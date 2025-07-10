@@ -1,0 +1,20 @@
+package com.example.tech.entity;
+
+import jakarta.persistence.*;
+import lombok.AllArgsConstructor;
+import lombok.Data;
+import lombok.NoArgsConstructor;
+@Entity
+@Data
+@NoArgsConstructor
+@Table(name = "syntaxes")
+@AllArgsConstructor
+public class SyntaxEntity {
+    @Id
+    @GeneratedValue(strategy = GenerationType.IDENTITY)
+    private Long id;
+    private String slug;
+    private String title;
+    private String userEmail;
+    private String sectionTitle;
+}
