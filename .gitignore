@@ -1,1 +1,2 @@
 backend/src/main/resources/firebase/firebase-service-account.json
+/backend/src/main/resources/firebase/*.json
