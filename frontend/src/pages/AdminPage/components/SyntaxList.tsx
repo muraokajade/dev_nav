@@ -1,12 +1,12 @@
 import { useEffect, useState } from "react";
 import axios from "axios";
-import { ArticleModel } from "../../../models/ArticleModel";
+import { SyntaxModel } from "../../../models/SyntaxModel"; 
 import { useAuth } from "../../../context/useAuthContext";
 import dayjs from "dayjs";
 
 export const SyntaxList = () => {
-    const [articles, setArticles] = useState<ArticleModel[]>([]);
-    const [article, setArticle] = useState<ArticleModel | null>(null);
+    const [syntaxes, setsyntaxes] = useState<SyntaxModel[]>([]);
+    const [syntax, setsyntax] = useState<SyntaxModel | null>(null);
     const { loading, currentUser, idToken } = useAuth();
     const [slug, setSlug] = useState("");
     const [title, setTitle] = useState("");
@@ -18,57 +18,57 @@ export const SyntaxList = () => {
     const togglePublish = async (slug: string) => {
       if (loading) return;
       try {
-        await axios.put(`/api/admin/articles/${slug}/toggle`, null, {
+        await axios.put(`/api/admin/syntaxes/${slug}/toggle`, null, {
           headers: {
             Authorization: `Bearer ${idToken}`,
           },
         });
         // 再取得
-        const updated = await axios.get("/api/admin/articles", {
+        const updated = await axios.get("/api/admin/syntaxes", {
           headers: {
             Authorization: `Bearer ${idToken}`,
           },
         });
-        setArticles(updated.data);
+        setsyntaxes(updated.data);
       } catch (e) {
         console.error("公開状態切替失敗", e);
       }
     };
   
     useEffect(() => {
-      const fetchArticles = async () => {
+      const fetchAllSyntaxes = async () => {
         if (loading) return;
         try {
-          const res = await axios.get("/api/admin/articles", {
+          const res = await axios.get("/api/admin/syntaxes", {
             headers: {
               Authorization: `Bearer ${idToken}`,
             },
           });
           console.log("取得した記事一覧:", res.data);
-          setArticles(res.data);
+          setsyntaxes(res.data);
         } catch (e) {
           console.error("記事取得失敗", e);
         }
       };
-      fetchArticles();
+      fetchAllSyntaxes();
     }, [loading, currentUser, idToken]);
   
     const handleEdit = async (id: number) => {
       if (loading) return;
       try {
-        const res = await axios.get(`/api/admin/article/${id}`, {
+        const res = await axios.get(`/api/admin/syntax/${id}`, {
           headers: {
             Authorization: `Bearer ${idToken}`,
           },
         });
-        const article = res.data;
-        setArticle(article);
+        const syntax = res.data;
+        setsyntax(syntax);
   
         // 編集対象の記事情報をステートにセット
-        setSlug(article.slug);
-        setTitle(article.title);
-        setContent(article.content);
-        setSectionTitle(article.sectionTitle);
+        setSlug(syntax.slug);
+        setTitle(syntax.title);
+        setContent(syntax.content);
+        setSectionTitle(syntax.sectionTitle);
   
         setIsEditModalOpen(true);
       } catch (err) {
@@ -89,18 +89,18 @@ export const SyntaxList = () => {
           formData.append("image", imageFile);
         }
   
-        const res = await axios.put(`/api/admin/article/${id}`, formData, {
+        const res = await axios.put(`/api/admin/syntax/${id}`, formData, {
           headers: {
             Authorization: `Bearer ${idToken}`,
           },
         });
-        const refreshed = await axios.get("/api/admin/articles", {
+        const refreshed = await axios.get("/api/admin/syntaxes", {
           headers: {
             Authorization: `Bearer ${idToken}`,
           },
         });
   
-        setArticles(refreshed.data);
+        setsyntaxes(refreshed.data);
         setIsEditModalOpen(false);
       } catch (e) {
         console.error("データ更新失敗");
@@ -111,7 +111,7 @@ export const SyntaxList = () => {
       if (loading) return;
       if (!window.confirm("本当に削除しますか？")) return;
       try {
-        await axios.delete(`/api/admin/article/${id}`, {
+        await axios.delete(`/api/admin/syntax/${id}`, {
           headers: {
             Authorization: `Bearer ${idToken}`,
           },
@@ -128,7 +128,7 @@ export const SyntaxList = () => {
       <div className="min-h-screen bg-gray-900">
         <div className="p-8 max-w-3xl mx-auto">
           <h2 className="text-2xl text-white font-bold mb-4 border-b pb-2">
-            📚 投稿済み記事
+            📚 投稿済み文法
           </h2>
           {isEditModalOpen && (
             <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
@@ -156,25 +156,7 @@ export const SyntaxList = () => {
                   value={sectionTitle}
                   onChange={(e) => setSectionTitle(e.target.value)}
                 />
-                <label>content</label>
-                <textarea
-                  className="w-full  text-black px-3 py-2 rounded mb-4"
-                  placeholder="本文"
-                  value={content}
-                  onChange={(e) => setContent(e.target.value)}
-                  rows={6}
-                />
-                <input
-                  type="file"
-                  accept="image/*"
-                  className="w-full"
-                  onChange={(e) => {
-                    if (e.target.files?.[0]) {
-                      console.log("📁 選択したファイル:", e.target.files[0]);
-                      setImageFile(e.target.files[0]);
-                    }
-                  }}
-                />
+
   
                 <div className="flex justify-end space-x-2">
                   <button
@@ -183,9 +165,9 @@ export const SyntaxList = () => {
                   >
                     キャンセル
                   </button>
-                  {article && (
+                  {syntax && (
                     <button
-                      onClick={() => handleUpdate(article.id)}
+                      onClick={() => handleUpdate(syntax.id)}
                       className="px-4 py-2 bg-blue-500 rounded hover:bg-blue-400"
                     >
                       更新する
@@ -197,49 +179,44 @@ export const SyntaxList = () => {
           )}
   
           <div className="space-y-2">
-            {articles.map((article) => (
+            {syntaxes.map((syntax) => (
               <div
-                key={article.slug}
+                key={syntax.slug}
                 className="flex items-start bg-gray-800 text-white rounded-lg px-4 py-3 shadow-sm hover:shadow-md"
               >
                 {/* 左側：基本情報 */}
                 <div className="w-1/3 pr-4 text-sm space-y-1">
-                  <p className="font-semibold text-lg">{article.title}</p>
-                  <p className="text-gray-400">Slug: {article.slug}</p>
+                  <p className="font-semibold text-lg">{syntax.title}</p>
+                  <p className="text-gray-400">Slug: {syntax.slug}</p>
                   <p className="text-gray-400">
-                    セクション: {article.sectionTitle}
+                    セクション: {syntax.sectionTitle}
                   </p>
                   <p className="text-gray-500 text-xs">
-                    投稿日: {dayjs(article.createdAt).format("YYYY/MM/DD HH:mm")}
+                    投稿日: {dayjs(syntax.createdAt).format("YYYY/MM/DD HH:mm")}
                   </p>
                 </div>
   
                 {/* 中央：縦線 */}
                 <div className="border-l border-gray-600 h-full mx-4" />
   
-                {/* 中央右：コンテンツ本文（長文・折り返し） */}
-                <div className="flex-1 text-sm text-gray-200 break-words pr-4">
-                  {article.content}
-                </div>
-  
                 {/* 右端：編集・削除ボタン */}
                 <div className="flex flex-col space-y-2 items-end">
                   <button
-                    onClick={() => togglePublish(article.slug)}
+                    onClick={() => togglePublish(syntax.slug)}
                     className={`text-sm ${
-                      article.published ? "text-green-400" : "text-yellow-400"
+                      syntax.published ? "text-green-400" : "text-yellow-400"
                     } hover:underline`}
                   >
-                    {article.published ? "公開中 → 非公開に" : "非公開 → 公開に"}
+                    {syntax.published ? "公開中 → 非公開に" : "非公開 → 公開に"}
                   </button>
                   <button
-                    onClick={() => handleEdit(article.id)}
+                    onClick={() => handleEdit(syntax.id)}
                     className="text-blue-400 hover:text-blue-200 text-sm"
                   >
                     編集
                   </button>
                   <button
-                    onClick={() => handleDelete(article.id)}
+                    onClick={() => handleDelete(syntax.id)}
                     className="text-red-400 hover:text-red-200 text-sm"
                   >
                     削除

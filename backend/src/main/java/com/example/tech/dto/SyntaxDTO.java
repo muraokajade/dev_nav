@@ -2,20 +2,15 @@ package com.example.tech.dto;
 
 import lombok.AllArgsConstructor;
 import lombok.Data;
-
-import java.time.LocalDateTime;
+import lombok.NoArgsConstructor;
 
 @Data
 @AllArgsConstructor
-public class ArticleDTO {
+@NoArgsConstructor
+public class SyntaxDTO {
     private Long id;
     private String slug;
     private String title;
     private String userEmail;
     private String sectionTitle;
-    private String content;
-    private String imageUrl;
-    private LocalDateTime createdAt;
-    private LocalDateTime updatedAt;
-    private boolean published;
 }

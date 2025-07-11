@@ -17,4 +17,11 @@ public class SyntaxEntity {
     private String title;
     private String userEmail;
     private String sectionTitle;
+
+    @Column(name = "is_published", nullable = false)
+    private boolean published = true;
+
+    public boolean published() {
+        return this.published;
+    }
 }

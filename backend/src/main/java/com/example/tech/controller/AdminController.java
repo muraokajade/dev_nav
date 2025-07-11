@@ -1,5 +1,7 @@
 package com.example.tech.controller;
 
+import com.example.tech.dto.ArticleDTO;
+import com.example.tech.dto.SyntaxDTO;
 import com.example.tech.dto.request.ArticleRequest;
 import com.example.tech.dto.request.SyntaxRequest;
 import com.example.tech.service.FirebaseAuthService;
@@ -11,6 +13,7 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
+import java.util.List;
 
 @RestController
 @CrossOrigin("http://localhost:3000")
@@ -20,6 +23,23 @@ public class AdminController {
 
     private final AdminService adminService;
     private final FirebaseAuthService firebaseAuthService;
+
+    @GetMapping("/articles")
+    public ResponseEntity<List<ArticleDTO>> getAllArticle(@RequestHeader(name = "Authorization") String token)
+    {
+        List<ArticleDTO> articles = adminService.getAllArticles();
+        return ResponseEntity.ok(articles);
+    }
+
+    @GetMapping("/syntaxes")
+    public ResponseEntity<List<SyntaxDTO>> getAllSyntax(@RequestHeader(name = "Authorization") String token)
+    {
+        List<SyntaxDTO> articles = adminService.getAllSyntax();
+        return ResponseEntity.ok(articles);
+    }
+
+
+
     @PostMapping("/add-article")
     public ResponseEntity<?> postArticle(@RequestHeader(name = "Authorization") String token,
                                          @RequestParam("image") MultipartFile imageFile,

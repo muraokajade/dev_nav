@@ -23,6 +23,7 @@ public class ArticleService {
                 entity.getId(),
                 entity.getSlug(),
                 entity.getTitle(),
+                entity.getUserEmail(),
                 entity.getSectionTitle(),
                 entity.getContent(),
                 entity.getImageUrl(),

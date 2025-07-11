@@ -14,6 +14,7 @@ export const ArticleList = () => {
   const [content, setContent] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  // console.log(idToken);
 
   const togglePublish = async (slug: string) => {
     if (loading) return;

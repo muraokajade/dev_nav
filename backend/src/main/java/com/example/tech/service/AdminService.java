@@ -1,5 +1,7 @@
 package com.example.tech.service;
 
+import com.example.tech.dto.SyntaxDTO;
+import com.example.tech.dto.ArticleDTO;
 import com.example.tech.dto.request.ArticleRequest;
 import com.example.tech.dto.request.SyntaxRequest;
 import com.example.tech.entity.ArticleEntity;
@@ -9,7 +11,7 @@ import com.example.tech.repository.SyntaxRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
-import java.io.File;
+import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -38,4 +40,36 @@ public class AdminService {
         entity.setSectionTitle(request.getSectionTitle());
         syntaxRepository.save(entity);
     }
+
+    public List<ArticleDTO> getAllArticles() {
+        List<ArticleEntity> entities = adminRepository.findAll();
+        return entities.stream().map(this::convertToArticleDTO).toList();
+    }
+    private ArticleDTO convertToArticleDTO(ArticleEntity entity) {
+        return new ArticleDTO(
+                entity.getId(),
+                entity.getSlug(),
+                entity.getTitle(),
+                entity.getUserEmail(),
+                entity.getSectionTitle(),
+                entity.getContent(),
+                entity.getImageUrl(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt(),
+                entity.isPublished()
+        );
+    }
+
+    public List<SyntaxDTO> getAllSyntax() {
+        List<SyntaxEntity> entities = syntaxRepository.findAll();
+        return entities.stream().map(entity-> new SyntaxDTO(
+                entity.getId(),
+                entity.getSlug(),
+                entity.getTitle(),
+                entity.getUserEmail(),
+                entity.getSectionTitle()
+        )).toList();
+    }
+
+
 }
