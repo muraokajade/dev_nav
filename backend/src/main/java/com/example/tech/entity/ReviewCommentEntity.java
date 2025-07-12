@@ -2,6 +2,7 @@ package com.example.tech.entity;
 
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
+import lombok.Data;
 import lombok.NoArgsConstructor;
 import org.hibernate.annotations.CreationTimestamp;
 import org.hibernate.annotations.UpdateTimestamp;
@@ -9,19 +10,21 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "review_scores", uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "article_id"}))
+@Table(name = "review_comments")
+@Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class ReviewScore {
+public class ReviewCommentEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
     private Long userId;
     private Long articleId;
+    private String comment;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-
 }

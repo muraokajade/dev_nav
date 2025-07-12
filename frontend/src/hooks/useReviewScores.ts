@@ -1,6 +1,6 @@
 import { useState, useEffect } from "react";
 import axios from "axios";
-import { useAuth } from "../context/useAuthContext"; 
+import { useAuth } from "../context/useAuthContext";
 
 type Score = {
   id: number;
@@ -10,63 +10,57 @@ type Score = {
 
 export const useReviewScores = (articleId: number, myUserId: number) => {
   const [scores, setScores] = useState<Score[]>([]);
+  const [myScore, setMyScore] = useState<number | null>(null); //自分の投稿
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { idToken } = useAuth();
 
-  // 全スコア取得
-  const fetchScores = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const res = await axios.get(`/api/review-scores?articleId=${articleId}`, {
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
-      setScores(res.data ?? []);
-    } catch (e) {
-      console.error("失敗", e);
-      setError("スコア取得に失敗しました");
-    } finally {
-      setLoading(false);
-    }
-  };
-
+  // 全体分
   useEffect(() => {
-    fetchScores();
+    axios
+      .get(`/api/review-scores/all?articleId=${articleId}`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      })
+      .then((res) => setScores(res.data ?? []))
+      .catch(() => setScores([]));
+    setLoading(false);
   }, [articleId]);
+
+  // 自分の分
+  useEffect(() => {
+    if (!idToken) return;
+    axios
+      .get(`/api/review-scores?articleId=${articleId}`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      })
+      .then((res) => setMyScore(res.data?.score ?? null))
+      .catch(() => setMyScore(null));
+    setLoading(false);
+  }, [articleId, idToken]);
   // 自分のスコア
-  const myScoreObj =
-    scores.find((s) => Number(s.userId) === Number(myUserId)) ?? null;
-  const myScore = myScoreObj?.score ?? null;
-  const myScoreId = myScoreObj?.id ?? null;
 
-
-
-
+  // 送信系（myScoreIdがあればPUT、なければPOST）
   const submitScore = async (score: number) => {
     setLoading(true);
     setError(null);
 
     try {
-      if (myScoreId == null) {
-
+      //まだ自分のスコアがない時
+      if (!score) {
         await axios.post(
           "/api/review-scores",
-          { articleId, score }, // ←ココがbody
+          { articleId, score },
           { headers: { Authorization: `Bearer ${idToken}` } }
         );
       } else {
         await axios.put(
-          `/api/review-scores/${myScoreId}`,
-          { articleId,score },
+          "/api/review-scores",
+          { articleId, score },
           { headers: { Authorization: `Bearer ${idToken}` } }
         );
       }
-      await fetchScores();
     } catch (e) {
-      setError("スコア送信に失敗しました");
+      setError("スコア取得に失敗しました。");
     } finally {
       setLoading(false);
     }

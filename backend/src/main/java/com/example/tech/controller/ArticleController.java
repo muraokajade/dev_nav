@@ -23,7 +23,6 @@ public class ArticleController {
 
     @GetMapping("/{id}")
     public ResponseEntity<ArticleDTO> getArticleById(@PathVariable Long id) {
-        System.out.println("来た");
         ArticleDTO article = articleService.getArticleById(id);
 
         return ResponseEntity.ok(article);

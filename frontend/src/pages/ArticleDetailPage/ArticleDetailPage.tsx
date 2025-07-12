@@ -3,9 +3,10 @@ import ReactMarkdown from "react-markdown";
 import { Link, useParams } from "react-router-dom";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { ReviewScore } from "./ReviewScore";
+import { ReviewScore } from "../../utils/ReviewScore";
 import { useAuth } from "../../context/useAuthContext";
 import axios from "axios";
+import { ReviewComments } from "../../utils/ReviewComments";
 
 export const ArticleDetailPage = () => {
   const { idAndSlug } = useParams();
@@ -15,7 +16,7 @@ export const ArticleDetailPage = () => {
   const [content, setContent] = useState("");
   const [articleId, setArticleId] = useState<number | null>(null);
 
-  // ユーザー情報
+  // ユーザー情報取得
   useEffect(() => {
     if (idToken) {
       axios
@@ -24,60 +25,64 @@ export const ArticleDetailPage = () => {
     }
   }, [idToken]);
 
-
   // 記事詳細をAPIから取得
   useEffect(() => {
     if (!id) return;
     axios.get(`/api/articles/${id}`).then((res) => {
       setContent(res.data.content);
       setArticleId(res.data.id);
-      // 他のフィールド（titleなど）もここでセット可能
     });
   }, [id]);
 
   return (
     <div className="min-h-screen bg-gray-900">
-      <div className="p-8 max-w-3xl mx-auto">
-        <div className="prose prose-invert max-w-4xl mx-auto py-10 min-h-screen">
-          <ReactMarkdown
-            children={content}
-            components={{
-              code({ className, children, ...props }: any) {
-                const match = /language-(\w+)/.exec(className || "");
-                const codeString = Array.isArray(children)
-                  ? children.join("")
-                  : String(children);
+      {/* 本文エリアだけ狭めに中央寄せ */}
+      <div className="prose prose-invert max-w-4xl mx-auto py-10">
+        <ReactMarkdown
+          children={content}
+          components={{
+            code({ className, children, ...props }: any) {
+              const match = /language-(\w+)/.exec(className || "");
+              const codeString = Array.isArray(children)
+                ? children.join("")
+                : String(children);
 
-                return match ? (
-                  <SyntaxHighlighter
-                    style={oneDark}
-                    language={match[1]}
-                    PreTag="div"
-                    className="not-prose"
-                    {...props}
-                  >
-                    {codeString.replace(/\n$/, "")}
-                  </SyntaxHighlighter>
-                ) : (
-                  <code className={className} {...props}>
-                    {children}
-                  </code>
-                );
-              },
-              pre: ({ children }) => <>{children}</>,
-            }}
-          />
+              return match ? (
+                <SyntaxHighlighter
+                  style={oneDark}
+                  language={match[1]}
+                  PreTag="div"
+                  className="not-prose"
+                  {...props}
+                >
+                  {codeString.replace(/\n$/, "")}
+                </SyntaxHighlighter>
+              ) : (
+                <code className={className} {...props}>
+                  {children}
+                </code>
+              );
+            },
+            pre: ({ children }) => <>{children}</>,
+          }}
+        />
+      </div>
 
-          {articleId && myUserId != null && (
-            <ReviewScore articleId={articleId} myUserId={myUserId} />
-          )}
-
-          <Link to="/tech">
-            <p className="inline-block mt-6 bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition duration-200">
-              技術記事一覧に戻る
-            </p>
-          </Link>
+      {/* レビューとコメントはやや広めの領域で中央寄せ */}
+      {articleId && myUserId != null && (
+        <div className="max-w-4xl w-full mx-auto px-4">
+          <ReviewScore articleId={articleId} myUserId={myUserId} />
+          <ReviewComments articleId={articleId} myUserId={myUserId} />
         </div>
+      )}
+
+      {/* 戻るボタンも本文と同じ幅で中央寄せ */}
+      <div className="prose prose-invert max-w-3xl mx-auto py-8">
+        <Link to="/tech">
+          <p className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition duration-200">
+            技術記事一覧に戻る
+          </p>
+        </Link>
       </div>
     </div>
   );
