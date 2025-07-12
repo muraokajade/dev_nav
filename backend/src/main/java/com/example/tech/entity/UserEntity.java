@@ -10,33 +10,18 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "users")
 @Data
 @AllArgsConstructor
-@Table(name = "articles")
 @NoArgsConstructor
-public class ArticleEntity {
+public class UserEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
-
-    @Column(unique = true)
-    private String slug;
-    private String title;
-    private String userEmail;
-    private String sectionTitle;
-    @Column(columnDefinition = "TEXT")
-    private String content;
-    private String imageUrl;
+    private String email;
+    private String displayName;
     @CreationTimestamp
     private LocalDateTime createdAt;
-
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-
-    @Column(name = "is_published", nullable = false)
-    private boolean published = true;
-
-    public boolean published() {
-        return this.published;
-    }
 }

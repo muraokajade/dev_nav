@@ -1,6 +1,9 @@
 import axios from "axios";
 import { useAuth } from "../../../context/useAuthContext";
 import { useState } from "react";
+import ReactMarkdown from "react-markdown"; // 追加
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 export const AddArticleForm = () => {
   const [slug, setSlug] = useState("");
@@ -71,8 +74,39 @@ export const AddArticleForm = () => {
             value={content}
             onChange={(e) => setContent(e.target.value)}
             placeholder="内容"
-            rows={6}
+            rows={40}
           />
+
+          {/* --- Markdownプレビュー --- */}
+          <div className="prose prose-invert max-w-none mt-2 p-4 bg-gray-800 rounded text-white">
+            <div className="font-bold mb-1">プレビュー:</div>
+            <ReactMarkdown
+              children={content}
+              components={{
+                code({ node, className, children, ...props }) {
+                  // ↓「classNameにlanguage-xxxが付いていれば“ブロック”、なければインライン」
+                  const match = /language-(\w+)/.exec(className || "");
+                  return match ? (
+                    <SyntaxHighlighter
+                      style={oneDark}
+                      language={match[1]}
+                      PreTag="div"
+                      className="not-prose"
+                      {...props}
+                    >
+                      {String(children).replace(/\n$/, "")}
+                    </SyntaxHighlighter>
+                  ) : (
+                    <code className={className} {...props}>
+                      {children}
+                    </code>
+                  );
+                },
+                pre: ({ children }) => <>{children}</>,
+              }}
+            />
+          </div>
+
           <input
             type="file"
             accept="image/*"

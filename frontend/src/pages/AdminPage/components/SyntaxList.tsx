@@ -56,7 +56,7 @@ export const SyntaxList = () => {
     const handleEdit = async (id: number) => {
       if (loading) return;
       try {
-        const res = await axios.get(`/api/admin/syntax/${id}`, {
+        const res = await axios.get(`/api/admin/syntaxes/${id}`, {
           headers: {
             Authorization: `Bearer ${idToken}`,
           },
@@ -80,16 +80,11 @@ export const SyntaxList = () => {
     const handleUpdate = async (id: number) => {
       if (loading) return;
       try {
-        const formData = new FormData();
-        formData.append("slug", slug);
-        formData.append("title", title);
-        formData.append("sectionTitle", sectionTitle);
-        formData.append("content", content);
-        if (imageFile) {
-          formData.append("image", imageFile);
-        }
   
-        const res = await axios.put(`/api/admin/syntax/${id}`, formData, {
+        const res = await axios.put(`/api/admin/syntaxes/${id}`,
+         {slug, title, sectionTitle},
+         
+         {
           headers: {
             Authorization: `Bearer ${idToken}`,
           },

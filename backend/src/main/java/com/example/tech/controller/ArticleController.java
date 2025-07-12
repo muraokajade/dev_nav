@@ -4,10 +4,7 @@ import com.example.tech.dto.ArticleDTO;
 import com.example.tech.service.ArticleService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
-import org.springframework.web.bind.annotation.CrossOrigin;
-import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RestController;
+import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 
@@ -22,6 +19,14 @@ public class ArticleController {
     public ResponseEntity<List<ArticleDTO>> getAllArticles() {
         List<ArticleDTO> articleDTOS = articleService.getAllArticles();
         return ResponseEntity.ok(articleDTOS);
+    }
+
+    @GetMapping("/{id}")
+    public ResponseEntity<ArticleDTO> getArticleById(@PathVariable Long id) {
+        System.out.println("来た");
+        ArticleDTO article = articleService.getArticleById(id);
+
+        return ResponseEntity.ok(article);
     }
 
 }

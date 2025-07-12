@@ -11,6 +11,7 @@ import { AddArticleForm } from "./pages/AdminPage/components/AddArticleForm";
 import { ArticleList } from "./pages/AdminPage/components/ArticleList";
 import { AddSyntaxForm } from "./pages/AdminPage/components/AddSyntaxForm";
 import { SyntaxList } from "./pages/AdminPage/components/SyntaxList";
+import { ArticleDetailPage } from "./pages/ArticleDetailPage/ArticleDetailPage";
 
 export default function App() {
   return (
@@ -20,6 +21,7 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/tech" element={<TechList />} />
         <Route path="/login" element={<Login />} />
+
 
         {/* 管理者専用ルート */}
         <Route path="/admin" element={
@@ -47,6 +49,7 @@ export default function App() {
             <ArticleList />
           </AdminRoute>
         } />
+        <Route path="/articles/:idAndSlug" element={<ArticleDetailPage />} />
         {/* 文法一覧 */}
         <Route path="/admin/syntaxes" element={
           <AdminRoute>

@@ -57,7 +57,7 @@ export const ArticleList = () => {
   const handleEdit = async (id: number) => {
     if (loading) return;
     try {
-      const res = await axios.get(`/api/admin/article/${id}`, {
+      const res = await axios.get(`/api/admin/articles/${id}`, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
@@ -90,7 +90,7 @@ export const ArticleList = () => {
         formData.append("image", imageFile);
       }
 
-      const res = await axios.put(`/api/admin/article/${id}`, formData, {
+      const res = await axios.put(`/api/admin/articles/${id}`, formData, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
@@ -220,7 +220,7 @@ export const ArticleList = () => {
 
               {/* 中央右：コンテンツ本文（長文・折り返し） */}
               <div className="flex-1 text-sm text-gray-200 break-words pr-4">
-                {article.content}
+                {article.content.slice(0,300)}
               </div>
 
               {/* 右端：編集・削除ボタン */}

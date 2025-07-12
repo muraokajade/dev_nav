@@ -32,4 +32,25 @@ public class ArticleService {
                 entity.isPublished()
         );
     }
+
+    public ArticleDTO getArticleById(Long id) {
+        ArticleEntity entity = articleRepository.findById(id)
+                .orElseThrow(()-> new RuntimeException("記事が見つかりません。"));
+
+        return convertToArticleDTO(entity);
+    }
+    private ArticleDTO convertToArticleDTO(ArticleEntity entity) {
+        return new ArticleDTO(
+                entity.getId(),
+                entity.getSlug(),
+                entity.getTitle(),
+                entity.getUserEmail(),
+                entity.getSectionTitle(),
+                entity.getContent(),
+                entity.getImageUrl(),
+                entity.getCreatedAt(),
+                entity.getUpdatedAt(),
+                entity.isPublished()
+        );
+    }
 }

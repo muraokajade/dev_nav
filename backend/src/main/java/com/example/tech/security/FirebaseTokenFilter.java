@@ -20,6 +20,12 @@ import java.util.List;
 public class FirebaseTokenFilter extends OncePerRequestFilter {
 
     @Override
+    protected boolean shouldNotFilter(HttpServletRequest request) throws ServletException {
+        String path = request.getRequestURI();
+        // 公開API（認証不要API）はフィルター自体を無効化
+        return path.startsWith("/api/articles");
+    }
+    @Override
     protected void doFilterInternal(HttpServletRequest request,
                                     HttpServletResponse response,
                                     FilterChain filterChain)
