@@ -10,53 +10,33 @@ const ProgressCalendar = () => (
 );
 <LevelBar />;
 
-export const MyPage = () => {
+export const Sample = () => {
   // 仮のステート
   const [user, setUser] = useState<any>(null);
-  const [userError, setUserError] = useState<string | null>(null);
   const [actionStats, setActionStats] = useState<any>(null);
-  const [actionError, setActionError] = useState<string | null>(null);
   const [level, setLevel] = useState(1);
   const [exp, setExp] = useState(0);
-  const { idToken } = useAuth();
+  const{idToken} = useAuth();
 
-  // /api/me 用
-  useEffect(() => {
-    if (!idToken) return;
-    setUser(null); // ローディング演出用（任意）
-    setUserError(null); // 前回エラー消す
-    axios
-      .get("/api/me", {
-        headers: { Authorization: `Bearer ${idToken}` },
-      })
-      .then((res) => setUser(res.data))
-      .catch((err) => {
-        setUserError("ユーザーデータの取得に失敗しました");
-        console.error(err);
-      });
-  }, [idToken]);
+//   useEffect(() => {
+//     if (idToken) {
+//       axios.get("/api/me", {
+//         headers: { Authorization: `Bearer ${idToken}` }
+//       })
+//       .then(res => setUser(res.data));
+  
+//       axios.get("/api/status/mine", {
+//         headers: { Authorization: `Bearer ${idToken}` }
+//       })
+//       .then(res => {
+//         setActionStats(res.data);
+//         setLevel(res.data.level);
+//         setExp(res.data.expPercent);
+//       });
+//     }
+//   }, [idToken]);
 
-  // /api/status/mine 用
-  useEffect(() => {
-    if (!idToken) return;
-    setActionStats(null);
-    setActionError(null);
-    axios
-      .get("/api/status/mine", {
-        headers: { Authorization: `Bearer ${idToken}` },
-      })
-      .then((res) => {
-        setActionStats(res.data);
-        setLevel(res.data.level);
-        setExp(res.data.expPercent);
-      })
-      .catch((err) => {
-        setActionError("ステータス情報の取得に失敗しました");
-        console.error(err);
-      });
-  }, [idToken]);
-
-  useEffect(() => {
+useEffect(() => {
     // --- ここでモックデータを直で突っ込むだけでOK！ ---
     setUser({
       displayName: "田中エンジニア",
@@ -77,32 +57,7 @@ export const MyPage = () => {
     setLevel(3);
     setExp(62);
   }, []);
-
-  if (userError || actionError)
-    return (
-      <div className="text-red-500 p-8">
-        {userError && <div>{userError}</div>}
-        {actionError && <div>{actionError}</div>}
-      </div>
-    );
-
-  //   useEffect(() => {
-  //     if (idToken) {
-  //       axios.get("/api/me", {
-  //         headers: { Authorization: `Bearer ${idToken}` }
-  //       })
-  //       .then(res => setUser(res.data));
-
-  //       axios.get("/api/status/mine", {
-  //         headers: { Authorization: `Bearer ${idToken}` }
-  //       })
-  //       .then(res => {
-  //         setActionStats(res.data);
-  //         setLevel(res.data.level);
-  //         setExp(res.data.expPercent);
-  //       });
-  //     }
-  //   }, [idToken]);
+  
 
   if (!user || !actionStats)
     return <div className="text-white">Loading...</div>;

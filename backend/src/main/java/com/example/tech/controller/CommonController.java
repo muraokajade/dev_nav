@@ -29,25 +29,5 @@ public class CommonController {
         registerService.registUser(request);
         return ResponseEntity.ok("登録完了");
     }
-    @GetMapping("/me")
-    public UserDTO getMe(@RequestHeader("Authorization") String token)
-    {
-        String email = firebaseAuthService.verifyAndGetEmail(token);
-        UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません。"));
-        return UserDTO.of(user);
-    }
-
-    @GetMapping("/status/mine")
-    public UserStatusDTO getMyStatus(@RequestHeader("Authorization") String token)
-    {
-        String email = firebaseAuthService.verifyAndGetEmail(token);
-        UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません。"));
-
-        Long userId = user.getId();
-        UserStatusDTO status = userStatusService.getStatus(userId);
-        return status;
-    }
 
 }

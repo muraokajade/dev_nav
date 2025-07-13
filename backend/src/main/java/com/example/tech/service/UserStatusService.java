@@ -30,7 +30,8 @@ public class UserStatusService {
         int level = exp / 100 + 1;
         int expPercent = exp % 100;
 
-        // 3. DTOにまとめて返す
+        // 3. TODO DTOにまとめて返す
         return new UserStatusDTO(articlesRead, reviews, likes, comments, level, expPercent);
+
     }
 }

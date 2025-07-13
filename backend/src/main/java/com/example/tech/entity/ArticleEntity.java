@@ -22,6 +22,7 @@ public class ArticleEntity {
     @Column(unique = true)
     private String slug;
     private String title;
+    private Long userId;
     private String userEmail;
     private String sectionTitle;
     @Column(columnDefinition = "TEXT")

@@ -18,6 +18,4 @@ public class LikeEntity {
     private Long userId;
     private Long articleId;
 
-
-
 }
