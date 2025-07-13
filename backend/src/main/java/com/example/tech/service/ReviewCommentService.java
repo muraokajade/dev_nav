@@ -57,4 +57,11 @@ public class ReviewCommentService {
 
         reviewCommentRepository.save(existing);
     }
+
+    public void deleteComment(Long id) {
+        ReviewCommentEntity existing = reviewCommentRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("コメントが見つかりません。"));
+
+        reviewCommentRepository.delete(existing);
+    }
 }

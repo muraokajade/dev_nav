@@ -46,4 +46,13 @@ public class ReviewCommentController {
         return ResponseEntity.ok("更新完了");
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteComment(@RequestHeader(name = "Authorization") String token,
+                                        @PathVariable Long id)
+    {
+
+        reviewCommentService.deleteComment(id);
+        return ResponseEntity.ok("削除完了");
+    }
+
 }

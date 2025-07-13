@@ -7,6 +7,7 @@ import { ReviewScore } from "../../utils/ReviewScore";
 import { useAuth } from "../../context/useAuthContext";
 import axios from "axios";
 import { ReviewComments } from "../../utils/ReviewComments";
+import { LikeButton } from "../../utils/LikeButton";
 
 export const ArticleDetailPage = () => {
   const { idAndSlug } = useParams();
@@ -15,6 +16,48 @@ export const ArticleDetailPage = () => {
   const [myUserId, setMyUserId] = useState<number | null>(null);
   const [content, setContent] = useState("");
   const [articleId, setArticleId] = useState<number | null>(null);
+  const [liked, setLiked] = useState(false);
+  const [likeCount, setLikeCount] = useState(0);
+//console.log(idToken);
+  const handleLike = async () => {
+    if (!idToken) return;
+    if (liked) {
+      try {
+        await axios.delete(`/api/likes/${articleId}`, {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        setLiked(false);
+        setLikeCount((prev) => prev - 1);
+      } catch (e) {
+        console.error("削除失敗", e);
+      }
+    } else {
+      try {
+        await axios.post(
+          "/api/likes",
+          { articleId },
+          { headers: { Authorization: `Bearer ${idToken}` } }
+        );
+        setLiked(true);
+        setLikeCount((prev) => prev + 1);
+      } catch (e) {
+        console.error("いいね失敗", e);
+      }
+    }
+  };
+
+  //いいね情報取得初回表示
+  useEffect(() => {
+    if (!idToken || !articleId) return;
+    axios
+      .get(`/api/likes/status?articleId=${articleId}`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      })
+      .then((res) => {
+        setLiked(res.data.liked);
+        setLikeCount(res.data.count);
+      });
+  }, [articleId, idToken]);
 
   // ユーザー情報取得
   useEffect(() => {
@@ -37,6 +80,7 @@ export const ArticleDetailPage = () => {
   return (
     <div className="min-h-screen bg-gray-900">
       {/* 本文エリアだけ狭めに中央寄せ */}
+      <LikeButton liked={liked} count={likeCount} onClick={handleLike} />
       <div className="prose prose-invert max-w-4xl mx-auto py-10">
         <ReactMarkdown
           children={content}

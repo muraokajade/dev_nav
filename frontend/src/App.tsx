@@ -12,50 +12,74 @@ import { ArticleList } from "./pages/AdminPage/components/ArticleList";
 import { AddSyntaxForm } from "./pages/AdminPage/components/AddSyntaxForm";
 import { SyntaxList } from "./pages/AdminPage/components/SyntaxList";
 import { ArticleDetailPage } from "./pages/ArticleDetailPage/ArticleDetailPage";
+import { MypageRoute } from "./routes/MyPageRoute";
+import { Mypage } from "./pages/MyPage/MyPage";
 
 export default function App() {
   return (
     <div>
-      <Navbar/>
+      <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/tech" element={<TechList />} />
         <Route path="/login" element={<Login />} />
 
-
+        <Route
+          path="/mypage"
+          element={
+            <MypageRoute>
+              <Mypage />
+            </MypageRoute>
+          }
+        />
         {/* 管理者専用ルート */}
-        <Route path="/admin" element={
-          <AdminRoute>
-            <AdminPage />
-          </AdminRoute>
-        } />
+        <Route
+          path="/admin"
+          element={
+            <AdminRoute>
+              <AdminPage />
+            </AdminRoute>
+          }
+        />
 
         {/* 記事投稿 */}
-        <Route path="/admin/add-article" element={
-          <AdminRoute>
-            <AddArticleForm />
-          </AdminRoute>
-        } />
+        <Route
+          path="/admin/add-article"
+          element={
+            <AdminRoute>
+              <AddArticleForm />
+            </AdminRoute>
+          }
+        />
         {/* 文法投稿 */}
-        <Route path="/admin/add-syntax" element={
-          <AdminRoute>
-            <AddSyntaxForm />
-          </AdminRoute>
-        } />
+        <Route
+          path="/admin/add-syntax"
+          element={
+            <AdminRoute>
+              <AddSyntaxForm />
+            </AdminRoute>
+          }
+        />
 
         {/* 記事一覧 */}
-        <Route path="/admin/articles" element={
-          <AdminRoute>
-            <ArticleList />
-          </AdminRoute>
-        } />
+        <Route
+          path="/admin/articles"
+          element={
+            <AdminRoute>
+              <ArticleList />
+            </AdminRoute>
+          }
+        />
         <Route path="/articles/:idAndSlug" element={<ArticleDetailPage />} />
         {/* 文法一覧 */}
-        <Route path="/admin/syntaxes" element={
-          <AdminRoute>
-            <SyntaxList />
-          </AdminRoute>
-        } />
+        <Route
+          path="/admin/syntaxes"
+          element={
+            <AdminRoute>
+              <SyntaxList />
+            </AdminRoute>
+          }
+        />
       </Routes>
     </div>
   );

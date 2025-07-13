@@ -26,6 +26,8 @@ public class SecurityConfig {
                         .requestMatchers("/api/articles/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/review-scores/**", "/api/review-comments/**").permitAll()
                         .requestMatchers("/api/review-scores/**", "/api/review-comments/**").authenticated() // レビュー・コメントはログイン必須
+                        .requestMatchers(HttpMethod.GET, "/api/likes/count").permitAll()
+                        .requestMatchers(HttpMethod.GET, "/api/likes/status").authenticated()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
                 ).addFilterBefore(new FirebaseTokenFilter(), UsernamePasswordAuthenticationFilter.class);

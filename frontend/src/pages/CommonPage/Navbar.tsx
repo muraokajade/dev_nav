@@ -52,6 +52,9 @@ export const Navbar = () => {
           <Link to="/basics" className="text-white hover:text-blue-300">
             基本文法
           </Link>
+          <Link to="/mypage" className="text-white hover:text-blue-300">
+            マイページ
+          </Link>
           <Link to="/admin" className="text-white hover:text-blue-300">
             管理者専用
           </Link>
