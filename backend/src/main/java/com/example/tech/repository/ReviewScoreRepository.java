@@ -13,4 +13,6 @@ public interface ReviewScoreRepository extends JpaRepository<ReviewScoreEntity,L
     Optional<ReviewScoreEntity> findByUserIdAndArticleId(Long userId, Long articleId);
 
     List<ReviewScoreEntity> findScoresByArticleId(Long articleId);
+
+    int countByUserId(Long userId);
 }

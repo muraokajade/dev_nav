@@ -31,4 +31,18 @@ public class FirebaseAuthService {
 
         return decodedToken.getEmail();
     }
+    public String verifyAndGetEmail(String token) {
+        String idToken = token.replace("Bearer ", "");
+
+        FirebaseToken decodedToken;
+        try {
+            decodedToken = FirebaseAuth.getInstance().verifyIdToken(idToken);
+        } catch(FirebaseAuthException e) {
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED,"トークンの検証に失敗しました。");
+        }
+
+        // admin権限のチェックは不要！
+        return decodedToken.getEmail();
+    }
+
 }

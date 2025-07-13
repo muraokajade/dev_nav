@@ -12,4 +12,6 @@ import java.util.Optional;
 public interface ReviewCommentRepository extends JpaRepository<ReviewCommentEntity,Long> {
 
     List<ReviewCommentEntity> findAllCommentsByArticleId(Long articleId);
+
+    int countByUserId(Long userId);
 }

@@ -22,6 +22,7 @@ public class SecurityConfig {
         http
                 .csrf(csrf ->csrf.disable())
                 .authorizeHttpRequests(auth-> auth
+                        .requestMatchers("/api/register").permitAll()
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/articles/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/review-scores/**", "/api/review-comments/**").permitAll()

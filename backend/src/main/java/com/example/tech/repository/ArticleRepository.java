@@ -9,4 +9,6 @@ import java.util.List;
 @Repository
 public interface ArticleRepository extends JpaRepository<ArticleEntity,Long> {
     List<ArticleEntity> findByPublishedTrue();
+
+    int countByUserId(Long userId);
 }

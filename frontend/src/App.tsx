@@ -13,7 +13,8 @@ import { AddSyntaxForm } from "./pages/AdminPage/components/AddSyntaxForm";
 import { SyntaxList } from "./pages/AdminPage/components/SyntaxList";
 import { ArticleDetailPage } from "./pages/ArticleDetailPage/ArticleDetailPage";
 import { MypageRoute } from "./routes/MyPageRoute";
-import { Mypage } from "./pages/MyPage/MyPage";
+import { MyPage } from "./pages/MyPage/MyPage"; 
+import { Register } from "./pages/CommonPage/Register";
 
 export default function App() {
   return (
@@ -23,12 +24,12 @@ export default function App() {
         <Route path="/" element={<Home />} />
         <Route path="/tech" element={<TechList />} />
         <Route path="/login" element={<Login />} />
-
+        <Route path="/register" element={<Register />} />
         <Route
           path="/mypage"
           element={
             <MypageRoute>
-              <Mypage />
+              <MyPage />
             </MypageRoute>
           }
         />
