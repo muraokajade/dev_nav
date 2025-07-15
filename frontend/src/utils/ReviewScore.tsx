@@ -107,7 +107,7 @@ export const ReviewScore: React.FC<{ articleId: number; myUserId: number }> = ({
   return (
     <section className="bg-zinc-900 rounded-xl p-6 my-8 shadow-lg max-w-3xl text-zinc-100">
       <h3 className="font-bold mb-3 text-lg text-zinc-200">
-        レビュー点数（0〜5・0.5刻み）
+        レビュー点数
       </h3>
       <div className="flex items-center gap-3">
         <StarRatingSVG value={tempScore} onChange={setTempScore} />

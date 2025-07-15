@@ -2,8 +2,10 @@ package com.example.tech.service;
 
 import com.example.tech.dto.ReviewScoreDTO;
 import com.example.tech.dto.request.ReviewScoreRequest;
+import com.example.tech.entity.ArticleEntity;
 import com.example.tech.entity.ReviewScoreEntity;
 import com.example.tech.entity.UserEntity;
+import com.example.tech.repository.ArticleRepository;
 import com.example.tech.repository.ReviewScoreRepository;
 import com.example.tech.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -18,20 +20,31 @@ import java.util.Optional;
 public class ReviewScoreService {
     private final ReviewScoreRepository reviewScoreRepository;
     private final UserRepository userRepository;
+    private final ArticleRepository articleRepository;
+
     public void postReviewScore(ReviewScoreRequest request, String userEmail) {
         UserEntity user = userRepository.findUserByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません。"));
 
         Long userId = user.getId();
 
-        Optional<ReviewScoreEntity> existing = reviewScoreRepository.findByUserIdAndArticleId(userId, request.getArticleId());
+        Optional<ReviewScoreEntity> existing = reviewScoreRepository.findByUserIdAndArticle_Id(userId, request.getArticleId());
 
         if(existing.isPresent()) {
             throw new RuntimeException("既にレビュー済みです");
         }
 
+        //TODO
+        ArticleEntity article = articleRepository.findById(request.getArticleId())
+                .orElseThrow(() -> new RuntimeException("記事が見つかりません、"));
+
         ReviewScoreEntity entity = new ReviewScoreEntity();
-        entity.setArticleId(request.getArticleId());
+        entity.setArticle(article);
+
+        //entity.getArticle().setId(request.getArticleId());
+
+        //entity.setArticleId(request.getArticleId());
+
         entity.setUserId(userId);
         entity.setScore(request.getScore());
 
@@ -43,7 +56,7 @@ public class ReviewScoreService {
                 .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません。"));
         Long userId = user.getId();
 
-        Optional<ReviewScoreEntity> scoreOpt = reviewScoreRepository.findByUserIdAndArticleId(articleId,userId);
+        Optional<ReviewScoreEntity> scoreOpt = reviewScoreRepository.findByUserIdAndArticle_Id(userId,articleId);
 
         return scoreOpt.map(this::convertToDTO).orElse(null);
     }
@@ -51,7 +64,7 @@ public class ReviewScoreService {
     private ReviewScoreDTO convertToDTO(ReviewScoreEntity entity) {
         ReviewScoreDTO dto = new ReviewScoreDTO();
         dto.setId(entity.getId());
-        dto.setArticleId(entity.getArticleId());
+        dto.setArticleId(entity.getArticle().getId());
         dto.setUserId(entity.getUserId());
         dto.setScore(entity.getScore());
         dto.setCreatedAt(entity.getCreatedAt());
@@ -75,7 +88,7 @@ public class ReviewScoreService {
 
         Long userId = userEntity.getId();
 
-        Optional<ReviewScoreEntity> existingOpt = reviewScoreRepository.findByUserIdAndArticleId(userId, request.getArticleId());
+        Optional<ReviewScoreEntity> existingOpt = reviewScoreRepository.findByUserIdAndArticle_Id(userId, request.getArticleId());
 
         if(existingOpt.isPresent()) {
             ReviewScoreEntity entity = existingOpt.get();
@@ -88,5 +101,4 @@ public class ReviewScoreService {
 
     }
 
-//    Optional<ReviewScore> existing = reviewScoreRepository.findByUserEmailAndArticleId(userEmail,articleId)
 }

@@ -3,22 +3,53 @@ import axios from "axios";
 import { LevelBar } from "./components/LevelBar";
 import { ActionCard } from "./components/ActionCard";
 import { useAuth } from "../../context/useAuthContext";
-
-// 仮コンポーネント（未実装ならコメントで明記）
-const ProgressCalendar = () => (
-  <div>{/* ここに学習カレンダー */}カレンダー機能（未実装）</div>
-);
-<LevelBar />;
+import { ProgressCalendar } from "./components/ProgressCalendar";
+import { ActionHistoryList } from "./components/ActionHistoryList";
 
 export const MyPage = () => {
-  // 仮のステート
   const [user, setUser] = useState<any>(null);
   const [userError, setUserError] = useState<string | null>(null);
-  const [actionStats, setActionStats] = useState<any>(null);
+  const [actionStats, setActionStatus] = useState<any>(null);
   const [actionError, setActionError] = useState<string | null>(null);
   const [level, setLevel] = useState(1);
   const [exp, setExp] = useState(0);
   const { idToken } = useAuth();
+
+  // 1. カレンダー用の状態追加
+  const today = new Date();
+  const [year, setYear] = useState(today.getFullYear());
+  const [month, setMonth] = useState(today.getMonth() + 1); // JSは0始まり
+  const [calendarDays, setCalendarDays] = useState([]); // [{ date, actions }]型
+
+  useEffect(() => {
+    if (!idToken) return;
+    axios
+      .get(`/api/user/actions/calender?year=${year}&month=${month}`, {
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      })
+      .then((res) => setCalendarDays(res.data))
+      .catch((e) => setCalendarDays([]));
+  }, [idToken, year, month]);
+
+  // 3. 月移動用ハンドラ
+  const prevMonth = () => {
+    if (month === 1) {
+      setYear(year - 1);
+      setMonth(12);
+    } else {
+      setMonth(month - 1);
+    }
+  };
+  const nextMonth = () => {
+    if (month === 12) {
+      setYear(year + 1);
+      setMonth(1);
+    } else {
+      setMonth(month + 1);
+    }
+  };
 
   // /api/me 用
   useEffect(() => {
@@ -39,14 +70,14 @@ export const MyPage = () => {
   // /api/status/mine 用
   useEffect(() => {
     if (!idToken) return;
-    setActionStats(null);
+    setActionStatus(null);
     setActionError(null);
     axios
       .get("/api/status/mine", {
         headers: { Authorization: `Bearer ${idToken}` },
       })
       .then((res) => {
-        setActionStats(res.data);
+        setActionStatus(res.data);
         setLevel(res.data.level);
         setExp(res.data.expPercent);
       })
@@ -56,28 +87,6 @@ export const MyPage = () => {
       });
   }, [idToken]);
 
-  useEffect(() => {
-    // --- ここでモックデータを直で突っ込むだけでOK！ ---
-    setUser({
-      displayName: "田中エンジニア",
-      email: "engineer@example.com",
-      // iconUrl: "..." などもここで
-    });
-    setActionStats({
-      articlesRead: 22,
-      reviews: 7,
-      likes: 15,
-      comments: 9,
-      level: 3,
-      expPercent: 62,
-      // likedArticles: [/* ... */],
-      // reviewsHistory: [/* ... */],
-      // commentsHistory: [/* ... */],
-    });
-    setLevel(3);
-    setExp(62);
-  }, []);
-
   if (userError || actionError)
     return (
       <div className="text-red-500 p-8">
@@ -86,52 +95,46 @@ export const MyPage = () => {
       </div>
     );
 
-  //   useEffect(() => {
-  //     if (idToken) {
-  //       axios.get("/api/me", {
-  //         headers: { Authorization: `Bearer ${idToken}` }
-  //       })
-  //       .then(res => setUser(res.data));
-
-  //       axios.get("/api/status/mine", {
-  //         headers: { Authorization: `Bearer ${idToken}` }
-  //       })
-  //       .then(res => {
-  //         setActionStats(res.data);
-  //         setLevel(res.data.level);
-  //         setExp(res.data.expPercent);
-  //       });
-  //     }
-  //   }, [idToken]);
-
   if (!user || !actionStats)
     return <div className="text-white">Loading...</div>;
 
   return (
     <div className="min-h-screen bg-gray-900 text-white">
-      <div className="max-w-3xl mx-auto py-10">
-        <h1 className="text-3xl font-bold mb-6">マイページ</h1>
-        {/* プロフィール */}
-        <div className="flex items-center gap-4 mb-6">
-          {/* <ProfileImage src={user.iconUrl}/> */}
-          <div>
-            <div className="text-2xl font-semibold">{user.displayName}</div>
-            <div className="text-gray-400 text-sm">{user.email}</div>
+      <div className="max-w-4xl mx-auto py-10">
+        {/* タイトル＆2カラム */}
+        <div className="flex items-start gap-8 mb-8">
+          {/* 左カラム：プロフィール&バー */}
+          <div className="flex-1">
+            <h1 className="text-3xl font-bold mb-6">マイページ</h1>
+            <div className="mb-2">
+              <div className="text-2xl font-semibold">{user.displayName}</div>
+              <div className="text-gray-400 text-sm">{user.email}</div>
+            </div>
+            <div className="flex items-center gap-2 mb-2">
+              <span className="font-bold text-lg">Lv.{level}</span>
+              <span className="text-sm text-gray-400">EXP: {exp}%</span>
+            </div>
+            <LevelBar level={level} exp={exp} />
+          </div>
+          {/* 右カラム：カレンダー */}
+          <div className="flex-1 flex flex-col">
+            <div className="bg-white/10 w-2/3 shadow-lg rounded-2xl p-6">
+              <h2 className="text-xl font-bold mb-2 text-center text-white">
+                学習カレンダー
+              </h2>
+              <div className="flex justify-end">
+                <ProgressCalendar
+                  days={calendarDays}
+                  year={year}
+                  month={month}
+                  onPrevMonth={prevMonth}
+                  onNextMonth={nextMonth}
+                />
+              </div>
+            </div>
           </div>
         </div>
-        {/* レベル＆進捗バー */}
-        <div className="mb-4">
-          <div className="flex items-center gap-2">
-            <span className="font-bold text-lg">Lv.{level}</span>
-            <span className="text-sm text-gray-400">EXP: {exp}%</span>
-          </div>
-          <LevelBar level={level} exp={exp} />
-        </div>
-        {/* 学習アクションカレンダー */}
-        <div className="mb-8">
-          <h2 className="text-xl font-bold mb-2">学習カレンダー</h2>
-          <ProgressCalendar />
-        </div>
+
         {/* アクションサマリー */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-8">
           <ActionCard
@@ -151,15 +154,16 @@ export const MyPage = () => {
             icon="💬"
           />
         </div>
+
         {/* いいね済み記事一覧 */}
         <div className="mb-10">
           <h2 className="text-xl font-bold mb-2">いいねした記事一覧</h2>
           {/* <LikedArticlesList articles={actionStats.likedArticles} /> */}
           <div className="text-gray-400">記事一覧機能（未実装）</div>
         </div>
-        {/* レビュー履歴・コメント履歴なども追加可 */}
-        {/* <ReviewHistory reviews={actionStats.reviewsHistory}/> */}
-        {/* <CommentHistory comments={actionStats.commentsHistory}/> */}
+
+        {/* 履歴 */}
+        <ActionHistoryList />
       </div>
     </div>
   );

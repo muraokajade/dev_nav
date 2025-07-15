@@ -2,8 +2,10 @@ package com.example.tech.service;
 
 import com.example.tech.dto.ReviewCommentDTO;
 import com.example.tech.dto.request.ReviewCommentRequest;
+import com.example.tech.entity.ArticleEntity;
 import com.example.tech.entity.ReviewCommentEntity;
 import com.example.tech.entity.UserEntity;
+import com.example.tech.repository.ArticleRepository;
 import com.example.tech.repository.ReviewCommentRepository;
 import com.example.tech.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -17,15 +19,28 @@ import java.util.List;
 public class ReviewCommentService {
     private final ReviewCommentRepository reviewCommentRepository;
     private final UserRepository userRepository;
+    private final ArticleRepository articleRepository;
 
     public void postComment(ReviewCommentRequest request, String userEmail) {
         ReviewCommentEntity entity = new ReviewCommentEntity();
         UserEntity userEntity = userRepository.findUserByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません。"));
 
+        //TODO ReviewCommentEntity ManyToOne ArticleEntityリレーションにしたのでArticleEntityがあるかわからない
+        //TODO Articleを下記でセットしなければならない。リレーションセット
+        ArticleEntity article = articleRepository.findById(request.getArticleId())
+                .orElseThrow(() -> new RuntimeException("記事が見つかりません。"));
+
         Long userId = userEntity.getId();
 
-        entity.setArticleId(request.getArticleId());
+        //TODO　これはNPE
+        //entity.getArticle().setId(request.getArticleId());
+        entity.setArticle(article); //Idも含めてオブジェクトでarticleがセットされるのでリレーションを担保できた
+
+        System.out.println("DEBUG: articleId = " + article.getId());
+        System.out.println("DEBUG: entity.getArticle().getId() = " + entity.getArticle().getId());
+
+
         entity.setUserId(userId);
         entity.setComment(request.getComment());
         reviewCommentRepository.save(entity);
@@ -41,7 +56,7 @@ public class ReviewCommentService {
         ReviewCommentDTO dto = new ReviewCommentDTO();
         dto.setId(entity.getId());
         dto.setUserId(entity.getUserId());
-        dto.setArticleId(entity.getArticleId());
+        dto.setArticleId(entity.getArticle().getId());
         dto.setComment(entity.getComment());
         dto.setCreatedAt(entity.getCreatedAt());
         dto.setUpdatedAt(entity.getUpdatedAt());

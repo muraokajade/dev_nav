@@ -19,7 +19,10 @@ public class ReviewScoreEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
     private Long userId;
-    private Long articleId;
+    //private Long articleId;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "article_id", referencedColumnName = "id", nullable = false)
+    private ArticleEntity article;
     private double score;
 
     @CreationTimestamp

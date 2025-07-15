@@ -2,7 +2,10 @@ package com.example.tech.service;
 
 import com.example.tech.dto.ArticleDTO;
 import com.example.tech.entity.ArticleEntity;
+import com.example.tech.entity.UserEntity;
+import com.example.tech.repository.ArticleReadRepository;
 import com.example.tech.repository.ArticleRepository;
+import com.example.tech.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -13,6 +16,8 @@ import java.util.List;
 public class ArticleService {
 
     private final ArticleRepository articleRepository;
+    private final UserRepository userRepository;
+    private final ArticleReadRepository articleReadRepository;
     public List<ArticleDTO> getAllArticles() {
         List<ArticleEntity> entities = articleRepository.findByPublishedTrue();
         return entities.stream().map(this::convertToDTO).toList();
@@ -52,5 +57,15 @@ public class ArticleService {
                 entity.getUpdatedAt(),
                 entity.isPublished()
         );
+    }
+
+
+    public List<Long> getReadArticleIds(String userEmail) {
+        UserEntity user = userRepository.findUserByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません。"));
+
+        Long userId = user.getId();
+
+        return articleReadRepository.findAllArticleIdByUserId(userId);
     }
 }

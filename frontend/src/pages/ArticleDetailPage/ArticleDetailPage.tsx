@@ -18,7 +18,9 @@ export const ArticleDetailPage = () => {
   const [articleId, setArticleId] = useState<number | null>(null);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
-//console.log(idToken);
+  const [isRead, setIsRead] = useState(false);
+
+  //console.log(idToken);
   const handleLike = async () => {
     if (!idToken) return;
     if (liked) {
@@ -45,6 +47,32 @@ export const ArticleDetailPage = () => {
       }
     }
   };
+  // 記事読了API用のハンドラ追加
+  const handleRead = async () => {
+    if (!idToken || !articleId) return;
+    try {
+      await axios.post(
+        "/api/articles/read",
+        { articleId },
+        { headers: { Authorization: `Bearer ${idToken}` } }
+      );
+      setIsRead(true);
+      alert("完了");
+    } catch (e) {
+      alert("読了登録失敗");
+      console.error(e);
+    }
+  };
+  // 「既読済みか」初回取得（オプション：DB側で既読チェックAPIがあれば）
+  useEffect(() => {
+    if (!idToken || !articleId) return;
+    axios
+      .get(`/api/articles/read/status?articleId=${articleId}`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      })
+      .then((res) => setIsRead(res.data.read ?? false))
+      .catch(() => setIsRead(false));
+  }, [idToken, articleId]);
 
   //いいね情報取得初回表示
   useEffect(() => {
@@ -119,6 +147,19 @@ export const ArticleDetailPage = () => {
           <ReviewComments articleId={articleId} myUserId={myUserId} />
         </div>
       )}
+      <div className="flex justify-end max-w-4xl mx-auto mt-4">
+        <button
+          className={`px-4 py-2 rounded font-bold shadow transition ${
+            isRead
+              ? "bg-green-500 cursor-not-allowed"
+              : "bg-blue-600 hover:bg-blue-700"
+          }`}
+          disabled={isRead}
+          onClick={handleRead}
+        >
+          {isRead ? "読了済み" : "この記事を読了する"}
+        </button>
+      </div>
 
       {/* 戻るボタンも本文と同じ幅で中央寄せ */}
       <div className="prose prose-invert max-w-3xl mx-auto py-8">

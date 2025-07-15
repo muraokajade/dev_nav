@@ -49,7 +49,7 @@ export const Navbar = () => {
           <Link to="/tech" className="text-white hover:text-blue-300">
             技術スタック
           </Link>
-          <Link to="/basics" className="text-white hover:text-blue-300">
+          <Link to="/syntaxes" className="text-white hover:text-blue-300">
             基本文法
           </Link>
           <Link to="/mypage" className="text-white hover:text-blue-300">

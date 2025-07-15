@@ -33,20 +33,23 @@ export const useReviewScores = (articleId: number, myUserId: number) => {
       .get(`/api/review-scores?articleId=${articleId}`, {
         headers: { Authorization: `Bearer ${idToken}` },
       })
-      .then((res) => setMyScore(res.data?.score ?? null))
+      .then((res) => {
+        console.log("myScore取得APIレスポンス", res);
+        setMyScore(res.data?.score ?? null);
+      })
       .catch(() => setMyScore(null));
     setLoading(false);
   }, [articleId, idToken]);
   // 自分のスコア
 
-  // 送信系（myScoreIdがあればPUT、なければPOST）
+  // 送信系（myScoreがあればPUT、なければPOST）
   const submitScore = async (score: number) => {
     setLoading(true);
     setError(null);
 
     try {
       //まだ自分のスコアがない時
-      if (!score) {
+      if (myScore === null) {
         await axios.post(
           "/api/review-scores",
           { articleId, score },
@@ -59,6 +62,12 @@ export const useReviewScores = (articleId: number, myUserId: number) => {
           { headers: { Authorization: `Bearer ${idToken}` } }
         );
       }
+      // ★送信後に再取得することで、myScoreが最新化され、次回はPUTに切り替わる
+      const res = await axios.get(`/api/review-scores?articleId=${articleId}`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      console.log(res.data);
+      setMyScore(res.data?.score ?? null);
     } catch (e) {
       setError("スコア取得に失敗しました。");
     } finally {
