@@ -15,6 +15,7 @@ import { ArticleDetailPage } from "./pages/ArticleDetailPage/ArticleDetailPage";
 import { MypageRoute } from "./routes/MyPageRoute";
 import { MyPage } from "./pages/MyPage/MyPage"; 
 import { Register } from "./pages/CommonPage/Register";
+import { AdminQAPage } from "./pages/AdminPage/components/AdminQAPage"; 
 
 export default function App() {
   return (
@@ -68,6 +69,15 @@ export default function App() {
           element={
             <AdminRoute>
               <ArticleList />
+            </AdminRoute>
+          }
+        />
+        {/* 記事一覧 */}
+        <Route
+          path="/admin/qa"
+          element={
+            <AdminRoute>
+              <AdminQAPage />
             </AdminRoute>
           }
         />

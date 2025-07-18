@@ -1,7 +1,9 @@
 package com.example.tech.service;
 
+import com.example.tech.entity.ArticleEntity;
 import com.example.tech.entity.LikeEntity;
 import com.example.tech.entity.UserEntity;
+import com.example.tech.repository.ArticleRepository;
 import com.example.tech.repository.LikeRepository;
 import com.example.tech.repository.UserRepository;
 import jakarta.transaction.Transactional;
@@ -14,15 +16,22 @@ import org.springframework.stereotype.Service;
 public class LikeService {
     private final LikeRepository likeRepository;
     private final UserRepository userRepository;
+    private final ArticleRepository articleRepository;
     public void registerLike(String userEmail, Long articleId) {
         UserEntity user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません。"));
-
         Long userId = user.getId();
+        ArticleEntity article = articleRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("記事が見るかりません。"));
+
+
 
         LikeEntity like = new LikeEntity();
-        like.setUserId(userId);
-        like.setArticleId(articleId);
+
+        like.setArticle(like.getArticle());
+
+        like.setUser(user);
+        like.setArticle(article);
 
         likeRepository.save(like);
     }

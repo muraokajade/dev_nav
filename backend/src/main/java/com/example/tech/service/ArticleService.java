@@ -5,10 +5,14 @@ import com.example.tech.entity.ArticleEntity;
 import com.example.tech.entity.UserEntity;
 import com.example.tech.repository.ArticleReadRepository;
 import com.example.tech.repository.ArticleRepository;
+import com.example.tech.repository.LikeRepository;
 import com.example.tech.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
+import java.time.LocalDate;
+import java.time.LocalDateTime;
+import java.time.LocalTime;
 import java.util.List;
 
 @Service
@@ -18,6 +22,7 @@ public class ArticleService {
     private final ArticleRepository articleRepository;
     private final UserRepository userRepository;
     private final ArticleReadRepository articleReadRepository;
+    private final LikeRepository likeRepository;
     public List<ArticleDTO> getAllArticles() {
         List<ArticleEntity> entities = articleRepository.findByPublishedTrue();
         return entities.stream().map(this::convertToDTO).toList();
@@ -67,5 +72,21 @@ public class ArticleService {
         Long userId = user.getId();
 
         return articleReadRepository.findAllArticleIdByUserId(userId);
+    }
+
+    public List<ArticleDTO> findLikedArticlesByUser(String userEmail) {
+        LocalDateTime start = LocalDate.now().atStartOfDay();
+        LocalDateTime end = LocalDate.now().atTime(LocalTime.MAX);
+        UserEntity user = userRepository.findUserByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません。"));
+        Long userId = user.getId();
+
+        List<Long> articleIds = likeRepository.findArticleIdsByUserId(userId,start,end);
+        List<ArticleEntity> articleEntities = articleRepository.findAllById(articleIds);
+
+        return articleEntities
+                .stream()
+                .map(this::convertToDTO)
+                .toList();
     }
 }

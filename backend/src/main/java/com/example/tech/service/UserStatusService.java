@@ -1,6 +1,7 @@
 package com.example.tech.service;
 
 import com.example.tech.dto.ActionHistoryDTO;
+import com.example.tech.dto.ArticleDTO;
 import com.example.tech.dto.CalendarActionDTO;
 import com.example.tech.dto.UserStatusDTO;
 import com.example.tech.dto.request.ArticleReadRequest;
@@ -39,8 +40,10 @@ public class UserStatusService {
         int level = exp / 100 + 1;
         int expPercent = exp % 100;
 
+        List<ArticleDTO> likedArticles = articleRepository.findLikedArticlesByUserId(userId);
+
         // 3. TODO DTOにまとめて返す
-        return new UserStatusDTO(articlesRead, reviews, likes, comments, level, expPercent);
+        return new UserStatusDTO(articlesRead, reviews, likes, comments, level, expPercent,likedArticles);
 
     }
 
@@ -73,7 +76,7 @@ public class UserStatusService {
         for(int day = 1; day <= start.lengthOfMonth(); day++) {
             LocalDate d = LocalDate.of(year,month,day);
             int actions = dateActionMap.getOrDefault(d,0);
-            result.add(new CalendarActionDTO(d, actions));
+            result.add(new CalendarActionDTO(d, (long)actions));
         }
         return result;
     }
@@ -82,6 +85,7 @@ public class UserStatusService {
         UserEntity user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("ユーザーがいません。"));
         Long userId = user.getId();
+
         PageRequest pageRequest = PageRequest.of(0, limit); // limit件だけ
         List<ReviewCommentEntity> reviewCommentEntities = reviewCommentRepository
                 .findByUserIdOrderByCreatedAtDesc(userId, pageRequest);

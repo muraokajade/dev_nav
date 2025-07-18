@@ -19,4 +19,8 @@ public interface ArticleReadRepository extends JpaRepository<ArticleReadEntity, 
 
     @Query("SELECT ar.article.id FROM ArticleReadEntity ar WHERE ar.userId = :userId")
     List<Long> findAllArticleIdByUserId(@Param("userId") Long userId);
+
+    // 例: JPAリポジトリで用意
+    boolean existsByUserIdAndArticle_Id(Long userId, Long articleId);
+
 }

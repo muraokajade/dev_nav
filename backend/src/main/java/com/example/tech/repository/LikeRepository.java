@@ -21,15 +21,28 @@ public interface LikeRepository extends JpaRepository<LikeEntity,Long> {
     int countByUserId(Long userId);
 
     @Query("""
-            SELECT new com.example.tech.dto.CalendarActionDTO(
-                DATE(l.createdAt), COUNT(l)
-            )
-            FROM LikeEntity l
-            WHERE l.userId = :userId
-                AND l.createdAt BETWEEN :start AND :end
-            GROUP BY DATE(l.createdAt)
-            """)
-    List<CalendarActionDTO> findDailyLikesActions(@Param("userId") Long userId,
+    SELECT l.article.id
+    FROM LikeEntity l
+    WHERE l.user.id = :userId
+      AND l.createdAt BETWEEN :start AND :end
+""")
+    List<Long> findArticleIdsByUserId(
+            @Param("userId") Long userId,
+            @Param("start") LocalDateTime start,
+            @Param("end") LocalDateTime end
+    );
+
+    @Query("""
+    SELECT new com.example.tech.dto.CalendarActionDTO(
+        FUNCTION('DATE', l.createdAt), COUNT(l)
+    )
+    FROM LikeEntity l
+    WHERE l.user.id = :userId
+      AND l.createdAt BETWEEN :start AND :end
+    GROUP BY FUNCTION('DATE', l.createdAt)
+""")
+    List<CalendarActionDTO> findDailyLikesActions(@Param("userId")Long userId,
                                                   @Param("start") LocalDateTime start,
-                                                  @Param("end") LocalDateTime end);
+                                                  @Param("end") LocalDateTime  end);
+
 }

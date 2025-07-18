@@ -5,6 +5,7 @@ import { ActionCard } from "./components/ActionCard";
 import { useAuth } from "../../context/useAuthContext";
 import { ProgressCalendar } from "./components/ProgressCalendar";
 import { ActionHistoryList } from "./components/ActionHistoryList";
+import { LikedArticlesList } from "./components/LikedArticlesList";
 
 export const MyPage = () => {
   const [user, setUser] = useState<any>(null);
@@ -13,6 +14,7 @@ export const MyPage = () => {
   const [actionError, setActionError] = useState<string | null>(null);
   const [level, setLevel] = useState(1);
   const [exp, setExp] = useState(0);
+  const [likedArticles, setLikedArticles] = useState([]);
   const { idToken } = useAuth();
 
   // 1. カレンダー用の状態追加
@@ -77,6 +79,7 @@ export const MyPage = () => {
         headers: { Authorization: `Bearer ${idToken}` },
       })
       .then((res) => {
+        console.log("APIレスポンス", res.data); // ←★ここでlikedArticlesが入ってるか見る
         setActionStatus(res.data);
         setLevel(res.data.level);
         setExp(res.data.expPercent);
@@ -85,6 +88,17 @@ export const MyPage = () => {
         setActionError("ステータス情報の取得に失敗しました");
         console.error(err);
       });
+  }, [idToken]);
+
+  //liked
+  useEffect(() => {
+    if (!idToken) return;
+    axios
+      .get("/api/articles/liked", {
+        headers: { Authorization: `Bearer ${idToken}` },
+      })
+      .then((res) => setLikedArticles(res.data))
+      .catch(() => setLikedArticles([]));
   }, [idToken]);
 
   if (userError || actionError)
@@ -157,8 +171,7 @@ export const MyPage = () => {
 
         {/* いいね済み記事一覧 */}
         <div className="mb-10">
-          <h2 className="text-xl font-bold mb-2">いいねした記事一覧</h2>
-          {/* <LikedArticlesList articles={actionStats.likedArticles} /> */}
+          <LikedArticlesList articles={actionStats.likedArticles ?? []} />
           <div className="text-gray-400">記事一覧機能（未実装）</div>
         </div>
 

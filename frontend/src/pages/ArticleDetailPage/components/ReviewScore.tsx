@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useReviewScores } from "../hooks/useReviewScores";
+import { useReviewScores } from "../../../hooks/useReviewScores"; 
 
 type StarRatingProps = {
   value: number; // 0〜5, 0.5刻み

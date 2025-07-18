@@ -10,29 +10,37 @@ import org.hibernate.annotations.UpdateTimestamp;
 import java.time.LocalDateTime;
 
 @Entity
+@Table(name = "messages")
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-@Table(name = "likes")
-public class LikeEntity {
+public class MessageEntity {
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    //private Long userId;
-    @ManyToOne
-    @JoinColumn(name = "user_id")
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "article_id", nullable = false)
+    private ArticleEntity article;
+
+    private String title;
+    @Column(columnDefinition = "TEXT")
+    private String question;
+    @ManyToOne(fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", referencedColumnName = "id")
     private UserEntity user;
 
-    //private Long articleId;
-    @ManyToOne
-    @JoinColumn(name = "article_id")
-    private ArticleEntity article;
+
+    @Column(columnDefinition = "TEXT")
+    private String response;
+
+    private String adminEmail;
+
+    private boolean closed = false;
 
     @CreationTimestamp
     private LocalDateTime createdAt;
 
     @UpdateTimestamp
     private LocalDateTime updatedAt;
-
 }

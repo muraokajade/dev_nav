@@ -3,24 +3,34 @@ import ReactMarkdown from "react-markdown";
 import { Link, useParams } from "react-router-dom";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-import { ReviewScore } from "../../utils/ReviewScore";
+import dayjs from "dayjs";
+import { ReviewScore } from "./components/ReviewScore";
 import { useAuth } from "../../context/useAuthContext";
 import axios from "axios";
-import { ReviewComments } from "../../utils/ReviewComments";
+import { ReviewComments } from "./components/ReviewComments";
 import { LikeButton } from "../../utils/LikeButton";
+import { ArticleDetailActions } from "./components/ArticleDetailActions";
 
 export const ArticleDetailPage = () => {
   const { idAndSlug } = useParams();
   const id = idAndSlug?.split("-")[0];
   const { idToken } = useAuth();
-  const [myUserId, setMyUserId] = useState<number | null>(null);
+  console.log(idToken);
+
+  // リッチ化用：記事メタ情報
+  const [title, setTitle] = useState("");
+  const [author, setAuthor] = useState("");
+  const [createdAt, setCreatedAt] = useState("");
+  const [category, setCategory] = useState("");
+  const [imageUrl, setImageUrl] = useState("");
   const [content, setContent] = useState("");
   const [articleId, setArticleId] = useState<number | null>(null);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isRead, setIsRead] = useState(false);
+  const [myUserId, setMyUserId] = useState<number | null>(null);
 
-  //console.log(idToken);
+  // いいね
   const handleLike = async () => {
     if (!idToken) return;
     if (liked) {
@@ -47,7 +57,8 @@ export const ArticleDetailPage = () => {
       }
     }
   };
-  // 記事読了API用のハンドラ追加
+
+  // 読了
   const handleRead = async () => {
     if (!idToken || !articleId) return;
     try {
@@ -63,7 +74,7 @@ export const ArticleDetailPage = () => {
       console.error(e);
     }
   };
-  // 「既読済みか」初回取得（オプション：DB側で既読チェックAPIがあれば）
+
   useEffect(() => {
     if (!idToken || !articleId) return;
     axios
@@ -74,7 +85,6 @@ export const ArticleDetailPage = () => {
       .catch(() => setIsRead(false));
   }, [idToken, articleId]);
 
-  //いいね情報取得初回表示
   useEffect(() => {
     if (!idToken || !articleId) return;
     axios
@@ -87,7 +97,6 @@ export const ArticleDetailPage = () => {
       });
   }, [articleId, idToken]);
 
-  // ユーザー情報取得
   useEffect(() => {
     if (idToken) {
       axios
@@ -96,10 +105,15 @@ export const ArticleDetailPage = () => {
     }
   }, [idToken]);
 
-  // 記事詳細をAPIから取得
+  // 記事メタ＆本文取得
   useEffect(() => {
     if (!id) return;
     axios.get(`/api/articles/${id}`).then((res) => {
+      setTitle(res.data.title);
+      setAuthor(res.data.author ?? "（不明）");
+      setCreatedAt(res.data.createdAt ?? "");
+      setCategory(res.data.category ?? "");
+      setImageUrl(res.data.imageUrl ?? "");
       setContent(res.data.content);
       setArticleId(res.data.id);
     });
@@ -107,9 +121,33 @@ export const ArticleDetailPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      {/* 本文エリアだけ狭めに中央寄せ */}
+      {/* いいねボタン */}
       <LikeButton liked={liked} count={likeCount} onClick={handleLike} />
-      <div className="prose prose-invert max-w-4xl mx-auto py-10">
+
+      {/* リッチ化された記事カード */}
+      <div className="prose prose-invert max-w-4xl mx-auto py-10 bg-zinc-900 rounded-2xl shadow-2xl mb-8">
+        {/* サムネイル（必要に応じて） */}
+        {imageUrl && (
+          <img
+            src={imageUrl}
+            alt={title}
+            className="w-full h-64 object-cover rounded-xl mb-8"
+          />
+        )}
+
+        {/* タイトル */}
+        <h1 className="text-4xl font-bold mb-4">{title}</h1>
+
+        {/* 著者・日付・カテゴリ */}
+        <div className="flex items-center gap-4 mb-6 text-gray-400 text-sm">
+          <span>著者: {author}</span>
+          {createdAt && <span>投稿日: {dayjs(createdAt).format("YYYY/MM/DD")}</span>}
+          {category && (
+            <span className="bg-blue-500 px-2 py-0.5 rounded text-white">{category}</span>
+          )}
+        </div>
+
+        {/* 本文 */}
         <ReactMarkdown
           children={content}
           components={{
@@ -140,29 +178,30 @@ export const ArticleDetailPage = () => {
         />
       </div>
 
-      {/* レビューとコメントはやや広めの領域で中央寄せ */}
-      {articleId && myUserId != null && (
-        <div className="max-w-4xl w-full mx-auto px-4">
-          <ReviewScore articleId={articleId} myUserId={myUserId} />
-          <ReviewComments articleId={articleId} myUserId={myUserId} />
+      {/* レビュー・コメント・Q&Aタブ */}
+      <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-start md:items-center gap-4 mt-8">
+        <div className="flex-1">
+          {articleId && myUserId != null && (
+            <ArticleDetailActions articleId={articleId} myUserId={myUserId} />
+          )}
         </div>
-      )}
-      <div className="flex justify-end max-w-4xl mx-auto mt-4">
-        <button
-          className={`px-4 py-2 rounded font-bold shadow transition ${
-            isRead
-              ? "bg-green-500 cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-700"
-          }`}
-          disabled={isRead}
-          onClick={handleRead}
-        >
-          {isRead ? "読了済み" : "この記事を読了する"}
-        </button>
+        <div className="flex-shrink-0 flex items-center">
+          <button
+            className={`px-4 py-2 rounded text-white font-bold shadow transition ${
+              isRead
+                ? "bg-green-500 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
+            }`}
+            disabled={isRead}
+            onClick={handleRead}
+          >
+            {isRead ? "読了済み" : "この記事を読了する"}
+          </button>
+        </div>
       </div>
 
-      {/* 戻るボタンも本文と同じ幅で中央寄せ */}
-      <div className="prose prose-invert max-w-3xl mx-auto py-8">
+      {/* 戻るボタン */}
+      <div className="max-w-4xl mx-auto py-8">
         <Link to="/tech">
           <p className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition duration-200">
             技術記事一覧に戻る

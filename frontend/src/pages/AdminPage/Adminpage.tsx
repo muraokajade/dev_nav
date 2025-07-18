@@ -1,34 +1,69 @@
 import { useState } from "react";
-import { Link } from "react-router-dom";
-// import { AddArticleForm } from "./components/AddArticleForm"; 
-// import { ArticleList } from "../TeckListPage/ArticleList"; 
+import { AddArticleForm } from "./components/AddArticleForm";
+import { AddSyntaxForm } from "./components/AddSyntaxForm";
+import { ArticleList } from "./components/ArticleList";
+import { SyntaxList } from "./components/SyntaxList";
+import { AdminQAPage } from "./components/AdminQAPage";
+import { AdminDashboard } from "./components/AdminDashboard";
+// ...必要なら他のimport
 
 export const AdminPage = () => {
-    const menus = [
-        { name: "技術記事投稿", path: "/admin/add-article", icon: "📝" },
-        { name: "基本文法投稿", path: "/admin/add-syntax", icon: "📝" },
-        { name: "記事一覧", path: "/admin/articles", icon: "📄" },
-        { name: "文法一覧", path: "/admin/syntaxes", icon: "📄" },
-        { name: "ユーザー管理", path: "/admin/users", icon: "👤" },
-    ]
+  // サイドメニューの定義
+  const menus = [
+    { key: "dashboard", name: "ダッシュボード", icon: "🏠" },
+    { key: "add-article", name: "技術記事投稿", icon: "📝" },
+    { key: "add-syntax", name: "基本文法投稿", icon: "📝" },
+    { key: "articles", name: "記事一覧", icon: "📄" },
+    { key: "syntaxes", name: "文法一覧", icon: "📄" },
+    { key: "qa", name: "Q&A管理", icon: "❓" }
+  ];
 
-    return (
-        <div className="min-h-screen bg-gray-900">
-          <div className="p-8 max-w-3xl mx-auto">
-            <h1 className="text-2xl font-bold text-white mb-8">管理者ダッシュボード</h1>
-            <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
-              {menus.map(menu => (
-                <Link
-                  to={menu.path}
-                  key={menu.path}
-                  className="flex items-center bg-white rounded-2xl p-6 shadow hover:bg-gray-100 transition"
-                >
-                  <span className="text-3xl mr-4">{menu.icon}</span>
-                  <span className="text-lg font-semibold text-gray-900">{menu.name}</span>
-                </Link>
-              ))}
-            </div>
-          </div>
-        </div>
-      );
+  // 現在アクティブなメニュー
+  const [active, setActive] = useState("dashboard");
+
+  // メイン表示を切り替える
+  const renderContent = () => {
+    switch (active) {
+      case "dashboard":
+        return <AdminDashboard/>;
+      case "add-article":
+        return <AddArticleForm />;
+      case "add-syntax":
+        return <AddSyntaxForm />;
+      case "articles":
+        return <ArticleList />;
+      case "syntaxes":
+        return <SyntaxList />;
+      case "qa":
+        return <AdminQAPage />;
+      default:
+        return null;
+    }
+  };
+
+  return (
+    <div className="min-h-screen bg-gray-900 flex">
+      {/* サイドメニュー */}
+      <aside className="w-56 bg-zinc-950 py-8 flex flex-col gap-2">
+        {menus.map(menu => (
+          <button
+            key={menu.key}
+            onClick={() => setActive(menu.key)}
+            className={`flex items-center gap-3 px-6 py-3 text-lg font-semibold rounded-l-xl transition
+              ${active === menu.key
+                ? "bg-blue-700 text-white"
+                : "bg-zinc-950 text-zinc-300 hover:bg-zinc-800"}`}
+          >
+            <span className="text-2xl">{menu.icon}</span>
+            <span>{menu.name}</span>
+          </button>
+        ))}
+      </aside>
+
+      {/* メインエリア */}
+      <main className="flex-1 bg-gray-950 p-10">
+        {renderContent()}
+      </main>
+    </div>
+  );
 };

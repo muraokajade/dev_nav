@@ -18,4 +18,9 @@ public class ArticleDTO {
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean published;
+    public ArticleDTO(Long id, String title, String userEmail) {
+        this.id = id;
+        this.title = title;
+        this.userEmail = userEmail;
+    }
 }

@@ -1,6 +1,7 @@
 package com.example.tech.controller;
 
 import com.example.tech.dto.ArticleDTO;
+import com.example.tech.repository.UserRepository;
 import com.example.tech.service.ArticleService;
 import com.example.tech.service.FirebaseAuthService;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +18,7 @@ public class ArticleController {
 
     private final ArticleService articleService;
     private final FirebaseAuthService firebaseAuthService;
+    private final UserRepository userRepository;
     @GetMapping
     public ResponseEntity<List<ArticleDTO>> getAllArticles() {
         List<ArticleDTO> articleDTOS = articleService.getAllArticles();
@@ -36,6 +38,13 @@ public class ArticleController {
         List<Long> readArticleIds = articleService.getReadArticleIds(userEmail);
 
         return ResponseEntity.ok(readArticleIds);
+    }
+    @GetMapping("/liked")
+    public ResponseEntity<List<ArticleDTO>> geLikedArticles(@RequestHeader(name = "Authorization") String token)
+    {
+        String userEmail = firebaseAuthService.verifyAndGetEmail(token);
+        List<ArticleDTO> likeArticles = articleService.findLikedArticlesByUser(userEmail);
+        return ResponseEntity.ok(likeArticles);
     }
 
 }

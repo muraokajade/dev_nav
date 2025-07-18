@@ -3,6 +3,7 @@ import axios from "axios";
 import dayjs from "dayjs";
 import { ActionHistory } from "../../../models/ActionHistory";
 import { useAuth } from "../../../context/useAuthContext";
+import { Link } from "react-router-dom";
 
 export const ActionHistoryList = () => {
   const [history, setHistory] = useState<ActionHistory[]>([]);
@@ -33,11 +34,20 @@ export const ActionHistoryList = () => {
               {item.type === "comment" && "💬 コメント"}
               {item.type === "read" && "📖 読了:"}
             </span>
-            <span className="font-bold">記事タイトル:{item.articleTitle}</span>
+            <span className="font-bold">
+              記事タイトル:
+              <Link
+                to={`/articles/${item.articleId}`}
+                className="text-blue-400 hover:text-blue-600 hover:underline transition"
+              >
+                {item.articleTitle}
+              </Link>
+            </span>
             {item.content && (
-              <span className="text-gray-400">投稿コメント:「{item.content}」</span>
+              <span className="text-gray-400">
+                投稿コメント:「{item.content}」
+              </span>
             )}
-
             <span className="text-gray-500 ml-auto">
               {dayjs(item.date).format("M/D HH:mm")}
             </span>

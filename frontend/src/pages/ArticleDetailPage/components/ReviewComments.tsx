@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Comments } from "../models/Comments";
-import { useAuth } from "../context/useAuthContext";
+import { Comments } from "../../../models/Comments"; 
+import { useAuth } from "../../../context/useAuthContext"; 
 import axios from "axios";
 
 export const ReviewComments: React.FC<{
