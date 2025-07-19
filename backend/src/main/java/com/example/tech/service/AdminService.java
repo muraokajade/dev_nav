@@ -6,8 +6,10 @@ import com.example.tech.dto.request.ArticleRequest;
 import com.example.tech.dto.request.SyntaxRequest;
 import com.example.tech.entity.ArticleEntity;
 import com.example.tech.entity.SyntaxEntity;
+import com.example.tech.entity.UserEntity;
 import com.example.tech.repository.AdminRepository;
 import com.example.tech.repository.SyntaxRepository;
+import com.example.tech.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 
@@ -18,14 +20,19 @@ import java.util.List;
 public class AdminService {
     private final AdminRepository adminRepository;
     private final SyntaxRepository syntaxRepository;
+    private final UserRepository userRepository;
 
     public void postArticles(ArticleRequest request, String adminEmail, String imageUrl) {
         ArticleEntity entity = new ArticleEntity();
 
+        UserEntity user = userRepository.findUserByEmail(adminEmail)
+                        .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません。"));
+
         entity.setSlug(request.getSlug());
         entity.setTitle(request.getTitle());
         entity.setUserEmail(adminEmail);
-        entity.setSectionTitle(request.getSectionTitle());
+        entity.setUser(user);
+        entity.setCategory(request.getCategory());
         entity.setContent(request.getContent());
         entity.setImageUrl(imageUrl);
         entity.setPublished(true);
@@ -38,7 +45,8 @@ public class AdminService {
         entity.setSlug(request.getSlug());
         entity.setTitle(request.getTitle());
         entity.setUserEmail(adminEmail);
-        entity.setSectionTitle(request.getSectionTitle());
+        entity.setCategory(request.getCategory());
+        entity.setContent(request.getContent());
         entity.setPublished(true);
         syntaxRepository.save(entity);
     }
@@ -56,10 +64,12 @@ public class AdminService {
                 entity.getSlug(),
                 entity.getTitle(),
                 entity.getUserEmail(),
-                entity.getSectionTitle(),
+                entity.getUser() != null ? entity.getUser().getDisplayName() : "不明",
+                entity.getCategory(),
+                entity.getContent(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),
-                entity.published()
+                entity.isPublished()
 
         )).toList();
     }
@@ -94,7 +104,8 @@ public class AdminService {
                 entity.getSlug(),
                 entity.getTitle(),
                 entity.getUserEmail(),
-                entity.getSectionTitle(),
+                entity.getUser().getDisplayName(),
+                entity.getCategory(),
                 entity.getContent(),
                 entity.getImageUrl(),
                 entity.getCreatedAt(),
@@ -108,7 +119,9 @@ public class AdminService {
                 entity.getSlug(),
                 entity.getTitle(),
                 entity.getUserEmail(),
-                entity.getSectionTitle(),
+                entity.getUser() != null ? entity.getUser().getDisplayName() : "不明",
+                entity.getCategory(),
+                entity.getContent(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),
                 entity.isPublished()
@@ -129,7 +142,7 @@ public class AdminService {
         entity.setSlug(request.getSlug());
         entity.setTitle(request.getTitle());
         entity.setUserEmail(adminEmail);
-        entity.setSectionTitle(request.getSectionTitle());
+        entity.setCategory(request.getCategory());
         entity.setContent(request.getContent());
         entity.setImageUrl(imageUrl);
         entity.setPublished(true);
@@ -143,7 +156,7 @@ public class AdminService {
         entity.setSlug(request.getSlug());
         entity.setTitle(request.getTitle());
         entity.setUserEmail(adminEmail);
-        entity.setSectionTitle(request.getSectionTitle());
+        entity.setCategory(request.getCategory());
 
         syntaxRepository.save(entity);
     }

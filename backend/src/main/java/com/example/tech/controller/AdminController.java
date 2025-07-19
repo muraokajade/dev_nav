@@ -71,7 +71,7 @@ public class AdminController {
         }
 
         // 2. 公開URLを組み立てる（nginxなどで /images/ → /path/to/upload/ を公開してる想定）
-        String imageUrl = "/images/" + fileName;
+        String imageUrl = "/uploads/" + fileName;
 
         adminService.postArticles(request, adminEmail,imageUrl);
         return ResponseEntity.ok("投稿完了");
@@ -156,7 +156,7 @@ public class AdminController {
         }
 
         // 2. 公開URLを組み立てる（nginxなどで /images/ → /path/to/upload/ を公開してる想定）
-        String imageUrl = "/images/" + fileName;
+        String imageUrl = "/uploads/" + fileName;
 
         adminService.putArticle(id, request,adminEmail,imageUrl);
         return ResponseEntity.ok("投稿完了");

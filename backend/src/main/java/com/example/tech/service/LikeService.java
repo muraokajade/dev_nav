@@ -17,18 +17,20 @@ public class LikeService {
     private final LikeRepository likeRepository;
     private final UserRepository userRepository;
     private final ArticleRepository articleRepository;
+
     public void registerLike(String userEmail, Long articleId) {
         UserEntity user = userRepository.findByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません。"));
-        Long userId = user.getId();
-        ArticleEntity article = articleRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("記事が見るかりません。"));
+        ArticleEntity article = articleRepository.findById(articleId)
+                .orElseThrow(() -> new RuntimeException("記事が見つかりません。"));
 
-
+        // すでにLikeがあるかチェック
+        if (likeRepository.existsByUserIdAndArticleId(user.getId(), articleId)) {
+            // 既にLike済みなら何もしない
+            return;
+        }
 
         LikeEntity like = new LikeEntity();
-
-        like.setArticle(like.getArticle());
 
         like.setUser(user);
         like.setArticle(article);
@@ -55,12 +57,6 @@ public class LikeService {
 
         Long userId = entity.getId();
         likeRepository.deleteByUserIdAndArticleId(userId,articleId);
-        //TODO下記はだめな理由
-//        LikeEntity likeEntity = new LikeEntity();
-//        likeEntity.setUserId(userId);
-//        likeEntity.setArticleId(articleId);
-//
-//        likeRepository.delete(likeEntity);
     }
 
     public Long countOnlyByArticleId(Long articleId) {

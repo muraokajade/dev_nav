@@ -37,7 +37,7 @@ public class LikeController {
     public LikeStatusResponse getStatusResponse(@RequestHeader(name = "Authorization")String token,
                                                 @RequestParam Long articleId)
     {
-        String userEmail = firebaseAuthService.verifyAdminAndGetEmail(token);
+        String userEmail = firebaseAuthService.verifyAndGetEmail(token);
         boolean liked = likeService.findByUserIdAndArticleId(userEmail, articleId);
         Long count = likeService.countByArticleId(articleId);
         return new LikeStatusResponse(liked,count);

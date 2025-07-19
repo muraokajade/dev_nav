@@ -22,9 +22,14 @@ public class ArticleEntity {
     @Column(unique = true)
     private String slug;
     private String title;
-    private Long userId;
+    //private Long userId;
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private UserEntity user;
+
     private String userEmail;
-    private String sectionTitle;
+    private String authorName;  // ←追加
+    private String category;
     @Column(columnDefinition = "TEXT")
     private String content;
     private String imageUrl;

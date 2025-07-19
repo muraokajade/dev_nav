@@ -5,28 +5,31 @@ import { useState } from "react";
 export const AddSyntaxForm = () => {
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");
-  const [sectionTitle, setSectionTitle] = useState("");
+  const [category, setCategory] = useState("");
+  const [content, setContent] = useState("");
+  const categories = [
+    "Spring",
+    "React",
+    "Vue",
+    "Firebase",
+    "Tailwind",
+    "Other",
+  ];
 
   const { idToken, loading } = useAuth();
 
   const handleSubmit = async (e: React.FormEvent) => {
     if (loading) return;
     e.preventDefault();
-    if (!slug || !title || !sectionTitle) {
+    if (!slug || !title || !category) {
       alert("すべての項目を入力してください");
       return;
     }
 
-    //これは間違い!!
-    // const formData = new FormData();
-    // formData.append("slug", slug);
-    // formData.append("title", title);
-    // formData.append("sectionTitle", sectionTitle);
-
     try {
       await axios.post(
         "/api/admin/add-syntax",
-        { slug, title, sectionTitle },
+        { slug, title, category, content },
         {
           headers: {
             Authorization: `Bearer ${idToken}`,
@@ -35,7 +38,9 @@ export const AddSyntaxForm = () => {
       );
       setSlug("");
       setTitle("");
-      setSectionTitle("");
+      setCategory("");
+      setContent("");
+      alert("投稿完了");
     } catch (err) {
       console.error("❌ 投稿失敗", err);
       alert("投稿に失敗しました");
@@ -58,12 +63,26 @@ export const AddSyntaxForm = () => {
             onChange={(e) => setTitle(e.target.value)}
             placeholder="タイトル"
           />
-          <input
+          <select
             className="w-full text-black border p-2"
-            value={sectionTitle}
-            onChange={(e) => setSectionTitle(e.target.value)}
-            placeholder="セクションタイトル"
+            value={category}
+            onChange={(e) => setCategory(e.target.value)}
+          >
+            <option value="">カテゴリを選択</option>
+            {categories.map((cat, i) => (
+              <option key={i} value={cat}>
+                {cat}
+              </option>
+            ))}
+          </select>
+          <textarea
+            className="w-full text-black border p-2"
+            value={content}
+            onChange={(e) => setContent(e.target.value)}
+            placeholder="内容"
+            rows={40}
           />
+
           <button
             type="submit"
             className="bg-blue-600 text-white px-4 py-2 rounded"

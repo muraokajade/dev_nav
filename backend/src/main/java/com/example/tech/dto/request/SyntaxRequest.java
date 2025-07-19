@@ -10,5 +10,6 @@ import lombok.NoArgsConstructor;
 public class SyntaxRequest {
     private String slug;
     private String title;
-    private String sectionTitle;
+    private String category;
+    private String content;
 }

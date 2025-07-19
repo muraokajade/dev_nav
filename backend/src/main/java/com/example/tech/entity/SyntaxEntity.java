@@ -20,9 +20,14 @@ public class SyntaxEntity {
     private Long id;
     private String slug;
     private String title;
+    @ManyToOne
+    @JoinColumn(name = "user_id")
+    private UserEntity user;
     private String userEmail;
-    private String sectionTitle;
-
+    private String authorName;
+    private String category;
+    @Column(columnDefinition = "TEXT")
+    private String content;
     @CreationTimestamp
     private LocalDateTime createdAt;
 

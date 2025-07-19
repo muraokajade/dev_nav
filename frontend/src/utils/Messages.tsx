@@ -1,6 +1,6 @@
 import { useEffect, useState } from "react";
-import { useAuth } from "../../../context/useAuthContext";
-import { MessageResponse } from "../../../models/MessageResponse";
+import { useAuth } from "../context/useAuthContext"; 
+import { MessageResponse } from "../models/MessageResponse"; 
 import axios from "axios";
 
 export const Messages: React.FC<{

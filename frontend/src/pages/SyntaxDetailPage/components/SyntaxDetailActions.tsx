@@ -3,7 +3,7 @@ import { ReviewScore } from "../../../utils/ReviewScore";
 import { ReviewComments } from "../../../utils/ReviewComments"; 
 import { Messages } from "../../../utils/Messages"; 
 
-export const ArticleDetailActions: React.FC<{
+export const SyntaxDetailActions: React.FC<{
   articleId: number;
   myUserId: number;
 }> = ({ articleId, myUserId }) => {

@@ -4,10 +4,11 @@ import { Link, useParams } from "react-router-dom";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import dayjs from "dayjs";
+
 import { useAuth } from "../../context/useAuthContext";
 import axios from "axios";
 import { LikeButton } from "../../utils/LikeButton";
-import { ArticleDetailActions } from "./components/ArticleDetailActions";
+import { SyntaxDetailActions } from "./components/SyntaxDetailActions"; 
 
 export const ArticleDetailPage = () => {
   const { idAndSlug } = useParams();
@@ -182,7 +183,7 @@ export const ArticleDetailPage = () => {
       <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-start md:items-center gap-4 mt-8">
         <div className="flex-1">
           {articleId && myUserId != null && (
-            <ArticleDetailActions articleId={articleId} myUserId={myUserId} />
+            <SyntaxDetailActions articleId={articleId} myUserId={myUserId} />
           )}
         </div>
         <div className="flex-shrink-0 flex items-center">

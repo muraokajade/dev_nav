@@ -4,7 +4,7 @@ import { ArticleModel } from "../../../models/ArticleModel";
 import { useAuth } from "../../../context/useAuthContext";
 import dayjs from "dayjs";
 
-export const ArticleList = () => {
+export const AdminArticleList = () => {
   const [articles, setArticles] = useState<ArticleModel[]>([]);
   const [article, setArticle] = useState<ArticleModel | null>(null);
   const { loading, currentUser, idToken } = useAuth();
@@ -208,7 +208,7 @@ export const ArticleList = () => {
                 <p className="font-semibold text-lg">{article.title}</p>
                 <p className="text-gray-400">Slug: {article.slug}</p>
                 <p className="text-gray-400">
-                  セクション: {article.sectionTitle}
+                  カテゴリー: {article.category}
                 </p>
                 <p className="text-gray-500 text-xs">
                   投稿日: {dayjs(article.createdAt).format("YYYY/MM/DD HH:mm")}

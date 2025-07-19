@@ -26,44 +26,53 @@ export const ProgressCalendar: React.FC<ProgressCalendarProps> = ({
     return "bg-gray-700";
   };
   // 7日ごとに分割
-  const weeks: DayAction[][] = [];
+  const weeks: (DayAction | null)[][] = [];
   for (let i = 0; i < days.length; i += 7) {
-    weeks.push(days.slice(i, i + 7));
+    // 1. sliceでまずコピー
+    const week = days.slice(i, i + 7) as (DayAction | null)[];
+    // 2. 足りない分null詰め
+    while (week.length < 7) week.push(null);
+    weeks.push(week);
   }
+
   return (
     <div>
       <div className="flex items-center justify-between mb-2">
         <button
-          className="text-sm bg-gray-800 px-3 py-1 rounded hover:bg-gray-600"
+          className="text-sm bg-gray-800 px-3 py-1 rounded hover:bg-gray-600 whitespace-nowrap"
           onClick={onPrevMonth}
         >
           ← 前の月
         </button>
-        <span className="font-bold">
+        <span className="font-bold whitespace-nowrap">
           {year}年{month}月
         </span>
         <button
-          className="text-sm bg-gray-800 px-3 py-1 rounded hover:bg-gray-600"
+          className="text-sm bg-gray-800 px-3 py-1 rounded hover:bg-gray-600 whitespace-nowrap"
           onClick={onNextMonth}
         >
           次の月 →
         </button>
       </div>
       {/* カレンダー（草） */}
-      <div className="flex flex-col gap-1">
+      <div className="flex flex-col gap-1 items-center">
         {weeks.map((week, i) => (
           <div key={i} className="flex gap-1">
-            {week.map((day) => (
-              <div
-                key={day.date}
-                className={`w-6 h-6 rounded text-center ${getColor(
-                  day.actions
-                )} transition duration-300`}
-                title={`${day.date}: ${day.actions}アクション`}
-              >
-                {dayjs(day.date).date()}
-              </div>
-            ))}
+            {week.map((day, j) =>
+              day ? (
+                <div
+                  key={day.date}
+                  className={`w-6 h-6 rounded text-center ${getColor(
+                    day.actions
+                  )} transition duration-300`}
+                  title={`${day.date}: ${day.actions}アクション`}
+                >
+                  {dayjs(day.date).date()}
+                </div>
+              ) : (
+                <div key={j} className="w-6 h-6" /> // 空白マス
+              )
+            )}
           </div>
         ))}
       </div>

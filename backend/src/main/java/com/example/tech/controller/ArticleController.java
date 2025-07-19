@@ -5,6 +5,9 @@ import com.example.tech.repository.UserRepository;
 import com.example.tech.service.ArticleService;
 import com.example.tech.service.FirebaseAuthService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.PageRequest;
+import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -20,8 +23,10 @@ public class ArticleController {
     private final FirebaseAuthService firebaseAuthService;
     private final UserRepository userRepository;
     @GetMapping
-    public ResponseEntity<List<ArticleDTO>> getAllArticles() {
-        List<ArticleDTO> articleDTOS = articleService.getAllArticles();
+    public ResponseEntity<Page<ArticleDTO>> getAllArticles(@RequestParam int page,
+                                                           @RequestParam int size) {
+        Pageable pageable = PageRequest.of(page, size);
+        Page<ArticleDTO> articleDTOS = articleService.getAllArticles(pageable);
         return ResponseEntity.ok(articleDTOS);
     }
 
@@ -32,10 +37,13 @@ public class ArticleController {
         return ResponseEntity.ok(article);
     }
     @GetMapping("/read/all")
-    public ResponseEntity<List<Long>> getReadArticleIds(@RequestHeader (name = "Authorization") String token)
+    public ResponseEntity<Page<Long>> getReadArticleIds(@RequestHeader (name = "Authorization") String token,
+                                                        @RequestParam int page,
+                                                        @RequestParam int size)
     {
+        Pageable pageable = PageRequest.of(page, size);
         String userEmail = firebaseAuthService.verifyAndGetEmail(token);
-        List<Long> readArticleIds = articleService.getReadArticleIds(userEmail);
+        Page<Long> readArticleIds = articleService.getReadArticleIds(userEmail, pageable);
 
         return ResponseEntity.ok(readArticleIds);
     }

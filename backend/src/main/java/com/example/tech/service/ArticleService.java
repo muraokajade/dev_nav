@@ -8,6 +8,8 @@ import com.example.tech.repository.ArticleRepository;
 import com.example.tech.repository.LikeRepository;
 import com.example.tech.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.time.LocalDate;
@@ -23,9 +25,9 @@ public class ArticleService {
     private final UserRepository userRepository;
     private final ArticleReadRepository articleReadRepository;
     private final LikeRepository likeRepository;
-    public List<ArticleDTO> getAllArticles() {
-        List<ArticleEntity> entities = articleRepository.findByPublishedTrue();
-        return entities.stream().map(this::convertToDTO).toList();
+    public Page<ArticleDTO> getAllArticles(Pageable pageable) {
+        Page<ArticleEntity> entities = articleRepository.findByPublishedTrue(pageable);
+        return entities.map(this::convertToDTO);
     }
 
     private ArticleDTO convertToDTO(ArticleEntity entity) {
@@ -34,7 +36,8 @@ public class ArticleService {
                 entity.getSlug(),
                 entity.getTitle(),
                 entity.getUserEmail(),
-                entity.getSectionTitle(),
+                entity.getUser() != null ? entity.getUser().getDisplayName() : "不明",
+                entity.getCategory(),
                 entity.getContent(),
                 entity.getImageUrl(),
                 entity.getCreatedAt(),
@@ -55,7 +58,8 @@ public class ArticleService {
                 entity.getSlug(),
                 entity.getTitle(),
                 entity.getUserEmail(),
-                entity.getSectionTitle(),
+                entity.getUser() != null ? entity.getUser().getDisplayName() : "不明",
+                entity.getCategory(),
                 entity.getContent(),
                 entity.getImageUrl(),
                 entity.getCreatedAt(),
@@ -65,13 +69,13 @@ public class ArticleService {
     }
 
 
-    public List<Long> getReadArticleIds(String userEmail) {
+    public Page<Long> getReadArticleIds(String userEmail,Pageable pageable) {
         UserEntity user = userRepository.findUserByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません。"));
 
         Long userId = user.getId();
 
-        return articleReadRepository.findAllArticleIdByUserId(userId);
+        return articleReadRepository.findAllArticleIdByUserId(userId,pageable);
     }
 
     public List<ArticleDTO> findLikedArticlesByUser(String userEmail) {

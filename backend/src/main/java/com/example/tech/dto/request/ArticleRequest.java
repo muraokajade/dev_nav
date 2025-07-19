@@ -12,7 +12,7 @@ public class ArticleRequest {
     private String slug;
     private String title;
     private String adminEmail;
-    private String sectionTitle;
+    private String category;
     private String content;
     private MultipartFile image;
 }

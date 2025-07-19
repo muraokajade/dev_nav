@@ -3,19 +3,20 @@ import "./App.css";
 import { Home } from "./pages/HomePage/Home";
 import { BrowserRouter, Route, Router, Routes } from "react-router-dom";
 import { Navbar } from "./pages/CommonPage/Navbar";
-import { TechList } from "./pages/TechListPage/TechList";
+import { TechList } from "./pages/MainContentsPage/TechList";
 import { AdminRoute } from "./routes/AdminRoute";
 import { AdminPage } from "./pages/AdminPage/Adminpage";
 import { Login } from "./pages/CommonPage/Login";
 import { AddArticleForm } from "./pages/AdminPage/components/AddArticleForm";
-import { ArticleList } from "./pages/AdminPage/components/ArticleList";
+import { AdminArticleList } from "./pages/AdminPage/components/AdminArticleList"; 
 import { AddSyntaxForm } from "./pages/AdminPage/components/AddSyntaxForm";
-import { SyntaxList } from "./pages/AdminPage/components/SyntaxList";
+import { AdminSyntaxList } from "./pages/AdminPage/components/AdminSyntaxList";
 import { ArticleDetailPage } from "./pages/ArticleDetailPage/ArticleDetailPage";
 import { MypageRoute } from "./routes/MyPageRoute";
-import { MyPage } from "./pages/MyPage/MyPage"; 
+import { MyPage } from "./pages/MyPage/MyPage";
 import { Register } from "./pages/CommonPage/Register";
-import { AdminQAPage } from "./pages/AdminPage/components/AdminQAPage"; 
+import { AdminQAPage } from "./pages/AdminPage/components/AdminQAPage";
+import { SyntaxList } from "./pages/MainContentsPage/SyntaxList";
 
 export default function App() {
   return (
@@ -24,8 +25,11 @@ export default function App() {
       <Routes>
         <Route path="/" element={<Home />} />
         <Route path="/tech" element={<TechList />} />
+        <Route path="/syntaxes" element={<SyntaxList />} />
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
+        <Route path="/articles/:idAndSlug" element={<ArticleDetailPage />} />
+        <Route path="/syntaxes/:idAndSlug" element={<ArticleDetailPage />} />
         <Route
           path="/mypage"
           element={
@@ -68,7 +72,7 @@ export default function App() {
           path="/admin/articles"
           element={
             <AdminRoute>
-              <ArticleList />
+              <AdminArticleList />
             </AdminRoute>
           }
         />
@@ -81,13 +85,13 @@ export default function App() {
             </AdminRoute>
           }
         />
-        <Route path="/articles/:idAndSlug" element={<ArticleDetailPage />} />
+
         {/* 文法一覧 */}
         <Route
           path="/admin/syntaxes"
           element={
             <AdminRoute>
-              <SyntaxList />
+              <AdminSyntaxList />
             </AdminRoute>
           }
         />

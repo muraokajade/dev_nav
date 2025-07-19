@@ -1,6 +1,7 @@
 package com.example.tech.repository;
 
 import com.example.tech.entity.ArticleReadEntity;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
@@ -18,7 +19,7 @@ public interface ArticleReadRepository extends JpaRepository<ArticleReadEntity, 
     List<ArticleReadEntity> findByUserIdOrderByReadAtDesc(Long userId, Pageable pageable);
 
     @Query("SELECT ar.article.id FROM ArticleReadEntity ar WHERE ar.userId = :userId")
-    List<Long> findAllArticleIdByUserId(@Param("userId") Long userId);
+    Page<Long> findAllArticleIdByUserId(@Param("userId") Long userId, Pageable pageable);
 
     // 例: JPAリポジトリで用意
     boolean existsByUserIdAndArticle_Id(Long userId, Long articleId);

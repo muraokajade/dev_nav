@@ -34,8 +34,6 @@ public class ArticleReadService {
 
         Long userId = user.getId();
 
-
-
         //TODO // ★リレーションのArticleEntityを取得
         ArticleEntity article = articleRepository.findById(request.getArticleId())
                 .orElseThrow(() ->new RuntimeException("記事が見つかりません。"));
@@ -53,20 +51,6 @@ public class ArticleReadService {
             System.out.println("既読登録重複: " + e.getMessage());
             return;
         }
-
-
-        ArticleReadEntity readEntity = new ArticleReadEntity();
-
-
-        readEntity.setUserId(userId);
-        //TODO new ArticleReadEntity() した直後、article プロパティはnull
-
-        // 注意: new ArticleReadEntity()直後はarticleプロパティはnull
-        // getArticle().setId(...)とするとNPEになるので、必ず
-        // findByIdで取得したArticleEntityオブジェクトをsetArticle()でセットする
-        readEntity.setArticle(article);
-        readEntity.setReadAt(LocalDateTime.now());
-        articleReadRepository.save(readEntity);
 
     }
 }

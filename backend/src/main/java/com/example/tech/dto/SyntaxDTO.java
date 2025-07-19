@@ -14,7 +14,9 @@ public class SyntaxDTO {
     private String slug;
     private String title;
     private String userEmail;
-    private String sectionTitle;
+    private String displayName;
+    private String category;
+    private String content;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;
     private boolean published;
