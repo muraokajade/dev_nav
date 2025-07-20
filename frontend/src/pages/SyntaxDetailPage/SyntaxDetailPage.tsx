@@ -10,7 +10,7 @@ import axios from "axios";
 import { LikeButton } from "../../utils/LikeButton";
 import { SyntaxDetailActions } from "./components/SyntaxDetailActions"; 
 
-export const ArticleDetailPage = () => {
+export const SyntaxDetailPage = () => {
   const { idAndSlug } = useParams();
   const id = idAndSlug?.split("-")[0];
   const { idToken } = useAuth();
@@ -108,13 +108,12 @@ export const ArticleDetailPage = () => {
   // 記事メタ＆本文取得
   useEffect(() => {
     if (!id) return;
-    axios.get(`/api/articles/${id}`).then((res) => {
+    axios.get(`/api/syntaxes/${id}`).then((res) => {
       console.log(res.data);
       setTitle(res.data.title);
       setAuthor(res.data.authorName ?? "（不明）");
       setCreatedAt(res.data.createdAt ?? "");
       setCategory(res.data.category ?? "");
-      setImageUrl(res.data.imageUrl ?? "");
       setContent(res.data.content);
       setArticleId(res.data.id);
     });

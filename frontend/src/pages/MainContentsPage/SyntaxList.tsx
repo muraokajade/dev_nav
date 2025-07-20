@@ -4,6 +4,7 @@ import { ArticleModel } from "../../models/ArticleModel";
 import axios from "axios";
 import { useAuth } from "../../context/useAuthContext";
 import { usePagination } from "../../hooks/usePagination";
+import { Pagenation } from "../../utils/Pagenation";
 export const SyntaxList = () => {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -39,6 +40,7 @@ export const SyntaxList = () => {
         const publishedSyntaxes: ArticleModel[] = res.data.content;
         console.log(res.data);
         setSyntaxes(publishedSyntaxes);
+        setTotalPages(res.data.totalPages);
       } catch (e) {
         console.error("文法記事取得失敗", e);
       }
@@ -61,6 +63,8 @@ export const SyntaxList = () => {
     category: cat,
     syntaxes: filteredSyntaxes.filter((a) => a.category === cat),
   }));
+
+  const paginate = (pageNumber: number) => setDisplayPage(pageNumber);
 
   return (
     <div className="min-h-screen bg-gray-900">
@@ -137,6 +141,14 @@ export const SyntaxList = () => {
             ))}
           </div>
         </div>
+        {totalPages > 0 && (
+          <Pagenation
+            displayPage={displayPage}
+            totalPages={totalPages}
+            maxPageLinks={5}
+            paginate={paginate}
+          />
+        )}
       </div>
     </div>
   );

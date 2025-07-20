@@ -172,5 +172,12 @@ public class AdminController {
 
         return ResponseEntity.ok("更新完了");
     }
+    @DeleteMapping("/articles/{id}")
+    public ResponseEntity<?> deleteArticle(@RequestHeader(name = "Authorization") String token,
+                                           @PathVariable Long id)
+    {
+        adminService.deleteById(id);
+     return ResponseEntity.ok("削除しました。");
+    }
 
 }

@@ -112,14 +112,19 @@ export const AdminArticleList = () => {
     if (loading) return;
     if (!window.confirm("本当に削除しますか？")) return;
     try {
-      await axios.delete(`/api/admin/article/${id}`, {
+      await axios.delete(`/api/admin/articles/${id}`, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
       });
       console.log("削除成功");
-      // 最新の一覧取得（refreshなどのステートを使って再取得）
-      // setRefresh((prev: any) => !prev);
+      const res = await axios.get("/api/admin/articles", {
+        headers: {
+          Authorization: `Bearer ${idToken}`,
+        },
+      });
+      console.log("取得した記事一覧:", res.data);
+      setArticles(res.data);
     } catch (e) {
       console.error("削除失敗", e);
     }
@@ -207,9 +212,7 @@ export const AdminArticleList = () => {
               <div className="w-1/3 pr-4 text-sm space-y-1">
                 <p className="font-semibold text-lg">{article.title}</p>
                 <p className="text-gray-400">Slug: {article.slug}</p>
-                <p className="text-gray-400">
-                  カテゴリー: {article.category}
-                </p>
+                <p className="text-gray-400">カテゴリー: {article.category}</p>
                 <p className="text-gray-500 text-xs">
                   投稿日: {dayjs(article.createdAt).format("YYYY/MM/DD HH:mm")}
                 </p>
@@ -220,7 +223,7 @@ export const AdminArticleList = () => {
 
               {/* 中央右：コンテンツ本文（長文・折り返し） */}
               <div className="flex-1 text-sm text-gray-200 break-words pr-4">
-                {article.content.slice(0,300)}
+                {article.content.slice(0, 300)}
               </div>
 
               {/* 右端：編集・削除ボタン */}

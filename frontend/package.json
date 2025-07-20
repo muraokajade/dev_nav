@@ -5,6 +5,7 @@
   "proxy": "http://localhost:8080",
   "dependencies": {
     "@react-three/fiber": "^9.2.0",
+    "@react-three/postprocessing": "^3.0.4",
     "@tailwindcss/typography": "^0.5.16",
     "@testing-library/dom": "^10.4.0",
     "@testing-library/jest-dom": "^6.6.3",
@@ -16,6 +17,7 @@
     "axios": "^1.10.0",
     "dayjs": "^1.11.13",
     "firebase": "^11.10.0",
+    "framer-motion": "^12.23.6",
     "react": "^19.1.0",
     "react-dom": "^19.1.0",
     "react-markdown": "^10.1.0",

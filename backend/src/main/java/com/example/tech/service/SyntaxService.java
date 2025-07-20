@@ -8,6 +8,7 @@ import com.example.tech.repository.SyntaxRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -31,5 +32,24 @@ public class SyntaxService {
                 entity.getUpdatedAt(),
                 entity.isPublished()
         );
+    }
+
+    public SyntaxDTO findById(Long id) {
+        SyntaxEntity syntax = syntaxRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("記事が見つかりません。"));
+
+        SyntaxDTO syntaxDTO = new SyntaxDTO(
+                syntax.getId(),
+                syntax.getSlug(),
+                syntax.getCategory(),
+                syntax.getUserEmail(),
+                syntax.getUser() != null ? syntax.getUser().getDisplayName() : "不明",
+                syntax.getCategory(),
+                syntax.getContent(),
+                syntax.getCreatedAt(),
+                syntax.getUpdatedAt(),
+                syntax.isPublished()
+        );
+        return syntaxDTO;
     }
 }

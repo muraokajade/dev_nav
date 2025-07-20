@@ -8,6 +8,7 @@ import com.example.tech.entity.ArticleEntity;
 import com.example.tech.entity.SyntaxEntity;
 import com.example.tech.entity.UserEntity;
 import com.example.tech.repository.AdminRepository;
+import com.example.tech.repository.ArticleRepository;
 import com.example.tech.repository.SyntaxRepository;
 import com.example.tech.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
@@ -21,6 +22,8 @@ public class AdminService {
     private final AdminRepository adminRepository;
     private final SyntaxRepository syntaxRepository;
     private final UserRepository userRepository;
+    private final ArticleRepository articleRepository;
+
 
     public void postArticles(ArticleRequest request, String adminEmail, String imageUrl) {
         ArticleEntity entity = new ArticleEntity();
@@ -159,5 +162,12 @@ public class AdminService {
         entity.setCategory(request.getCategory());
 
         syntaxRepository.save(entity);
+    }
+
+    public void deleteById(Long id) {
+        ArticleEntity entity = articleRepository.findById(id)
+                .orElseThrow(() ->new RuntimeException("記事が見つかりません。"));
+
+        adminRepository.deleteById(id);
     }
 }

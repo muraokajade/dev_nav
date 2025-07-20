@@ -17,6 +17,7 @@ import { MyPage } from "./pages/MyPage/MyPage";
 import { Register } from "./pages/CommonPage/Register";
 import { AdminQAPage } from "./pages/AdminPage/components/AdminQAPage";
 import { SyntaxList } from "./pages/MainContentsPage/SyntaxList";
+import { SyntaxDetailPage } from "./pages/SyntaxDetailPage/SyntaxDetailPage";
 
 export default function App() {
   return (
@@ -29,7 +30,7 @@ export default function App() {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/articles/:idAndSlug" element={<ArticleDetailPage />} />
-        <Route path="/syntaxes/:idAndSlug" element={<ArticleDetailPage />} />
+        <Route path="/syntaxes/:idAndSlug" element={<SyntaxDetailPage />} />
         <Route
           path="/mypage"
           element={

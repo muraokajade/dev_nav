@@ -64,7 +64,7 @@ export const Navbar = () => {
         <div className="hidden md:flex items-center space-x-4">
           {isAuthenticated ? (
             <>
-              <span className="text-white">ようこそ, {currentUser?.email}</span>
+              <span className="text-white">ようこそ, {currentUser?.displayName}</span>
               <button
                 onClick={handleLogout}
                 className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
@@ -83,7 +83,6 @@ export const Navbar = () => {
         </div>
       </div>
 
-      {/* モバイルメニュー */}
       {/* モバイルメニュー */}
       {isOpen && (
         <div className="md:hidden mt-2 space-y-2 px-4">
