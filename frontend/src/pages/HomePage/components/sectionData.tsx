@@ -154,6 +154,66 @@ export const sections: SectionItem[] = [
       </div>
     ),
   },
+  {
+    key: "environment",
+    title: (
+      <div className="flex items-center gap-4 mt-16">
+        <MiniCanvas3D size={100} />
+        <span className="text-2xl font-semibold text-white">
+          開発環境について
+        </span>
+      </div>
+    ),
+    content: (
+      <div className="flex flex-col gap-8 w-full items-center">
+        <ul className="list-disc text-gray-200 text-xl md:text-2xl font-semibold space-y-6 w-full max-w-3xl mx-auto px-2">
+          <li>
+            開発用PC: <b>MacBook Pro（Appleシリコン）</b>
+          </li>
+          <li>
+            メインIDE: <b>IntelliJ IDEA（バックエンド）、Visual Studio Code（フロントエンド）</b>
+          </li>
+          <li>
+            バックエンド: <b>Spring Boot 3.x</b>
+          </li>
+          <li>
+            フロントエンド: <b>React 18 + TypeScript</b>
+          </li>
+          <li>
+            インフラ: <b>Vercel（フロント）、Render.com（API）</b>
+          </li>
+          <li>
+            データベース: <b>MySQL（管理はMySQL Workbenchを使用）</b>
+          </li>
+          <li>
+            APIテスト: <b>Insomnia</b>
+          </li>
+          <li>
+            その他: <b>Tailwind CSS, framer-motion, JWT認証, GitHub Actions, Docker（一部開発環境で利用）</b>
+          </li>
+        </ul>
+        <div className="bg-gray-800/70 rounded-xl p-8 mt-4 shadow-lg max-w-3xl mx-auto w-full text-base md:text-lg text-gray-200 leading-relaxed">
+          <p className="mb-2">
+            <span className="font-bold text-blue-500">この環境の特徴：</span>
+            <br />
+            Mac上でIntelliJ IDEAとVSCodeを使い分けて効率よく開発。API動作確認はInsomnia、DB管理はMySQL Workbenchでリアルタイムにテストしながら進めています。  
+           
+          </p>
+          <p>
+            <span className="font-bold text-blue-500">セットアップ・開発フロー：</span>
+            <br />
+            コード編集→ローカル実行→APIテスト（Insomnia）→DB確認（Workbench）→GitHubへpush→CI/CDで自動デプロイというサイクルで品質向上・効率化を実現しています。
+          </p>
+          <p>
+            ※詳細なセットアップ手順や各ツールの使い方は
+            <span className="text-blue-400 underline">README</span>
+            をご参照ください。
+          </p>
+        </div>
+      </div>
+    ),
+  },
+  
 
   {
     key: "about",

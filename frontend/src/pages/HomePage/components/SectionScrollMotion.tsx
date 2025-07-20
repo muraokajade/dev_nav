@@ -7,7 +7,7 @@ type Props = {
   mt?: string;
 };
 
-export default function SectionScrollMotion({ section, mt = "" }: Props) {
+export const SectionScrollMotion: React.FC<Props> = ({ section, mt = "" })=> {
   // HTMLElement型を明示！
   const ref = useRef<HTMLElement | null>(null);
 

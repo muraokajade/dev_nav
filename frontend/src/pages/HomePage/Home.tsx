@@ -4,7 +4,7 @@ import { Canvas } from "@react-three/fiber";
 import { LogoPlane } from "./components/LogoPlane";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
-import SectionScrollMotion from "./components/SectionScrollMotion";
+import { SectionScrollMotion } from "./components/SectionScrollMotion";
 
 export const Home = () => {
   const [isMobile, setIsMobile] = useState(() =>
@@ -15,7 +15,6 @@ export const Home = () => {
     window.addEventListener("resize", handleResize);
     return () => window.removeEventListener("resize", handleResize);
   }, []);
-  const [opacity, setOpacity] = useState(0.1);
 
   // ロゴ座標・スケール
   const reactPos: [number, number, number] = isMobile ? [-2, 0, 0] : [-4, 0, 0];
