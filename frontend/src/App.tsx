@@ -8,7 +8,7 @@ import { AdminRoute } from "./routes/AdminRoute";
 import { AdminPage } from "./pages/AdminPage/Adminpage";
 import { Login } from "./pages/CommonPage/Login";
 import { AddArticleForm } from "./pages/AdminPage/components/AddArticleForm";
-import { AdminArticleList } from "./pages/AdminPage/components/AdminArticleList"; 
+import { AdminArticleList } from "./pages/AdminPage/components/AdminArticleList";
 import { AddSyntaxForm } from "./pages/AdminPage/components/AddSyntaxForm";
 import { AdminSyntaxList } from "./pages/AdminPage/components/AdminSyntaxList";
 import { ArticleDetailPage } from "./pages/ArticleDetailPage/ArticleDetailPage";
@@ -18,10 +18,14 @@ import { Register } from "./pages/CommonPage/Register";
 import { AdminQAPage } from "./pages/AdminPage/components/AdminQAPage";
 import { SyntaxList } from "./pages/MainContentsPage/SyntaxList";
 import { SyntaxDetailPage } from "./pages/SyntaxDetailPage/SyntaxDetailPage";
+import { Footer } from "./pages/CommonPage/Footer";
+import { About } from "./pages/CommonPage/About";
+import { PrivacyPolicy } from "./pages/CommonPage/PrivacyPolicy";
+import { ContactForm } from "./pages/CommonPage/ContactForm";
 
 export default function App() {
   return (
-    <div>
+    <div className="min-h-screen bg-gray-900">
       <Navbar />
       <Routes>
         <Route path="/" element={<Home />} />
@@ -96,7 +100,13 @@ export default function App() {
             </AdminRoute>
           }
         />
+        <Route path="/about" element={<About />} />
+        <Route path="/policy" element={<PrivacyPolicy />} />
+        <Route path="/contact" element={<ContactForm />} />
       </Routes>
+
+
+      <Footer />
     </div>
   );
 }

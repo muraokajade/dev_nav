@@ -4,7 +4,7 @@ import * as THREE from "three";
 
 type LogoProps = {
   url: string;
-  position: [number, number, number];
+  position: [x: number, y: number, z:number];
   rotationSpeed?: number;
   scale?: [number, number, number];
   bounce?: boolean;

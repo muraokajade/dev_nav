@@ -50,14 +50,14 @@ export const Messages: React.FC<{
           value={title}
           onChange={(e) => setTitle(e.target.value)}
           placeholder="タイトル"
-          className="w-full px-4 py-2 rounded bg-zinc-800 border border-zinc-700 text-white"
+          className="w-full px-4 py-2 rounded border text-black"
         />
         <textarea
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           placeholder="質問内容"
           rows={3}
-          className="w-full px-4 py-2 rounded bg-zinc-800 border border-zinc-700 text-white"
+          className="w-full px-4 py-2 rounded border border-zinc-700 text-black"
         />
         <button
           onClick={handleSubmit}
