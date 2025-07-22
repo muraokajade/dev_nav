@@ -5,7 +5,7 @@ import ReactMarkdown from "react-markdown"; // 追加
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
-export const AddArticleForm = () => {
+export const AddProcedureForm = () => {
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");

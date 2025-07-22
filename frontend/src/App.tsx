@@ -22,91 +22,96 @@ import { Footer } from "./pages/CommonPage/Footer";
 import { About } from "./pages/CommonPage/About";
 import { PrivacyPolicy } from "./pages/CommonPage/PrivacyPolicy";
 import { ContactForm } from "./pages/CommonPage/ContactForm";
+import { ProceduresDetail } from "./pages/ProceduresPage/ProceduresDetail";
+import { ProceduresPage } from "./pages/ProceduresPage/ProceduresPage";
 
 export default function App() {
   return (
-    <div className="min-h-screen bg-gray-900">
-      <Navbar />
-      <Routes>
-        <Route path="/" element={<Home />} />
-        <Route path="/tech" element={<TechList />} />
-        <Route path="/syntaxes" element={<SyntaxList />} />
-        <Route path="/login" element={<Login />} />
-        <Route path="/register" element={<Register />} />
-        <Route path="/articles/:idAndSlug" element={<ArticleDetailPage />} />
-        <Route path="/syntaxes/:idAndSlug" element={<SyntaxDetailPage />} />
-        <Route
-          path="/mypage"
-          element={
-            <MypageRoute>
-              <MyPage />
-            </MypageRoute>
-          }
-        />
-        {/* 管理者専用ルート */}
-        <Route
-          path="/admin"
-          element={
-            <AdminRoute>
-              <AdminPage />
-            </AdminRoute>
-          }
-        />
+    <BrowserRouter>
+      <div className="min-h-screen bg-gray-900">
+        <Navbar />
+        <Routes>
+          <Route path="/" element={<Home />} />
+          <Route path="/tech" element={<TechList />} />
+          <Route path="/syntaxes" element={<SyntaxList />} />
+          <Route path="/login" element={<Login />} />
+          <Route path="/register" element={<Register />} />
+          <Route path="/articles/:idAndSlug" element={<ArticleDetailPage />} />
+          <Route path="/syntaxes/:idAndSlug" element={<SyntaxDetailPage />} />
+          <Route path="/procedures" element={<ProceduresPage />} />
+          <Route path="/procedures/:idAndSlug" element={<ProceduresDetail />} />
+          <Route
+            path="/mypage"
+            element={
+              <MypageRoute>
+                <MyPage />
+              </MypageRoute>
+            }
+          />
+          {/* 管理者専用ルート */}
+          <Route
+            path="/admin"
+            element={
+              <AdminRoute>
+                <AdminPage />
+              </AdminRoute>
+            }
+          />
 
-        {/* 記事投稿 */}
-        <Route
-          path="/admin/add-article"
-          element={
-            <AdminRoute>
-              <AddArticleForm />
-            </AdminRoute>
-          }
-        />
-        {/* 文法投稿 */}
-        <Route
-          path="/admin/add-syntax"
-          element={
-            <AdminRoute>
-              <AddSyntaxForm />
-            </AdminRoute>
-          }
-        />
+          {/* 記事投稿 */}
+          <Route
+            path="/admin/add-article"
+            element={
+              <AdminRoute>
+                <AddArticleForm />
+              </AdminRoute>
+            }
+          />
+          {/* 文法投稿 */}
+          <Route
+            path="/admin/add-syntax"
+            element={
+              <AdminRoute>
+                <AddSyntaxForm />
+              </AdminRoute>
+            }
+          />
 
-        {/* 記事一覧 */}
-        <Route
-          path="/admin/articles"
-          element={
-            <AdminRoute>
-              <AdminArticleList />
-            </AdminRoute>
-          }
-        />
-        {/* 記事一覧 */}
-        <Route
-          path="/admin/qa"
-          element={
-            <AdminRoute>
-              <AdminQAPage />
-            </AdminRoute>
-          }
-        />
+          {/* 記事一覧 */}
+          <Route
+            path="/admin/articles"
+            element={
+              <AdminRoute>
+                <AdminArticleList />
+              </AdminRoute>
+            }
+          />
+          {/* 記事一覧 */}
+          <Route
+            path="/admin/qa"
+            element={
+              <AdminRoute>
+                <AdminQAPage />
+              </AdminRoute>
+            }
+          />
 
-        {/* 文法一覧 */}
-        <Route
-          path="/admin/syntaxes"
-          element={
-            <AdminRoute>
-              <AdminSyntaxList />
-            </AdminRoute>
-          }
-        />
-        <Route path="/about" element={<About />} />
-        <Route path="/policy" element={<PrivacyPolicy />} />
-        <Route path="/contact" element={<ContactForm />} />
-      </Routes>
+          {/* 文法一覧 */}
+          <Route
+            path="/admin/syntaxes"
+            element={
+              <AdminRoute>
+                <AdminSyntaxList />
+              </AdminRoute>
+            }
+          />
+          <Route path="/about" element={<About />} />
+          <Route path="/policy" element={<PrivacyPolicy />} />
+          <Route path="/contact" element={<ContactForm />} />
+        </Routes>
 
-
-      <Footer />
-    </div>
+        <Footer />
+      </div>
+    </BrowserRouter>
   );
 }

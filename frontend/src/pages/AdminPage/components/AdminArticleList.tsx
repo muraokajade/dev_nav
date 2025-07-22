@@ -10,10 +10,18 @@ export const AdminArticleList = () => {
   const { loading, currentUser, idToken } = useAuth();
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");
-  const [sectionTitle, setSectionTitle] = useState("");
+  const [category, setCategory] = useState("");
   const [content, setContent] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const categories = [
+    "Spring",
+    "React",
+    "Vue",
+    "Firebase",
+    "Tailwind",
+    "Other",
+  ];
   // console.log(idToken);
 
   const togglePublish = async (slug: string) => {
@@ -69,7 +77,7 @@ export const AdminArticleList = () => {
       setSlug(article.slug);
       setTitle(article.title);
       setContent(article.content);
-      setSectionTitle(article.sectionTitle);
+      setCategory(article.sectionTitle);
 
       setIsEditModalOpen(true);
     } catch (err) {
@@ -84,13 +92,13 @@ export const AdminArticleList = () => {
       const formData = new FormData();
       formData.append("slug", slug);
       formData.append("title", title);
-      formData.append("sectionTitle", sectionTitle);
+      formData.append("category", category);
       formData.append("content", content);
       if (imageFile) {
         formData.append("image", imageFile);
       }
 
-      const res = await axios.put(`/api/admin/articles/${id}`, formData, {
+      await axios.put(`/api/admin/articles/${id}`, formData, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
@@ -155,13 +163,18 @@ export const AdminArticleList = () => {
                 value={title}
                 onChange={(e) => setTitle(e.target.value)}
               />
-              <label>sectionTitle</label>
-              <input
-                className="w-full  text-black px-3 py-2 rounded mb-2"
-                placeholder="セクションタイトル"
-                value={sectionTitle}
-                onChange={(e) => setSectionTitle(e.target.value)}
-              />
+              <select
+                className="w-full text-black border p-2"
+                value={category}
+                onChange={(e) => setCategory(e.target.value)}
+              >
+                <option value="">カテゴリを選択</option>
+                {categories.map((cat, i) => (
+                  <option key={i} value={cat}>
+                    {cat}
+                  </option>
+                ))}
+              </select>
               <label>content</label>
               <textarea
                 className="w-full  text-black px-3 py-2 rounded mb-4"

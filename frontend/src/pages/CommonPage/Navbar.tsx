@@ -52,6 +52,9 @@ export const Navbar = () => {
           <Link to="/syntaxes" className="text-white hover:text-blue-300">
             基本文法
           </Link>
+          <Link to="/procedures" className="text-white hover:text-blue-300">
+            開発手順書
+          </Link>
           <Link to="/mypage" className="text-white hover:text-blue-300">
             マイページ
           </Link>
