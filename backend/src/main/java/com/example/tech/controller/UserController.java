@@ -66,13 +66,6 @@ public class UserController {
         return  userStatusService.getActionHistories(userEmail, limit);
     }
 
-    @GetMapping("/articles/read/status")
-    public Boolean isArticleRead(@RequestHeader("Authorization") String token,
-                                 @RequestParam Long articleId)
-    {
-        String userEmail = firebaseAuthService.verifyAndGetEmail(token);
-        return articleReadService.isArticleRead(userEmail,articleId);
-    }
 
     @PostMapping("/articles/read")
     public ResponseEntity<?> registerArticleRead(@RequestHeader("Authorization") String token,

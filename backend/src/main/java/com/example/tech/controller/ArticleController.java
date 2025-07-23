@@ -36,7 +36,7 @@ public class ArticleController {
 
         return ResponseEntity.ok(article);
     }
-    @GetMapping("/read/all")
+    @GetMapping("/read")
     public ResponseEntity<Page<Long>> getReadArticleIds(@RequestHeader (name = "Authorization") String token,
                                                         @RequestParam int page,
                                                         @RequestParam int size)
@@ -53,6 +53,14 @@ public class ArticleController {
         String userEmail = firebaseAuthService.verifyAndGetEmail(token);
         List<ArticleDTO> likeArticles = articleService.findLikedArticlesByUser(userEmail);
         return ResponseEntity.ok(likeArticles);
+    }
+    @GetMapping("/read/status")
+    public Boolean isReadArticle(@RequestHeader(name = "Authorization") String token,
+                                 @RequestParam Long articleId)
+
+    {
+        String userEmail = firebaseAuthService.verifyAndGetEmail(token);
+        return articleService.isReadArticleById(userEmail, articleId);
     }
 
 }

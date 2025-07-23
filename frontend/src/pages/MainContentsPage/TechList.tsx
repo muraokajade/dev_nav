@@ -19,6 +19,7 @@ export const TechList = () => {
     "Firebase",
     "Tailwind",
     "Other",
+    "環境開発",
   ];
 
   const { idToken } = useAuth();
@@ -30,14 +31,13 @@ export const TechList = () => {
     const fetchReadedArticles = async () => {
       try {
         const res = await axios.get(
-          `/api/articles/read/all?page=${pageIndex}&size=10`,
+          `/api/articles/read?page=${pageIndex}&size=10`,
           {
             headers: { Authorization: `Bearer ${idToken}` },
           }
         );
         console.log(res.data);
         setReadArticleIds(res.data.content ?? []);
-        // .then((res) => setReadArticleIds(res.data ?? []));
       } catch (e) {
         console.error(e);
         setReadArticleIds([]);

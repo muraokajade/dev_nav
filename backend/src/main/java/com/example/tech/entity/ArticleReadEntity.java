@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @AllArgsConstructor
 @NoArgsConstructor
 
-//TODO　1人が1記事を何回読んでも、DB上は「1回だけしか記録されない」（=重複記録防止）
+//1人が1記事を何回読んでも、DB上は「1回だけしか記録されない」（=重複記録防止）
 @Table(name = "article_reads", uniqueConstraints = @UniqueConstraint(columnNames = {"user_id", "article_id"}))
 
 public class ArticleReadEntity {

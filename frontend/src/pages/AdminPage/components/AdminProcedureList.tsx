@@ -6,6 +6,7 @@ import dayjs from "dayjs";
 import { usePagination } from "../../../hooks/usePagination";
 import { Procedure } from "../../../models/Procedure";
 import { toast } from "react-hot-toast";
+import { Pagination } from "../../../utils/Pagination";
 
 export const AdminProcedureList = () => {
   const [procedures, setProcedures] = useState<Procedure[]>([]);
@@ -18,7 +19,7 @@ export const AdminProcedureList = () => {
   const [content, setContent] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const {pageIndex, setTotalPages} = usePagination();
+  const {pageIndex, setTotalPages, displayPage, setDisplayPage, totalPages} = usePagination();
   const categories = [
     "Spring",
     "React",
@@ -60,6 +61,7 @@ export const AdminProcedureList = () => {
         });
         console.log("取得した記事一覧:", res.data);
         setProcedures(res.data.content);
+        setTotalPages(res.data.totalPages);
       } catch (e) {
         console.error("記事取得失敗", e);
       }
@@ -145,6 +147,8 @@ export const AdminProcedureList = () => {
       console.error("削除失敗", e);
     }
   };
+
+  const paginate = (pageNumber:number) => setDisplayPage(pageNumber);
 
   return (
     <div className="min-h-screen bg-gray-900">
@@ -282,6 +286,12 @@ export const AdminProcedureList = () => {
             </div>
           ))}
         </div>
+        <Pagination
+          displayPage={displayPage}
+          totalPages={totalPages}
+          maxPageLinks={5}
+          paginate={paginate}
+          />
       </div>
     </div>
   );

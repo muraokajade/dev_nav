@@ -28,7 +28,7 @@ export const ArticleDetailPage = () => {
   const [isRead, setIsRead] = useState(false);
   const [myUserId, setMyUserId] = useState<number | null>(null);
 
-  // いいね
+  // いいね機能
   const handleLike = async () => {
     if (!idToken) return;
     if (liked) {
@@ -56,7 +56,7 @@ export const ArticleDetailPage = () => {
     }
   };
 
-  // 読了
+  // 読了機能
   const handleRead = async () => {
     if (!idToken || !articleId) return;
     try {
@@ -70,17 +70,27 @@ export const ArticleDetailPage = () => {
     } catch (e) {
       alert("読了登録失敗");
       console.error(e);
+      setIsRead(false);
     }
   };
 
   useEffect(() => {
     if (!idToken || !articleId) return;
-    axios
-      .get(`/api/articles/read/status?articleId=${articleId}`, {
-        headers: { Authorization: `Bearer ${idToken}` },
-      })
-      .then((res) => setIsRead(res.data.read ?? false))
-      .catch(() => setIsRead(false));
+    const fetchReadStatus = async () => {
+      try {
+        const res = await axios.get(
+          `/api/articles/read/status?articleId=${articleId}`,
+          {
+            headers: { Authorization: `Bearer ${idToken}` },
+          }
+        );
+        console.log(res.data); // バックエンドでプリミティブ値で返しているのでjsonはtrue or false注意！
+        setIsRead(res.data ?? false);
+      } catch {
+        setIsRead(false);
+      }
+    };
+    fetchReadStatus();
   }, [idToken, articleId]);
 
   useEffect(() => {
@@ -141,9 +151,13 @@ export const ArticleDetailPage = () => {
         {/* 著者・日付・カテゴリ */}
         <div className="flex items-center gap-4 mb-6 text-gray-400 text-sm">
           <span>著者: {author}</span>
-          {createdAt && <span>投稿日: {dayjs(createdAt).format("YYYY/MM/DD")}</span>}
+          {createdAt && (
+            <span>投稿日: {dayjs(createdAt).format("YYYY/MM/DD")}</span>
+          )}
           {category && (
-            <span className="bg-blue-500 px-2 py-0.5 rounded text-white">{category}</span>
+            <span className="bg-blue-500 px-2 py-0.5 rounded text-white">
+              {category}
+            </span>
           )}
         </div>
 

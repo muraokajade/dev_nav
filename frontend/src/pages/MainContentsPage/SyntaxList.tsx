@@ -19,6 +19,7 @@ export const SyntaxList = () => {
     "Firebase",
     "Tailwind",
     "Other",
+    "環境開発"
   ];
 
   const { idToken } = useAuth();

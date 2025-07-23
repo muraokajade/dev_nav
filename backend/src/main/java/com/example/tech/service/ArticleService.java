@@ -93,4 +93,13 @@ public class ArticleService {
                 .map(this::convertToDTO)
                 .toList();
     }
+
+    public Boolean isReadArticleById(String userEmail, Long articleId) {
+        UserEntity user = userRepository.findUserByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません。"));
+
+        Long userId = user.getId();
+
+        return articleReadRepository.existsByUserIdAndArticle_Id(userId,articleId);
+    }
 }
