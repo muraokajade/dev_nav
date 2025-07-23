@@ -1,5 +1,6 @@
 package com.example.tech.service;
 
+import com.example.tech.entity.ProcedureEntity;
 import com.google.firebase.auth.FirebaseAuth;
 import com.google.firebase.auth.FirebaseAuthException;
 import com.google.firebase.auth.FirebaseToken;

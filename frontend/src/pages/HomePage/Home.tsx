@@ -5,8 +5,12 @@ import { LogoPlane } from "./components/LogoPlane";
 import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { SectionScrollMotion } from "./components/SectionScrollMotion";
+import { useAuth } from "../../context/useAuthContext";
+
 
 export const Home = () => {
+  const {idToken} = useAuth();
+  console.log(idToken);
   const [isMobile, setIsMobile] = useState(() =>
     typeof window !== "undefined" ? window.innerWidth < 600 : false
   );

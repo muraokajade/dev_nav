@@ -5,6 +5,8 @@ import { AdminArticleList } from "./components/AdminArticleList";
 import { AdminSyntaxList } from "./components/AdminSyntaxList";
 import { AdminQAPage } from "./components/AdminQAPage";
 import { AdminDashboard } from "./components/AdminDashboard";
+import { AddProcedureForm } from "./components/AddProcedureForm";
+import { AdminProcedureList } from "./components/AdminProcedureList";
 // ...必要なら他のimport
 
 export const AdminPage = () => {
@@ -13,8 +15,10 @@ export const AdminPage = () => {
     { key: "dashboard", name: "ダッシュボード", icon: "🏠" },
     { key: "add-article", name: "技術記事投稿", icon: "📝" },
     { key: "add-syntax", name: "基本文法投稿", icon: "📝" },
+    { key: "add-procedure", name: "開発手順投稿", icon: "📝" },
     { key: "articles", name: "記事一覧", icon: "📄" },
     { key: "syntaxes", name: "文法一覧", icon: "📄" },
+    { key: "procedures", name: "開発手順一覧", icon: "📄" },
     { key: "qa", name: "Q&A管理", icon: "❓" },
   ];
 
@@ -30,10 +34,14 @@ export const AdminPage = () => {
         return <AddArticleForm />;
       case "add-syntax":
         return <AddSyntaxForm />;
+      case "add-procedure":
+        return <AddProcedureForm />;
       case "articles":
         return <AdminArticleList />;
       case "syntaxes":
         return <AdminSyntaxList />;
+      case "procedures":
+        return <AdminProcedureList />;
       case "qa":
         return <AdminQAPage />;
       default:

@@ -1,15 +1,4 @@
-// src/data/dummyProcedures.ts
-
-export type Procedure = {
-  stepNumber: string;
-  slug: string;
-  title: string;
-  author: string;
-  createdAt: string;
-  content: string;
-};
-
-export const dummyProcedures: Procedure[] = [
+const dummyProcedures = [
 {
   stepNumber: "1-00",
   slug: "node-nvm-setup",
@@ -23,9 +12,9 @@ export const dummyProcedures: Procedure[] = [
 
    Vite 7以降はNode.js v20.19.0以上が必須です。
 
-   \`\`\`bash
+   ```bash
    node -v
-   \`\`\`
+   ```
 
    - \`zsh: command not found: node\` などのエラーが出る場合はNode.jsが未インストールなので、以下の手順に進んでください。
 
@@ -36,21 +25,21 @@ export const dummyProcedures: Procedure[] = [
    nvm（Node Version Manager）はNode.jsのバージョン管理ツールです。  
    ターミナルで次のコマンドを実行してnvmをインストールします。
 
-   \`\`\`bash
+   ```bash
    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.39.7/install.sh | bash
-   \`\`\`
+   ```
 
    インストール後、nvmを有効化します（ターミナル再起動または下記を実行）。
 
-   \`\`\`bash
+   ```bash
    source ~/.nvm/nvm.sh
-   \`\`\`
+   ```
 
    nvmがインストールされたかどうか確認：
 
-   \`\`\`bash
+   ```bash
    nvm --version
-   \`\`\`
+   ```
 
 ---
 
@@ -58,11 +47,11 @@ export const dummyProcedures: Procedure[] = [
 
    ターミナルで下記コマンドを順番に実行します。
 
-   \`\`\`bash
+   ```bash
    echo 'export NVM_DIR="$HOME/.nvm"' >> ~/.zshrc
    echo '[ -s "$NVM_DIR/nvm.sh" ] && \. "$NVM_DIR/nvm.sh"' >> ~/.zshrc
    source ~/.zshrc
-   \`\`\`
+   ```
 
    ※これで**どのディレクトリ・どの場所でも**\`node -v\`や\`nvm\`コマンドが使えるようになります。
 
@@ -72,19 +61,19 @@ export const dummyProcedures: Procedure[] = [
 
    Vite 7以降のプロジェクトで推奨されているNode.js v20をインストールします。
 
-   \`\`\`bash
+   ```bash
    nvm install 20
    nvm use 20
-   \`\`\`
+   ```
 
 ---
 
 5. Node.jsのバージョン再確認
 
-   \`\`\`bash
+   ```bash
    node -v
    # v20.19.0 以上かチェック！
-   \`\`\`
+   ```
 
 ---
 
@@ -102,11 +91,11 @@ export const dummyProcedures: Procedure[] = [
 
 #### 参考：今後、複数バージョンのNode.jsを切り替えるには
 
-\`\`\`bash
+```bash
 nvm install 18    # 例：v18を追加でインストール
 nvm use 18        # v18に切り替え
 node -v           # バージョン確認
-\`\`\`
+```
 
 ---
 `,
@@ -115,8 +104,8 @@ node -v           # バージョン確認
 
 {
   stepNumber: "1-01",
-  slug: "vite-react-tailwind-setup",
-  title: "Vite + React + Tailwind CSS環境構築【2025年最新版／バージョン罠対策】",
+  slug: "react-tailwind-setup",
+  title: "React + Tailwind CSS環境構築【2025年最新版／バージョン罠対策】",
   author: "村岡兼通",
   createdAt: "2024-07-21",
   content: `
@@ -124,37 +113,38 @@ node -v           # バージョン確認
 
 1. プロジェクト用ディレクトリ作成（推奨）
 
-   \`\`\`bash
-   mkdir vite-dev-nav
-   cd vite-dev-nav
-   \`\`\`
+   ```bash
+   mkdir dev-nav
+   cd dev-nav
+   ```
 
 ---
 
 2. Vite + React(TypeScript) プロジェクト作成
 
-   \`\`\`bash
-   npm create vite@latest . -- --template react-ts
-   \`\`\`
+   ```bash
+    npx create-react-app my-app --template typescript
+
+   ```
    ※既存ディレクトリ内で「.」指定するとネストやパスの混乱を防げます。
 
 ---
 
 3. 依存パッケージ初期化（おまじない）
 
-   \`\`\`bash
+   ```bash
    rm -rf node_modules package-lock.json
    npm install
-   \`\`\`
+   ```
    ※依存関係の不整合や残骸を防ぐため、最初に必ず1回リセット。
 
 ---
 
 4. 【重要】npmのバージョンを9系に下げる
 
-   \`\`\`bash
+   ```bash
    npm install -g npm@9
-   \`\`\`
+   ```
    ※2024年現在、npm10系とtailwindcss最新版（4.x）の組み合わせでバイナリが正しく生成されないバグが報告されています。  
    9系だとほぼ全ての環境で安定します。
 
@@ -162,10 +152,10 @@ node -v           # バージョン確認
 
 5. Tailwind CSS（3.4.3）セットアップ
 
-   \`\`\`bash
+   ```bash
    npm install -D tailwindcss@3.4.3 postcss autoprefixer
    npx tailwindcss init -p
-   \`\`\`
+   ```
    ※tailwindcss4系はnpm9/10や一部の環境で「node_modules/.bin/tailwindcss」が生成されないバグがあるため、  
    現時点では3.4.3を使うと確実です（2025年7月時点）。
 
@@ -173,20 +163,20 @@ node -v           # バージョン確認
 
 6. tailwind.config.cjs編集
 
-   \`\`\`js
+   ```js
    /** @type {import('tailwindcss').Config} */
    module.exports = {
      content: ["./index.html", "./src/**/*.{js,jsx,ts,tsx}"],
      theme: { extend: {} },
      plugins: [],
    }
-   \`\`\`
+   ```
    ※tailwind.config.jsでエラーが出たら「.cjs」拡張子に。
 ---
 
 7. postcss.config.cjs作成（Node20+かつ"type":"module"の場合）
 
-   \`\`\`js
+   ```js
    // postcss.config.cjs
    module.exports = {
      plugins: {
@@ -194,26 +184,26 @@ node -v           # バージョン確認
        autoprefixer: {},
      },
    };
-   \`\`\`
+   ```
    ※postcss.config.jsでエラーが出たら「.cjs」拡張子に。
 
 ---
 
 8. src/index.cssにTailwindディレクティブを追加
 
-   \`\`\`css
+   ```css
    @tailwind base;
    @tailwind components;
    @tailwind utilities;
-   \`\`\`
+   ```
 
 ---
 
 9. 開発サーバー起動
 
-   \`\`\`bash
+   ```bash
    npm run dev
-   \`\`\`
+   ```
 
 ---
 
@@ -248,24 +238,24 @@ node -v           # バージョン確認
   
   1. Git初期化
   
-     \`\`\`bash
+     ```bash
      git init
-     \`\`\`
+     ```
   
   2. .gitignoreファイル作成
   
-     \`\`\`gitignore
+     ```gitignore
      node_modules/
      dist/
      .env
-     \`\`\`
+     ```
   
   3. 最初のコミット
   
-     \`\`\`bash
+     ```bash
      git add .
      git commit -m "Initial commit"
-     \`\`\`
+     ```
   
   ---
   
@@ -287,21 +277,21 @@ node -v           # バージョン確認
   
   1. ESLint／Prettierインストール
   
-     \`\`\`bash
+     ```bash
      npm install -D eslint prettier eslint-config-prettier eslint-plugin-react eslint-plugin-import
-     \`\`\`
+     ```
   
   2. 設定ファイル作成
   
-     \`\`\`bash
+     ```bash
      npx eslint --init
-     \`\`\`
+     ```
      - フレームワークは「React」
      - TypeScriptの場合は「TypeScript」も選択
   
   3. .eslintrcの例
   
-     \`\`\`json
+     ```json
      {
        "extends": [
          "react-app",
@@ -310,24 +300,24 @@ node -v           # バージョン確認
          "prettier"
        ]
      }
-     \`\`\`
+     ```
   
   4. Prettier設定例（prettier.config.js）
   
-     \`\`\`js
+     ```js
      module.exports = {
        semi: true,
        singleQuote: false,
        printWidth: 100,
      };
-     \`\`\`
+     ```
   
   5. 動作確認
   
-     \`\`\`bash
+     ```bash
      npx eslint src
      npx prettier --write src
-     \`\`\`
+     ```
   
   ---
   
@@ -386,7 +376,7 @@ node -v           # バージョン確認
 {
   stepNumber: "1-05",
   slug: "project-folder-move-reset-nodemodules",
-  title: "フォルダ分割＆node_modules再生成手順【初心者向けやさしい解説】",
+  title: "フォルダ分割＆node_modules再生成手順",
   author: "やまだたろう",
   createdAt: "2024-07-21",
   content: `
@@ -394,18 +384,18 @@ node -v           # バージョン確認
 
 1. 新しい作業用フォルダ（ここでは「my-apps」）を作成
 
-   \`\`\`bash
+   ```bash
    mkdir my-apps
-   \`\`\`
+   ```
 
 ---
 
 2. 既存のプロジェクト（例: sample-frontend, sample-backend）の「node_modules」を**移動前に必ず削除**
 
-   \`\`\`bash
+   ```bash
    rm -rf sample-frontend/node_modules
    rm -rf sample-backend/node_modules
-   \`\`\`
+   ```
    ※古いnode_modulesが残ったまま移動するとエラーの原因になるので、「移動前に消す」のが現場の鉄則です。
 
 ---
@@ -413,49 +403,49 @@ node -v           # バージョン確認
 3. プロジェクトのフォルダ名をわかりやすくリネーム  
 （例: sample-frontend → frontend, sample-backend → backend）
 
-   \`\`\`bash
+   ```bash
    mv sample-frontend frontend
    mv sample-backend backend
-   \`\`\`
+   ```
 
 ---
 
 4. リネームしたフォルダをmy-apps配下に移動
 
-   \`\`\`bash
+   ```bash
    mv frontend my-apps/
    mv backend my-apps/
-   \`\`\`
+   ```
    ※これで「my-apps/frontend」「my-apps/backend」という構成になります。
 
 ---
 
 5. frontend・backendそれぞれで依存パッケージをインストール
 
-   \`\`\`bash
+   ```bash
    cd my-apps/frontend
    npm install
 
    cd ../backend
    npm install
-   \`\`\`
+   ```
    ※yarnユーザーなら「npm」を「yarn」に置き換えてOK。
 
 ---
 
 6. 【補足】.envやREADMEなど、共通/必要なファイルがあれば手動でコピーや整理
 
-   \`\`\`bash
+   ```bash
    # 例: 共通.envをfrontendとbackendにコピー
    cp ../.env my-apps/frontend/
    cp ../.env my-apps/backend/
-   \`\`\`
+   ```
 
 ---
 
 ### フォルダ構成イメージ
 
-\`\`\`
+```
 my-apps/
   ├── frontend/
   │    ├── package.json
@@ -463,7 +453,7 @@ my-apps/
   └── backend/
        ├── package.json
        └── ...
-\`\`\`
+```
 
 ---
 
@@ -494,66 +484,66 @@ my-apps/
 
    1. プロジェクトルートに移動（例: dev-nav）
 
-      \`\`\`bash
+      ```bash
       cd dev-nav
-      \`\`\`
+      ```
 
    ---
 
    2. README.mdを作成
 
-      \`\`\`bash
+      ```bash
       echo "# dev-nav" >> README.md
-      \`\`\`
+      ```
 
    ---
 
    3. Gitリポジトリを初期化
 
-      \`\`\`bash
+      ```bash
       git init
-      \`\`\`
+      ```
 
    ---
 
    4. README.mdをステージに追加
 
-      \`\`\`bash
+      ```bash
       git add README.md
-      \`\`\`
+      ```
 
    ---
 
    5. 最初のコミット
 
-      \`\`\`bash
+      ```bash
       git commit -m "first commit"
-      \`\`\`
+      ```
 
    ---
 
    6. ブランチ名をmainに変更
 
-      \`\`\`bash
+      ```bash
       git branch -M main
-      \`\`\`
+      ```
 
    ---
 
    7. リモートリポジトリ（GitHub）を登録
 
-      \`\`\`bash
+      ```bash
       git remote add origin https://github.com/muraokajade/dev-nav.git
-      \`\`\`
+      ```
       ※GitHubで事前にリポジトリ（空でOK）を作成しておくこと！
 
    ---
 
    8. 初回push（GitHubにアップロード）
 
-      \`\`\`bash
+      ```bash
       git push -u origin main
-      \`\`\`
+      ```
 
    ---
 
@@ -569,7 +559,7 @@ my-apps/
    },{
   stepNumber: "2-01",
   slug: "firebase-auth-admin-mysql-setup",
-  title: "Firebase認証＆MySQLで管理者ユーザー作成手順【RDB連携現場ルート】",
+  title: "Firebase認証＆MySQLで管理者ユーザー作成手順【RDB連携ルート】",
   author: "やまだたろう",
   createdAt: "2024-07-21",
   content: `
@@ -616,9 +606,9 @@ my-apps/
 
 1. firebaseパッケージをインストール
 
-   \`\`\`bash
+   ```bash
    npm install firebase
-   \`\`\`
+   ```
 
 ---
 
@@ -630,7 +620,7 @@ my-apps/
 
 3. プロジェクト内にfirebase.ts（またはfirebaseConfig.ts）を作成し、初期化コードを書く
 
-   \`\`\`ts
+   ```ts
    // src/firebase.ts
    import { initializeApp } from "firebase/app";
    import { getAuth } from "firebase/auth";
@@ -649,7 +639,7 @@ my-apps/
 
    // Firebase Authインスタンスをエクスポート
    export const auth = getAuth(app);
-   \`\`\`
+   ```
 
 ---
 ### 管理者ユーザーにadminクレームを付与（Node.jsスクリプト例）
@@ -662,7 +652,7 @@ Firebase Admin SDKを使って下記のようなスクリプトを一度だけ�
 
 5. 下記Node.jsスクリプトを作成＆実行
 
-\`\`\`js
+```js
 // setAdminClaim.cjs
 const admin = require("firebase-admin");
 admin.initializeApp({
@@ -680,12 +670,12 @@ admin.auth().setCustomUserClaims(uid, { admin: true })
     console.error("エラー:", err);
     process.exit(1);
   });
-\`\`\`
+```
 
-\`\`\`bash
+```bash
 npm install firebase-admin
 node setAdminClaim.cjs
-\`\`\`
+```
 - ユーザー(あなたのuid)にadminクレームを付与しました。と出れば成功！あなたは管理者になりました。
 - これで**管理者クレーム（admin: true）**が付きます。
 - Reactからは user.getIdTokenResult().then(res => res.claims.admin) で判定できます。
@@ -696,6 +686,7 @@ node setAdminClaim.cjs
 ---
 `,
 },
+`
 {
   stepNumber: "2-03",
   slug: "react-authcontext-global-state",
@@ -703,9 +694,9 @@ node setAdminClaim.cjs
   author: "やまだたろう",
   createdAt: "2024-07-21",
   content: `
-### 概要
+### 手順
 
-本手順では、**React Context API**と**カスタムフック**で「認証情報（ユーザー／管理者判定など）」を**全画面でグローバル共有**する現場定番パターンを構築します。
+本手順では、**React Context API**と**カスタムフック**で「認証情報（ユーザー／管理者判定など）」を**全画面でグローバル共有**する定番パターンを構築します。
 
 ---
 
@@ -713,7 +704,7 @@ node setAdminClaim.cjs
 
 1. **ディレクトリ構成を決める**
 
-\`\`\`
+```bash
 src/
   context/
     AuthContext.ts     # 認証情報の型・Context本体・useAuthフック
@@ -721,13 +712,13 @@ src/
   libs/
     firebase.ts        # Firebase初期化
   ...（省略）
-\`\`\`
+```
 
 ---
 
 2. **AuthContext.ts**（認証情報の型・Context本体・カスタムフック）
 
-\`\`\`ts
+```ts
 // src/context/AuthContext.ts
 
 import type { User } from "firebase/auth";
@@ -753,13 +744,13 @@ export const AuthContext = createContext<AuthContextType>({
 
 // どの画面・コンポーネントでも認証情報を参照できるカスタムフック
 export const useAuth = () => useContext(AuthContext);
-\`\`\`
+```
 
 ---
 
 3. **AuthProvider.tsx**（Context Provider本体）
 
-\`\`\`tsx
+```tsx
 // src/context/AuthProvider.tsx
 
 import { useState, useEffect } from "react";
@@ -806,7 +797,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
     </AuthContext.Provider>
   );
 };
-\`\`\`
+```
 
 ---
 
@@ -817,15 +808,15 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 - **AuthProvider.tsx** で「Firebase認証状態」をリアルタイム監視して、  
   コンテキストとしてグローバルに配布
 - **App.tsx**やsrc/index.tsxで
-  \`\`\`tsx
+  ```tsx
   <AuthProvider>
     <App />
   </AuthProvider>
-  \`\`\`
+  ```
   のようにラップすれば、全コンポーネントから
-  \`\`\`tsx
+  ```tsx
   const { currentUser, isAdmin, loading } = useAuth();
-  \`\`\`
+  ```
   だけで認証情報にアクセス可能！
 
 ---
@@ -856,7 +847,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
 
 1. **ログイン画面の作成（src/pages/Login.tsx など）**
 
-\`\`\`tsx
+```tsx
 import { signInWithEmailAndPassword } from "firebase/auth";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom"
@@ -934,7 +925,7 @@ export const Login = () => {
         </div>
       );
 }
-\`\`\`
+```
 
 ---
 
@@ -963,7 +954,7 @@ export const Login = () => {
   content: `
 ### 実装例
 
-\`\`\`tsx
+```tsx
 import { BrowserRouter, Route, Routes } from "react-router-dom";
 import "./App.css";
 import { Login } from "./pages/CommonPage/Login";
@@ -985,7 +976,7 @@ function App() {
 }
 
 export default App;
-\`\`\`
+```
 
 ---
 
@@ -1034,7 +1025,7 @@ export default App;
 
 1. **Firebase Admin SDK依存を追加（pom.xml）**
 
-\`\`\`xml
+```xml
 <dependency>
   <groupId>com.google.firebase</groupId>
   <artifactId>firebase-admin</artifactId>
@@ -1051,7 +1042,7 @@ export default App;
   <artifactId>mysql-connector-java</artifactId>
   <scope>runtime</scope>
 </dependency>
-\`\`\`
+```
 
 ---
 
@@ -1065,7 +1056,7 @@ export default App;
 
 3. **DB接続設定（application.properties）**
 
-\`\`\`properties
+```properties
 spring.application.name=tech
 spring.datasource.url=jdbc:mysql://localhost:3306/"あなたのDB名"
 spring.datasource.username=root
@@ -1074,7 +1065,7 @@ spring.datasource.driver-class-name=com.mysql.cj.jdbc.Driver
 
 spring.jpa.hibernate.ddl-auto=update
 spring.jpa.show-sql=false
-\`\`\`
+```
 
 - ※パスワードはご自身のMySQL環境に合わせてください
 
@@ -1089,15 +1080,15 @@ spring.jpa.show-sql=false
 
 - **.gitignoreの設置方法**  
   プロジェクトルート（\`pom.xml\`や\`src\`と同じ階層）で以下を追加
-\`\`\`
+```
 src/main/resources/firebase/firebase-service-account.json
-\`\`\`
+```
 
 ---
 
 5. **初期化用の設定クラスを作成（例: FirebaseConfig.java）**
 
-\`\`\`java
+```java
 package com.example.tech.config;
 
 import com.google.auth.oauth2.GoogleCredentials;
@@ -1132,7 +1123,7 @@ public class FirebaseConfig {
         }
     }
 }
-\`\`\`
+```
 
 ---
 
@@ -1177,9 +1168,11 @@ public class FirebaseConfig {
   author: "やまだたろう",
   createdAt: "2024-07-21",
   content: `
-### 1. コード全文（現場コピペOK）
 
-\`\`\`java
+  ### 手順
+### 1. コード全文（コピペOK）
+
+```java
 package com.example.dev_nav.security;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -1255,7 +1248,7 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
         return null;
     }
 }
-\`\`\`
+```
 
 ---
 
@@ -1313,6 +1306,9 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
   author: "やまだたろう",
   createdAt: "2024-07-21",
   content: `
+
+### 手順
+
 ### 1. ここからの流れ（次の実装ロードマップ）
 
 1. **フィルターでFirebaseトークン検証＆「admin」カスタムクレーム取得**（もうOK！）
@@ -1321,7 +1317,7 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
 
 ---
 
-\`\`\`java
+```java
 public class FirebaseTokenFilter extends OncePerRequestFilter {
 
     @Override
@@ -1371,19 +1367,19 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
         return null;
     }
 }
-\`\`\`
+```
 
 ### 2. そもそも「hasRole('ADMIN')」は何を見ているのか？
 
 - **「認証済みユーザーが持つ「ROLE_ADMIN」権限を持っているか？」をSpring Securityが判定している**
 - フィルター（FirebaseTokenFilter）で
-    \`\`\`java
+    ```java
     if (Boolean.TRUE.equals(isAdmin)) {
         authorities.add(new SimpleGrantedAuthority("ROLE_ADMIN"));
     } else {
         authorities.add(new SimpleGrantedAuthority("ROLE_USER"));
     }
-    \`\`\`
+    ```
   というコードで**Spring Securityの「GrantedAuthority（権限）」にROLE_ADMINを持たせている**
 
 ---
@@ -1400,7 +1396,7 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
 
 ### 4. Spring Securityの設定例
 
-\`\`\`java
+```java
 // SecurityConfig.java
 import org.springframework.context.annotation.Bean;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
@@ -1421,7 +1417,7 @@ public class SecurityConfig {
         return http.build();
     }
 }
-\`\`\`
+```
 
 ---
 
@@ -1462,7 +1458,7 @@ public class SecurityConfig {
 
 - **/api/admin/** で管理者用API（記事削除、BAN、設定変更など）を作る
 - Controllerには普通に
-    \`\`\`java
+    ```java
     @RestController
     @RequestMapping("/api/admin")
     public class AdminController {
@@ -1471,7 +1467,7 @@ public class SecurityConfig {
             return "管理者だけ見える秘密情報！";
         }
     }
-    \`\`\`
+    ```
 - **このAPIはhasRole("ADMIN")でガッチリガードできる**
 
 ---
@@ -1500,7 +1496,7 @@ public class SecurityConfig {
 
 ### 2. コード全文
 
-\`\`\`java
+```java
 package com.example.tech.service;
 
 import com.google.firebase.auth.FirebaseAuth;
@@ -1553,7 +1549,7 @@ public class FirebaseAuthService {
         return decodedToken.getEmail();
     }
 }
-\`\`\`
+```
 
 ---
 
@@ -1610,7 +1606,7 @@ POST http://localhost:8080/api/admin/add-article
 2. コントローラーの解説
 
 
-\`\`\`java
+```java
 package com.example.dev_nav.controller;
 
 import com.example.dev_nav.dto.request.ArticleRequest;
@@ -1640,7 +1636,7 @@ public ResponseEntity<?> postArticle(
     return ResponseEntity.ok("投稿完了");
 }
 }
-\`\`\`
+```
 ポイント：
 
 AuthorizationヘッダーでJWTトークン（Bearer idToken）を受け取る
@@ -1652,7 +1648,7 @@ FirebaseAuthServiceで「管理者だけ」許可
 投稿成功時は「投稿完了」と返す
 
 3. ArticleRequestの内容
-\`\`\`java
+```java
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -1664,7 +1660,7 @@ public class ArticleRequest {
     private String content;
     private MultipartFile image;
 }
-\`\`\`
+```
 ArticleRequestには以下のフィールドがある
 
 slug … 記事URL用の一意文字列
@@ -1741,7 +1737,7 @@ POST http://localhost:8080/api/admin/add-article
 
 画像ファイル保存まで対応した改良版です。
 
-\`\`\`java
+```java
 @RestController
 @RequiredArgsConstructor
 @CrossOrigin("http://localhost:5173")
@@ -1789,7 +1785,7 @@ public class AdminController {
         return ResponseEntity.ok("投稿完了");
     }
 }
-\`\`\`
+```
 
 ポイント：
 
@@ -1802,7 +1798,7 @@ public class AdminController {
 
 3. ArticleRequestの内容
 
-\`\`\`java
+```java
 @Data  
 @AllArgsConstructor  
 @NoArgsConstructor  
@@ -1814,7 +1810,7 @@ public class ArticleRequest {
     private String content;  
     private MultipartFile image;  
 }
-\`\`\`
+```
 
 slug … 記事URL用の一意文字列  
 title … 記事タイトル  
@@ -1889,7 +1885,7 @@ B) ArticleEntity
 
 4. UserEntity・ArticleEntityのコード抜粋
 
-\`\`\`java
+```java
 @Entity
 @Table(name = \"users\")
 @Data
@@ -1942,12 +1938,12 @@ public class ArticleEntity {
     @Column(name = \"is_published\", nullable = false)
     private boolean published = true;
 }
-\`\`\`
+```
 5. usersテーブルへ初期データをINSERTするSQL
 
 -- usersテーブル作成クエリ（既に存在する場合はスキップ）
 
-\`\`\`sql
+```sql
 CREATE TABLE IF NOT EXISTS users (
   id BIGINT AUTO_INCREMENT PRIMARY KEY,
   email VARCHAR(255) NOT NULL UNIQUE,
@@ -1955,16 +1951,16 @@ CREATE TABLE IF NOT EXISTS users (
   created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
   updated_at DATETIME DEFAULT CURRENT_TIMESTAMP ON UPDATE CURRENT_TIMESTAMP
 );
-\`\`\`
+```
 -- 管理者ユーザー追加
-\`\`\`sql
+```sql
 INSERT INTO users (email, display_name)
 VALUES ('admin@example.com', '管理者アカウント');
-\`\`\`
+```
 -- 確認用
-\`\`\`sql
+```sql
 SELECT * FROM users;
-\`\`\`
+```
 【注意】
 - すでにテーブルやカラムがあればCREATE文は不要
 - 必ずusersテーブルに「記事を紐付けるユーザー（ここではadmin@example.com）」が存在する状態にする
@@ -1986,7 +1982,7 @@ SELECT * FROM users;
   content: `
 1. AdminServiceのメソッド全文（コメント付き）
 
-\`\`\`java
+```java
 @Service
 @RequiredArgsConstructor
 public class AdminService {
@@ -2023,7 +2019,7 @@ public class AdminService {
         articleRepository.save(entity);
     }
 }
-\`\`\`
+```
 ---
 
 2. リレーション設計とEntityのアノテーション
@@ -2034,7 +2030,7 @@ public class AdminService {
 - 逆にUser側から「投稿記事一覧」を持たせるなら@OneToManyでも拡張可能
 
 【コード抜粋とアノテーション解説】
-\`\`\`java
+```java
 @Entity
 @Table(name = \"articles\")
 @Data
@@ -2065,7 +2061,7 @@ public class UserEntity {
     private String displayName;
     // ...その他省略
 }
-\`\`\`
+```
 【@ManyToOne, @JoinColumn】
 - ArticleEntity.userは「UserEntity型」→ 記事から投稿者をオブジェクトで取得
 - @JoinColumnでDB上はuser_idカラムとして保存
@@ -2159,7 +2155,7 @@ Insomniaで「画像付き記事投稿API」をテストし、DBで記事デー�
 {
    stepNumber: "5-01",
 slug: "frontend-adminroute-setup",
-title: "管理者専用ルート（AdminRoute）の実装とRoute設定【フロントエンド5-02】",
+title: "React 管理者専用ルート（AdminRoute）の実装とRoute設定【フロントエンド5-02】",
 author: "やまだたろう",
 createdAt: "2024-07-21",
 content: `
@@ -2181,7 +2177,7 @@ content: `
 
 ## 3. AdminRouteコンポーネント実装例
 
-\`\`\`tsx
+```tsx
 import type { ReactNode } from "react";
 import { useAuth } from "../context/AuthContext"; 
 import { Navigate } from "react-router-dom";
@@ -2194,7 +2190,7 @@ export const AdminRoute = ({ children }: { children: ReactNode }) => {
 
   return <>{children}</>;
 };
-\`\`\`
+```
 
 - \`useAuth\`で管理者判定（isAdmin）・ローディング状態取得
 - \`loading\`なら「Loading...」表示
@@ -2205,7 +2201,7 @@ export const AdminRoute = ({ children }: { children: ReactNode }) => {
 
 ## 4. ルーティング設定例
 
-\`\`\`tsx
+```tsx
 import { Routes, Route } from "react-router-dom";
 import { AdminRoute } from "./components/AdminRoute";
 import { AdminPage } from "./pages/AdminPage";
@@ -2226,7 +2222,7 @@ function App() {
     </Routes>
   );
 }
-\`\`\`
+```
 
 ---
 
@@ -2267,7 +2263,7 @@ content: `
 
 ## 2. サンプル実装例（コピーOK）
 
-\`\`\`tsx
+```tsx
 import { useState } from "react";
 import { AddArticleForm } from "./components/AddArticleForm";
 import { AddSyntaxForm } from "./components/AddSyntaxForm";
@@ -2337,7 +2333,7 @@ export const AdminPage = () => {
     </div>
   );
 };
-\`\`\`
+```
 
 ---
 
@@ -2367,7 +2363,7 @@ export const AdminPage = () => {
 
 ---
 `
-
+`
 },
 {
    stepNumber: "5-03",
@@ -2385,18 +2381,18 @@ content: `
 
 #### 必要なnpmコマンド
 
-\`\`\`bash
+```bash
 npm install react-markdown react-syntax-highlighter
-\`\`\`
+```
 
 ---
 
 ### 2. react-syntax-highlighter導入時のTypeScriptエラーについて
 
-\`\`\`ts
+```ts
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-\`\`\`
+```
 
 **このとき、下記の型エラーが出ることがあります：**
 
@@ -2409,23 +2405,23 @@ import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 - プロジェクトのsrc直下などに
   custom.d.tsファイルを作成し、下記をコピペ
 
-\`\`\`ts
+```ts
 declare module 'react-syntax-highlighter/dist/esm/styles/prism';
-\`\`\`
+```
 
 これで型エラーは消えます（VSCodeの型チェッカー再起動推奨）。
 
 > **テーマ複数使う場合：**
 > 
-> \`\`\`ts
+> ```ts
 > declare module 'react-syntax-highlighter/dist/esm/styles/*';
-> \`\`\`
+> ```
 
 ---
 
 ### 3. 記事投稿フォームのサンプル（概要）
 
-\`\`\`tsx
+```tsx
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
 import { useState } from "react";
@@ -2602,7 +2598,7 @@ export const AddArticleForm = () => {
   );
 };
 
-\`\`\`
+```
 
 ---
 
@@ -2618,7 +2614,7 @@ export const AddArticleForm = () => {
 },
 {
   stepNumber: "5-04",
-  slug: "frontend-vite-cra-proxy-axios-post-article",
+  slug: "frontend-vie-cra-proxy-axios-post-article",
   title: "Vite/CRAのAPIプロキシ設定・slug注意・投稿フォームから記事投稿！【フロントエンド】",
   author: "やまだたろう",
   createdAt: "2024-07-21",
@@ -2628,7 +2624,7 @@ export const AddArticleForm = () => {
 
 Viteではpackage.jsonの"proxy"は効かないので**vite.config.ts**に設定！
 
-\`\`\`ts
+```ts
 // vite.config.ts
 import { defineConfig } from "vite";
 import react from "@vitejs/plugin-react";
@@ -2641,7 +2637,7 @@ export default defineConfig({
     },
   },
 });
-\`\`\`
+```
 
 - サーバ設定変更後は必ず\`npm run dev\`を再起動
 
@@ -2649,10 +2645,10 @@ export default defineConfig({
 
 ### 2. CRA（Create React App）の場合
 
-\`\`\`json
+```json
 // package.json
 "proxy": "http://localhost:8080",
-\`\`\`
+```
 
 - package.jsonに\`"proxy"\`を追加すればOK
 
@@ -2660,7 +2656,7 @@ export default defineConfig({
 
 ### 3. Axiosでフォーム送信するサンプル
 
-\`\`\`ts
+```ts
 const formData = new FormData();
 formData.append("slug", slug);
 formData.append("title", title);
@@ -2673,7 +2669,7 @@ await axios.post("/api/admin/add-article", formData, {
     Authorization: \`Bearer \${idToken}\`,
   },
 });
-\`\`\`
+```
 
 - \`Content-Type\`は自動で\`multipart/form-data\`になる
 - 画像は\`File\`型でそのままappend
@@ -2691,9 +2687,9 @@ await axios.post("/api/admin/add-article", formData, {
 
 **投稿画面のイメージ（public/images/admin-post-example.pngを使う例）**
 
-\`\`\`md
+```md
 ![ここから投稿してみよう！](/assets/images/admin-post-example.png)
-\`\`\`
+```
 <img src="/assets/images/admin-post-example.png" alt="ここから投稿してみよう！" style="max-width:100%;margin:2rem auto;display:block;" />
 
 > ※画像ファイルはpublic/images内に入れてください  
@@ -2736,7 +2732,7 @@ content: `
 
 ### 2. コントローラー（記事一覧API）
 
-\`\`\`java
+```java
 // 管理者用 記事一覧取得API（ページネーション対応）
 @GetMapping("/articles")
 public ResponseEntity<Page<ArticleDTO>> getAllArticles(
@@ -2749,7 +2745,7 @@ public ResponseEntity<Page<ArticleDTO>> getAllArticles(
     Page<ArticleDTO> articles = articleService.findAllArticles(adminEmail, pageable);
     return ResponseEntity.ok(articles);
 }
-\`\`\`
+```
 
 - **@GetMapping("/articles")** でURLは /api/admin/articles
 - **page, size** パラメータでページング可（例：?page=1&size=20）
@@ -2759,7 +2755,7 @@ public ResponseEntity<Page<ArticleDTO>> getAllArticles(
 
 ### 3. サービス層（findAllArticlesメソッド）
 
-\`\`\`java
+```java
 // Serviceクラス例
 public Page<ArticleDTO> findAllArticles(String adminEmail, Pageable pageable) {
     // 1. 全記事をページングで取得
@@ -2772,7 +2768,7 @@ public Page<ArticleDTO> findAllArticles(String adminEmail, Pageable pageable) {
     // 3. Page<ArticleEntity> → Page<ArticleDTO> に変換
     return entities.map(this::convertToArticleDTO);
 }
-\`\`\`
+```
 
 - **Page<ArticleEntity>** を **Page<ArticleDTO>** に一発変換（.map()）
 - 必要に応じて**管理者ユーザー情報も取得**  
@@ -2782,7 +2778,7 @@ public Page<ArticleDTO> findAllArticles(String adminEmail, Pageable pageable) {
 
 ### 4. DTO変換用メソッド
 
-\`\`\`java
+```java
 private ArticleDTO convertToArticleDTO(ArticleEntity entity) {
     ArticleDTO dto = new ArticleDTO();
     dto.setId(entity.getId());
@@ -2797,7 +2793,7 @@ private ArticleDTO convertToArticleDTO(ArticleEntity entity) {
     dto.setPublished(entity.isPublished());
     return dto;
 }
-\`\`\`
+```
 
 - **DTO = Data Transfer Object**（フロント用に余計な内部情報を持たせない「渡す用クラス」）
 - **User情報はリレーション経由で取得**  
@@ -2871,7 +2867,7 @@ GET http://localhost:8080/api/admin/articles
 
 ### 5. コントローラー＆サービスサンプル
 
-\`\`\`java
+```java
 // Controller
 @GetMapping("/articles")
 public ResponseEntity<Page<ArticleDTO>> getAllArticles(
@@ -2909,7 +2905,7 @@ private ArticleDTO convertToArticleDTO(ArticleEntity entity) {
     dto.setUpdatedAt(entity.getUpdatedAt());
     return dto;
 }
-\`\`\`
+```
 
 ---
 
@@ -2917,7 +2913,7 @@ private ArticleDTO convertToArticleDTO(ArticleEntity entity) {
 
 **ArticleEntity（DBの構造を表現）**
 
-\`\`\`java
+```java
 @Entity
 @Data
 @AllArgsConstructor
@@ -2951,11 +2947,11 @@ public class ArticleEntity {
     @Column(name = "is_published", nullable = false)
     private boolean published = true;
 }
-\`\`\`
+```
 
 **ArticleDTO（APIの返却データ用：フロントに渡す）**
 
-\`\`\`java
+```java
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
@@ -2972,13 +2968,13 @@ public class ArticleDTO {
     private LocalDateTime updatedAt;
     private boolean published;
 }
-\`\`\`
+```
 
 ---
 
 ### 7. レスポンス例
 
-\`\`\`json
+```json
 {
   "content": [
     {
@@ -3000,7 +2996,7 @@ public class ArticleDTO {
   "totalElements": 3,
   ...
 }
-\`\`\`
+```
 
 ---
 
@@ -3028,7 +3024,7 @@ public class ArticleDTO {
 
 ---
 
-\`\`\`tsx
+```tsx
 import { useEffect, useState } from "react";
 import axios from "axios";
 import type { ArticleModel } from "../../../models/ArticleModel";
@@ -3071,7 +3067,7 @@ export const AdminArticleList = () => {
     </div>
   );
 };
-\`\`\`
+```
 
 ---
 
@@ -3103,7 +3099,7 @@ export const AdminArticleList = () => {
 
 ### コントローラー
 
-\`\`\`java
+```java
 // ArticleController.java
 @GetMapping("/articles/{id}")
 public ResponseEntity<ArticleDTO> getArticleById(
@@ -3119,13 +3115,13 @@ public ResponseEntity<ArticleDTO> getArticleById(
     // 200 OKで返却
     return ResponseEntity.ok(article);
 }
-\`\`\`
+```
 
 ---
 
 ### サービス
 
-\`\`\`java
+```java
 // AdminService.java
 public ArticleDTO findById(String adminEmail, Long id) {
     // JPAリポジトリで記事エンティティをID検索
@@ -3145,7 +3141,7 @@ public ArticleDTO findById(String adminEmail, Long id) {
     dto.setUpdatedAt(entity.getUpdatedAt());
     return dto;
 }
-\`\`\`
+```
 
 ---
 
@@ -3165,14 +3161,14 @@ public ArticleDTO findById(String adminEmail, Long id) {
 - Header  
   - Authorization: Bearer {Firebase発行のidToken}
 
-\`\`\`
+```
 GET /api/admin/articles/1
 Authorization: Bearer eyJhbGciOi...
-\`\`\`
+```
 
 - レスポンス例（200 OK）
 
-\`\`\`json
+```json
 {
   "id": 1,
   "slug": "my-article",
@@ -3184,7 +3180,7 @@ Authorization: Bearer eyJhbGciOi...
   "createdAt": "2024-07-01T12:34:56",
   "updatedAt": "2024-07-15T09:00:00"
 }
-\`\`\`
+```
 
 ---
 
@@ -3216,7 +3212,7 @@ Authorization: Bearer eyJhbGciOi...
 
 ### コントローラー：画像アップロードつき記事編集API
 
-\`\`\`java
+```java
 @PutMapping("/articles/{id}")
 public ResponseEntity<?> putArticle(
     @RequestHeader(name = "Authorization") String token,
@@ -3255,13 +3251,13 @@ public ResponseEntity<?> putArticle(
     // 7. 完了レスポンス
     return ResponseEntity.ok("更新完了");
 }
-\`\`\`
+```
 
 ---
 
 ### サービス層：記事更新ロジック
 
-\`\`\`java
+```java
 public void putArticle(String adminEmail, Long id, ArticleRequest request, String imageUrl) {
     // 1. 記事（ArticleEntity）が存在するか確認
     ArticleEntity entity = articleRepository.findById(id)
@@ -3285,7 +3281,7 @@ public void putArticle(String adminEmail, Long id, ArticleRequest request, Strin
     // 4. 保存
     articleRepository.save(entity);
 }
-\`\`\`
+```
 
 ---
 
@@ -3360,7 +3356,7 @@ public void putArticle(String adminEmail, Long id, ArticleRequest request, Strin
 
 ---
 
-\`\`\`tsx
+```tsx
 import { useState } from "react";
 import axios from "axios";
 import { useAuth } from "../../../context/AuthContext";
@@ -3502,7 +3498,7 @@ export const AdminArticleList = () => {
     </div>
   );
 };
-\`\`\`
+```
 
 ---
 
@@ -3535,7 +3531,7 @@ export const AdminArticleList = () => {
 
 ### コントローラ実装
 
-\`\`\`java
+```java
 @PutMapping("/articles/{id}")
 public ResponseEntity<?> putArticle(
     @RequestHeader(name = "Authorization") String token,
@@ -3574,13 +3570,13 @@ public ResponseEntity<?> putArticle(
     // 7. 成功レスポンス
     return ResponseEntity.ok("更新完了");
 }
-\`\`\`
+```
 
 ---
 
 ### サービス実装
 
-\`\`\`java
+```java
 public void putArticle(String adminEmail, Long id, ArticleRequest request, String imageUrl) {
     // 1. 記事の存在確認と取得
     ArticleEntity entity = articleRepository.findById(id)
@@ -3604,7 +3600,7 @@ public void putArticle(String adminEmail, Long id, ArticleRequest request, Strin
     // 4. 保存（JPAで自動的にUPDATEされる）
     articleRepository.save(entity);
 }
-\`\`\`
+```
 
 ---
 
@@ -3664,7 +3660,7 @@ Insomniaで200 OKが出るまでがバックエンドのゴール
 
 ### 実装サンプル（ボタン押下時）
 
-\`\`\`tsx
+```tsx
 const handleUpdate = async (id: number) => {
   if (loading) return;
   try {
@@ -3698,13 +3694,13 @@ const handleUpdate = async (id: number) => {
     console.error("データ更新失敗");
   }
 };
-\`\`\`
+```
 
 ---
 
 ### 更新ボタン配置（記事編集モーダル内）
 
-\`\`\`tsx
+```tsx
 {article && (
   <button
     onClick={() => handleUpdate(article.id)}
@@ -3713,7 +3709,7 @@ const handleUpdate = async (id: number) => {
     更新する
   </button>
 )}
-\`\`\`
+```
 
 ---
 
@@ -3752,7 +3748,7 @@ const handleUpdate = async (id: number) => {
 
 ### コントローラ実装
 
-\`\`\`java
+```java
 @DeleteMapping("/articles/{id}")
 public ResponseEntity<?> deleteArticle(
     @RequestHeader(name = "Authorization") String token,
@@ -3767,13 +3763,13 @@ public ResponseEntity<?> deleteArticle(
     // 3. 成功レスポンス
     return ResponseEntity.ok("削除完了");
 }
-\`\`\`
+```
 
 ---
 
 ### サービス実装
 
-\`\`\`java
+```java
 public void deleteArticle(Long id) {
     // 1. 存在確認（なければ例外）
     ArticleEntity entity = articleRepository.findById(id)
@@ -3782,7 +3778,7 @@ public void deleteArticle(Long id) {
     // 2. 削除
     articleRepository.deleteById(id);
 }
-\`\`\`
+```
 
 ---
 
@@ -3827,7 +3823,7 @@ Insomniaで200 OKが出るまでがバックエンドのゴール
 
 ### コントローラ実装
 
-\`\`\`java
+```java
 @PutMapping("/articles/toggle/{id}")
 public ResponseEntity<?> togglePublish(
     @RequestHeader(name = "Authorization") String token,
@@ -3842,13 +3838,13 @@ public ResponseEntity<?> togglePublish(
     // 3. レスポンス
     return ResponseEntity.ok("公開状態更新");
 }
-\`\`\`
+```
 
 ---
 
 ### サービス実装
 
-\`\`\`java
+```java
 public void togglePublish(Long id) {
     ArticleEntity entity = articleRepository.findById(id)
         .orElseThrow(() -> new RuntimeException("記事が見つかりません。"));
@@ -3857,7 +3853,7 @@ public void togglePublish(Long id) {
     entity.setPublished(!entity.isPublished());
     articleRepository.save(entity);
 }
-\`\`\`
+```
 
 ---
 
@@ -3905,7 +3901,7 @@ idの存在はDB（例：phpMyAdminやDBコンソール）で事前確認推奨�
 
 ### 実装サンプル
 
-\`\`\`tsx
+```tsx
 const togglePublish = async (id: number) => {
   if (loading) return;
   try {
@@ -3925,13 +3921,13 @@ const togglePublish = async (id: number) => {
     console.error("公開状態切替失敗", e);
   }
 };
-\`\`\`
+```
 
 ---
 
 ### ボタンUI例（記事一覧や編集モーダル内で利用）
 
-\`\`\`tsx
+```tsx
 <button
   onClick={() => togglePublish(article.id)}
   className={text-sm {
@@ -3940,7 +3936,7 @@ const togglePublish = async (id: number) => {
 >
   {article.published ? "公開中 → 非公開に" : "非公開 → 公開に"}
 </button>
-\`\`\`
+```
 
 ---
 
@@ -3998,17 +3994,6 @@ const togglePublish = async (id: number) => {
 >  
 > お疲れ様でした！
 `
-}
-
-
-
-
-
-
-
-
-
-
-
-
+},
 ];
+module.exports = dummyProcedures;

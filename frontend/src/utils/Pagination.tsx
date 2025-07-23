@@ -1,6 +1,6 @@
 import { RenderPagination } from "./RenderPagination"; 
 
-export const Pagenation: React.FC<{
+export const Pagination: React.FC<{
   displayPage: number;
   totalPages: number;
   maxPageLinks: number;

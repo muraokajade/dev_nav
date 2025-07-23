@@ -3,17 +3,22 @@ import axios from "axios";
 import { ArticleModel } from "../../../models/ArticleModel";
 import { useAuth } from "../../../context/useAuthContext";
 import dayjs from "dayjs";
+import { usePagination } from "../../../hooks/usePagination";
+import { Procedure } from "../../../models/Procedure";
+import { toast } from "react-hot-toast";
 
-export const AdminArticleList = () => {
-  const [articles, setArticles] = useState<ArticleModel[]>([]);
-  const [article, setArticle] = useState<ArticleModel | null>(null);
+export const AdminProcedureList = () => {
+  const [procedures, setProcedures] = useState<Procedure[]>([]);
+  const [procedure, setProcedure] = useState<Procedure | null>(null);
   const { loading, currentUser, idToken } = useAuth();
+  const [stepNumber, setStepNumber] = useState("");
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [content, setContent] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const {pageIndex, setTotalPages} = usePagination();
   const categories = [
     "Spring",
     "React",
@@ -24,60 +29,60 @@ export const AdminArticleList = () => {
   ];
   // console.log(idToken);
 
-  const togglePublish = async (slug: string) => {
+  const togglePublish = async (id: number) => {
     if (loading) return;
     try {
-      await axios.put(`/api/admin/articles/${slug}/toggle`, null, {
+      await axios.put(`/api/admin/procedure/toggle/${id}`, null, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
       });
       // 再取得
-      const updated = await axios.get("/api/admin/articles", {
+      const res = await axios.get(`/api/admin/procedure?page=${pageIndex}&size=10`, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
       });
-      setArticles(updated.data);
+      setProcedures(res.data.content);
     } catch (e) {
       console.error("公開状態切替失敗", e);
     }
   };
 
   useEffect(() => {
-    const fetchArticles = async () => {
+    const fetchProcedure = async () => {
       if (loading) return;
       try {
-        const res = await axios.get("/api/admin/articles", {
+        const res = await axios.get(`/api/admin/procedure?page=${pageIndex}&size=10`, {
           headers: {
             Authorization: `Bearer ${idToken}`,
           },
         });
         console.log("取得した記事一覧:", res.data);
-        setArticles(res.data);
+        setProcedures(res.data.content);
       } catch (e) {
         console.error("記事取得失敗", e);
       }
     };
-    fetchArticles();
-  }, [loading, currentUser, idToken]);
+    fetchProcedure();
+  }, [loading, currentUser, idToken,pageIndex]);
 
   const handleEdit = async (id: number) => {
     if (loading) return;
     try {
-      const res = await axios.get(`/api/admin/articles/${id}`, {
+      const res = await axios.get(`/api/admin/procedure/${id}`, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
       });
-      const article = res.data;
-      setArticle(article);
+      setProcedure(res.data);
 
       // 編集対象の記事情報をステートにセット
-      setSlug(article.slug);
-      setTitle(article.title);
-      setContent(article.content);
-      setCategory(article.sectionTitle);
+      setStepNumber(res.data.stepNumber)
+      setSlug(res.data.slug);
+      setTitle(res.data.title);
+      setContent(res.data.content);
+      setCategory(res.data.sectionTitle);
 
       setIsEditModalOpen(true);
     } catch (err) {
@@ -88,11 +93,9 @@ export const AdminArticleList = () => {
 
   const handleUpdate = async (id: number) => {
     if (loading) return;
-    if(!slug || !title || !category || !content) {
-      alert("必要項目が入力されていません。");
-    }
     try {
       const formData = new FormData();
+      formData.append("stepNumber", stepNumber);
       formData.append("slug", slug);
       formData.append("title", title);
       formData.append("category", category);
@@ -101,18 +104,20 @@ export const AdminArticleList = () => {
         formData.append("image", imageFile);
       }
 
-      await axios.put(`/api/admin/articles/${id}`, formData, {
+      await axios.put(`/api/admin/procedure/${id}`, formData, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
       });
-      const refreshed = await axios.get("/api/admin/articles", {
+      const res = await axios.get(`/api/admin/procedure?page=${pageIndex}&size=10`, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
       });
 
-      setArticles(refreshed.data);
+      setProcedures(res.data.content);
+      setTotalPages(res.data.totalpage)
+      // toast.success("更新完了");
       setIsEditModalOpen(false);
     } catch (e) {
       console.error("データ更新失敗");
@@ -123,19 +128,19 @@ export const AdminArticleList = () => {
     if (loading) return;
     if (!window.confirm("本当に削除しますか？")) return;
     try {
-      await axios.delete(`/api/admin/articles/${id}`, {
+      await axios.delete(`/api/admin/procedure/${id}`, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
       });
-      console.log("削除成功");
-      const res = await axios.get("/api/admin/articles", {
+      
+      const res = await axios.get(`/api/admin/procedure?page=${pageIndex}&size=10`, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
       });
-      console.log("取得した記事一覧:", res.data);
-      setArticles(res.data);
+      // toast.success("削除完了");
+      setProcedures(res.data.content);
     } catch (e) {
       console.error("削除失敗", e);
     }
@@ -152,6 +157,14 @@ export const AdminArticleList = () => {
             <div className="bg-gray-900 text-white p-6 rounded-lg w-full max-w-2xl shadow-lg">
               <h3 className="text-xl font-semibold mb-4">🛠️ 記事の編集</h3>
 
+              <label>step-number</label>
+              <input
+                className="w-full text-black border px-3 py-2 rounded mb-2"
+                value={stepNumber}
+                onChange={(e) => setStepNumber(e.target.value)}
+                placeholder="ステップ番号
+                "
+              />
               <label>slug</label>
               <input
                 className="w-full text-black border px-3 py-2 rounded mb-2"
@@ -205,9 +218,9 @@ export const AdminArticleList = () => {
                 >
                   キャンセル
                 </button>
-                {article && (
+                {procedure && (
                   <button
-                    onClick={() => handleUpdate(article.id)}
+                    onClick={() => handleUpdate(procedure.id)}
                     className="px-4 py-2 bg-blue-500 rounded hover:bg-blue-400"
                   >
                     更新する
@@ -219,18 +232,19 @@ export const AdminArticleList = () => {
         )}
 
         <div className="space-y-2">
-          {articles.map((article) => (
+          {procedures.map((procedure) => (
             <div
-              key={article.slug}
+              key={procedure.slug}
               className="flex items-start bg-gray-800 text-white rounded-lg px-4 py-3 shadow-sm hover:shadow-md"
             >
               {/* 左側：基本情報 */}
               <div className="w-1/3 pr-4 text-sm space-y-1">
-                <p className="font-semibold text-lg">{article.title}</p>
-                <p className="text-gray-400">Slug: {article.slug}</p>
-                <p className="text-gray-400">カテゴリー: {article.category}</p>
+                <p className="text-gray-400">StepNumber: {procedure.stepNumber}</p>
+                <p className="font-semibold text-lg">{procedure.title}</p>
+                <p className="text-gray-400">Slug: {procedure.slug}</p>
+                <p className="text-gray-400">カテゴリー: {procedure.category}</p>
                 <p className="text-gray-500 text-xs">
-                  投稿日: {dayjs(article.createdAt).format("YYYY/MM/DD HH:mm")}
+                  投稿日: {dayjs(procedure.createdAt).format("YYYY/MM/DD HH:mm")}
                 </p>
               </div>
 
@@ -239,27 +253,27 @@ export const AdminArticleList = () => {
 
               {/* 中央右：コンテンツ本文（長文・折り返し） */}
               <div className="flex-1 text-sm text-gray-200 break-words pr-4">
-                {article.content.slice(0, 300)}
+                {procedure.content.slice(0, 300)}
               </div>
 
               {/* 右端：編集・削除ボタン */}
               <div className="flex flex-col space-y-2 items-end">
                 <button
-                  onClick={() => togglePublish(article.slug)}
+                  onClick={() => togglePublish(procedure.id)}
                   className={`text-sm ${
-                    article.published ? "text-green-400" : "text-yellow-400"
+                    procedure.published ? "text-green-400" : "text-yellow-400"
                   } hover:underline`}
                 >
-                  {article.published ? "公開中 → 非公開に" : "非公開 → 公開に"}
+                  {procedure.published ? "公開中 → 非公開に" : "非公開 → 公開に"}
                 </button>
                 <button
-                  onClick={() => handleEdit(article.id)}
+                  onClick={() => handleEdit(procedure.id)}
                   className="text-blue-400 hover:text-blue-200 text-sm"
                 >
                   編集
                 </button>
                 <button
-                  onClick={() => handleDelete(article.id)}
+                  onClick={() => handleDelete(procedure.id)}
                   className="text-red-400 hover:text-red-200 text-sm"
                 >
                   削除

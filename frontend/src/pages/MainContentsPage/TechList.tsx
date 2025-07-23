@@ -4,7 +4,7 @@ import { ArticleModel } from "../../models/ArticleModel";
 import axios from "axios";
 import { useAuth } from "../../context/useAuthContext";
 import { usePagination } from "../../hooks/usePagination";
-import { Pagenation } from "../../utils/Pagenation";
+import { Pagination } from "../../utils/Pagination";
 export const TechList = () => {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -51,7 +51,6 @@ export const TechList = () => {
     const fetchArticles = async () => {
       try {
         const res = await axios.get(`/api/articles?page=${pageIndex}&size=10`);
-        console.log(res.data);
         const publishedArticles: ArticleModel[] = res.data.content;
         setArticles(publishedArticles);
         setTotalPages(res.data.totalPages);
@@ -160,7 +159,7 @@ export const TechList = () => {
           </div>
         </div>
         {totalPages > 0 && (
-          <Pagenation
+          <Pagination
             displayPage={displayPage}
             totalPages={totalPages}
             maxPageLinks={5}

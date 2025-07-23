@@ -26,6 +26,7 @@ public class SecurityConfig {
                         .requestMatchers("/api/admin/**").hasRole("ADMIN")
                         .requestMatchers("/api/articles/**").permitAll()
                         .requestMatchers("/api/syntaxes/**").permitAll()
+                        .requestMatchers("/api/procedures/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/messages").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/review-scores/**", "/api/review-comments/**").permitAll()
                         .requestMatchers("/api/review-scores/**", "/api/review-comments/**").authenticated() // レビュー・コメントはログイン必須

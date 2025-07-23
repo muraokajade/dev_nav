@@ -4,7 +4,7 @@ import { ArticleModel } from "../../models/ArticleModel";
 import axios from "axios";
 import { useAuth } from "../../context/useAuthContext";
 import { usePagination } from "../../hooks/usePagination";
-import { Pagenation } from "../../utils/Pagenation";
+import { Pagination } from "../../utils/Pagination";
 export const SyntaxList = () => {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -142,7 +142,7 @@ export const SyntaxList = () => {
           </div>
         </div>
         {totalPages > 0 && (
-          <Pagenation
+          <Pagination
             displayPage={displayPage}
             totalPages={totalPages}
             maxPageLinks={5}

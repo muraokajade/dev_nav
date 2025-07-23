@@ -22,8 +22,10 @@ import { Footer } from "./pages/CommonPage/Footer";
 import { About } from "./pages/CommonPage/About";
 import { PrivacyPolicy } from "./pages/CommonPage/PrivacyPolicy";
 import { ContactForm } from "./pages/CommonPage/ContactForm";
-import { ProceduresDetail } from "./pages/ProceduresPage/ProceduresDetail";
+import { ProcedureDetailPage } from "./pages/ProceduresPage/ProcedureDetailPage";
 import { ProceduresPage } from "./pages/ProceduresPage/ProceduresPage";
+import { AddProcedureForm } from "./pages/AdminPage/components/AddProcedureForm";
+import { AdminProcedureList } from "./pages/AdminPage/components/AdminProcedureList";
 
 export default function App() {
   return (
@@ -39,7 +41,7 @@ export default function App() {
           <Route path="/articles/:idAndSlug" element={<ArticleDetailPage />} />
           <Route path="/syntaxes/:idAndSlug" element={<SyntaxDetailPage />} />
           <Route path="/procedures" element={<ProceduresPage />} />
-          <Route path="/procedures/:idAndSlug" element={<ProceduresDetail />} />
+          <Route path="/procedures/:idAndSlug" element={<ProcedureDetailPage />} />
           <Route
             path="/mypage"
             element={
@@ -64,6 +66,15 @@ export default function App() {
             element={
               <AdminRoute>
                 <AddArticleForm />
+              </AdminRoute>
+            }
+          />
+          {/* 開発手順投稿 */}
+          <Route
+            path="/admin/add-article"
+            element={
+              <AdminRoute>
+                <AddProcedureForm />
               </AdminRoute>
             }
           />
@@ -102,6 +113,15 @@ export default function App() {
             element={
               <AdminRoute>
                 <AdminSyntaxList />
+              </AdminRoute>
+            }
+          />
+          {/* 開発手順一覧 */}
+          <Route
+            path="/admin/syntaxes"
+            element={
+              <AdminRoute>
+                <AdminProcedureList />
               </AdminRoute>
             }
           />

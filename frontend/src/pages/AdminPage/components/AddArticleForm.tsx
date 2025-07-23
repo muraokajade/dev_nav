@@ -1,10 +1,11 @@
 import axios from "axios";
 import { useAuth } from "../../../context/useAuthContext";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import ReactMarkdown from "react-markdown"; // 追加
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-
+import { MarkdownToolbar } from "../../../utils/MarkdownToolbar";
+import { MarkdownTextarea } from "../../../utils/MarkdownTextarea";
 export const AddArticleForm = () => {
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");
@@ -12,6 +13,7 @@ export const AddArticleForm = () => {
   const [content, setContent] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
   const categories = [
     "Spring",
     "React",
@@ -26,17 +28,20 @@ export const AddArticleForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     if (loading) return;
     e.preventDefault();
-    if (!slug || !title || !category || !content || !imageFile) {
+    if (!slug || !title || !category || !content) {
       alert("すべての項目を入力してください");
       return;
     }
 
     const formData = new FormData();
+
     formData.append("slug", slug);
     formData.append("title", title);
     formData.append("category", category);
     formData.append("content", content);
-    formData.append("image", imageFile);
+    if(imageFile) {
+      formData.append("image", imageFile);
+    }
 
     try {
       await axios.post("/api/admin/add-article", formData, {
@@ -93,12 +98,11 @@ export const AddArticleForm = () => {
             ))}
           </select>
 
-          <textarea
-            className="w-full text-black border p-2"
+          <MarkdownTextarea
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={setContent}
+            rows={30}
             placeholder="内容"
-            rows={40}
           />
 
           <input

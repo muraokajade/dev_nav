@@ -1,17 +1,22 @@
 import axios from "axios";
 import { useAuth } from "../../../context/useAuthContext";
-import { useState } from "react";
+import { useRef, useState } from "react";
 import ReactMarkdown from "react-markdown"; // 追加
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { MarkdownToolbar } from "../../../utils/MarkdownToolbar";
+import { MarkdownTextarea } from "../../../utils/MarkdownTextarea";
 
 export const AddProcedureForm = () => {
+  const [stepNumber, setStepNumber] = useState("");
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
   const [content, setContent] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
+
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
   const categories = [
     "Spring",
     "React",
@@ -26,25 +31,29 @@ export const AddProcedureForm = () => {
   const handleSubmit = async (e: React.FormEvent) => {
     if (loading) return;
     e.preventDefault();
-    if (!slug || !title || !category || !content || !imageFile) {
-      alert("すべての項目を入力してください");
+    if (!slug || !title || !category || !content) {
+      alert("入力項目に不足があります。");
       return;
     }
 
     const formData = new FormData();
+    formData.append("stepNumber", stepNumber);
     formData.append("slug", slug);
     formData.append("title", title);
     formData.append("category", category);
     formData.append("content", content);
-    formData.append("image", imageFile);
+    if (imageFile) {
+      formData.append("image", imageFile);
+    }
 
     try {
-      await axios.post("/api/admin/add-article", formData, {
+      await axios.post("/api/admin/add-procedure", formData, {
         headers: {
           Authorization: `Bearer ${idToken}`,
           // "Content-Type": "multipart/form-data",
         },
       });
+      setStepNumber("");
       setSlug("");
       setTitle("");
       setCategory("");
@@ -70,6 +79,12 @@ export const AddProcedureForm = () => {
         <form onSubmit={handleSubmit} className="mb-6 space-y-4">
           <input
             className="w-full text-black border p-2"
+            value={stepNumber}
+            onChange={(e) => setStepNumber(e.target.value)}
+            placeholder="手順番号（例: 1-01）"
+          />
+          <input
+            className="w-full text-black border p-2"
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
             placeholder="スラッグ（URL識別子）"
@@ -93,12 +108,11 @@ export const AddProcedureForm = () => {
             ))}
           </select>
 
-          <textarea
-            className="w-full text-black border p-2"
+          <MarkdownTextarea
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            onChange={setContent}
+            rows={30}
             placeholder="内容"
-            rows={40}
           />
 
           <input
