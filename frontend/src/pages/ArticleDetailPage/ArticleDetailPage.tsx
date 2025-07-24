@@ -8,6 +8,7 @@ import { useAuth } from "../../context/useAuthContext";
 import axios from "axios";
 import { LikeButton } from "../../utils/LikeButton";
 import { ArticleDetailActions } from "./components/ArticleDetailActions";
+import { SampleStar } from "../../utils/SampleStar";
 
 export const ArticleDetailPage = () => {
   const { idAndSlug } = useParams();
@@ -191,6 +192,7 @@ export const ArticleDetailPage = () => {
           }}
         />
       </div>
+      <SampleStar />
 
       {/* レビュー・コメント・Q&Aタブ */}
       <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-start md:items-center gap-4 mt-8">

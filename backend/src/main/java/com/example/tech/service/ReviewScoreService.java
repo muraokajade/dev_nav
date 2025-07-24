@@ -34,17 +34,12 @@ public class ReviewScoreService {
             throw new RuntimeException("既にレビュー済みです");
         }
 
-        //TODO
+        //
         ArticleEntity article = articleRepository.findById(request.getArticleId())
                 .orElseThrow(() -> new RuntimeException("記事が見つかりません、"));
 
         ReviewScoreEntity entity = new ReviewScoreEntity();
         entity.setArticle(article);
-
-        //entity.getArticle().setId(request.getArticleId());
-
-        //entity.setArticleId(request.getArticleId());
-
         entity.setUserId(userId);
         entity.setScore(request.getScore());
 

@@ -111,7 +111,7 @@ export const ReviewScore: React.FC<{ articleId: number; myUserId: number }> = ({
       </h3>
       <div className="flex items-center gap-3">
         <StarRatingSVG value={tempScore} onChange={setTempScore} />
-
+        
         <button
           className={`ml-2 px-4 py-1 rounded font-semibold shadow transition 
             ${

@@ -29,18 +29,22 @@ export const useReviewScores = (articleId: number, myUserId: number) => {
   // 自分の分
   useEffect(() => {
     if (!idToken) return;
-    axios
-      .get(`/api/review-scores?articleId=${articleId}`, {
-        headers: { Authorization: `Bearer ${idToken}` },
-      })
-      .then((res) => {
-        console.log("myScore取得APIレスポンス", res);
-        setMyScore(res.data?.score ?? null);
-      })
-      .catch(() => setMyScore(null));
-    setLoading(false);
+    const fetchScore = async () => {
+      try {
+        const res = await axios.get(
+          `/api/review-scores?articleId=${articleId}`,
+          { headers: { Authorization: `Bearer ${idToken}` } }
+        );
+        setMyScore(res.data.score ?? null);
+      } catch (e) {
+        setMyScore(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+    fetchScore();
   }, [articleId, idToken]);
-  // 自分のスコア
+
 
   // 送信系（myScoreがあればPUT、なければPOST）
   const submitScore = async (score: number) => {

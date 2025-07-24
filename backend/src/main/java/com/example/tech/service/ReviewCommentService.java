@@ -37,10 +37,6 @@ public class ReviewCommentService {
         //entity.getArticle().setId(request.getArticleId());
         entity.setArticle(article); //Idも含めてオブジェクトでarticleがセットされるのでリレーションを担保できた
 
-        System.out.println("DEBUG: articleId = " + article.getId());
-        System.out.println("DEBUG: entity.getArticle().getId() = " + entity.getArticle().getId());
-
-
         entity.setUserId(userId);
         entity.setComment(request.getComment());
         reviewCommentRepository.save(entity);

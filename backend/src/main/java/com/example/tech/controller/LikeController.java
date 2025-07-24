@@ -20,7 +20,7 @@ public class LikeController {
     public ResponseEntity<?> registerLike(@RequestHeader(name = "Authorization")String token,
                                           @RequestBody LikeRequest request)
     {
-        String userEmail = firebaseAuthService.verifyAdminAndGetEmail(token);
+        String userEmail = firebaseAuthService.verifyAndGetEmail(token);
         likeService.registerLike(userEmail, request.getArticleId());
         return ResponseEntity.ok("いいね!");
     }
@@ -28,9 +28,9 @@ public class LikeController {
     public ResponseEntity<?> deleteLike(@RequestHeader(name = "Authorization")String token,
                                         @PathVariable Long articleId)
     {
-        String userEmail = firebaseAuthService.verifyAdminAndGetEmail(token);
+        String userEmail = firebaseAuthService.verifyAndGetEmail(token);
         likeService.deleteLike(userEmail, articleId);
-        return ResponseEntity.ok("よくないね");
+        return ResponseEntity.ok("解除。");
     }
 
     @GetMapping("/status")

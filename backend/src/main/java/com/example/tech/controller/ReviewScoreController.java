@@ -20,7 +20,6 @@ public class ReviewScoreController {
 
     private final FirebaseAuthService firebaseAuthService;
     private final ReviewScoreService reviewScoreService;
-    private final UserRepository userRepository;
     @PostMapping
     public ResponseEntity<?> postReviewScore(@RequestHeader(name = "Authorization")String token,
                                              @RequestBody ReviewScoreRequest request)
