@@ -1,12 +1,14 @@
-import { useEffect, useState } from "react";
+import { useCallback, useEffect, useState } from "react";
 import axios from "axios";
 import { ArticleModel } from "../../../models/ArticleModel";
 import { useAuth } from "../../../context/useAuthContext";
 import dayjs from "dayjs";
 import { usePagination } from "../../../hooks/usePagination";
 import { Procedure } from "../../../models/Procedure";
-import { toast } from "react-hot-toast";
 import { Pagination } from "../../../utils/Pagination";
+import ReactMarkdown from "react-markdown";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 export const AdminProcedureList = () => {
   const [procedures, setProcedures] = useState<Procedure[]>([]);
@@ -16,10 +18,12 @@ export const AdminProcedureList = () => {
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
+  const [summary, setSummary] = useState("");
   const [content, setContent] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const {pageIndex, setTotalPages, displayPage, setDisplayPage, totalPages} = usePagination();
+  const { pageIndex, setTotalPages, displayPage, setDisplayPage, totalPages } =
+    usePagination();
   const categories = [
     "Spring",
     "React",
@@ -30,6 +34,30 @@ export const AdminProcedureList = () => {
   ];
   // console.log(idToken);
 
+  const fetchProcedure = useCallback(async () => {
+    try {
+      const res = await axios.get(
+        `/api/admin/procedure?page=${pageIndex}&size=10`,
+        {
+          headers: {
+            Authorization: `Bearer ${idToken}`,
+          },
+        }
+      );
+      setProcedures(res.data.content);
+      setTotalPages(res.data.totalPages);
+    } catch (e) {
+      console.error(e);
+    }
+  }, [pageIndex, idToken,setTotalPages]);
+
+  useEffect(() => {
+    if(!loading)
+    (async () => {
+      await fetchProcedure();
+    })();
+  },[loading,fetchProcedure])
+
   const togglePublish = async (id: number) => {
     if (loading) return;
     try {
@@ -39,35 +67,42 @@ export const AdminProcedureList = () => {
         },
       });
       // 再取得
-      const res = await axios.get(`/api/admin/procedure?page=${pageIndex}&size=10`, {
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
-      setProcedures(res.data.content);
+      // const res = await axios.get(
+      //   `/api/admin/procedure?page=${pageIndex}&size=10`,
+      //   {
+      //     headers: {
+      //       Authorization: `Bearer ${idToken}`,
+      //     },
+      //   }
+      // );
+      // setProcedures(res.data.content);
+      await fetchProcedure();
     } catch (e) {
       console.error("公開状態切替失敗", e);
     }
   };
 
-  useEffect(() => {
-    const fetchProcedure = async () => {
-      if (loading) return;
-      try {
-        const res = await axios.get(`/api/admin/procedure?page=${pageIndex}&size=10`, {
-          headers: {
-            Authorization: `Bearer ${idToken}`,
-          },
-        });
-        console.log("取得した記事一覧:", res.data);
-        setProcedures(res.data.content);
-        setTotalPages(res.data.totalPages);
-      } catch (e) {
-        console.error("記事取得失敗", e);
-      }
-    };
-    fetchProcedure();
-  }, [loading, currentUser, idToken,pageIndex]);
+  // useEffect(() => {
+  //   const fetchProcedure = async () => {
+  //     if (loading) return;
+  //     try {
+  //       const res = await axios.get(
+  //         `/api/admin/procedure?page=${pageIndex}&size=10`,
+  //         {
+  //           headers: {
+  //             Authorization: `Bearer ${idToken}`,
+  //           },
+  //         }
+  //       );
+  //       console.log("取得した記事一覧:", res.data);
+  //       setProcedures(res.data.content);
+  //       setTotalPages(res.data.totalPages);
+  //     } catch (e) {
+  //       console.error("記事取得失敗", e);
+  //     }
+  //   };
+  //   fetchProcedure();
+  // }, [loading, currentUser, idToken, pageIndex]);
 
   const handleEdit = async (id: number) => {
     if (loading) return;
@@ -80,9 +115,10 @@ export const AdminProcedureList = () => {
       setProcedure(res.data);
 
       // 編集対象の記事情報をステートにセット
-      setStepNumber(res.data.stepNumber)
+      setStepNumber(res.data.stepNumber);
       setSlug(res.data.slug);
       setTitle(res.data.title);
+      setSummary(res.data.summary);
       setContent(res.data.content);
       setCategory(res.data.sectionTitle);
 
@@ -111,15 +147,19 @@ export const AdminProcedureList = () => {
           Authorization: `Bearer ${idToken}`,
         },
       });
-      const res = await axios.get(`/api/admin/procedure?page=${pageIndex}&size=10`, {
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
+      // const res = await axios.get(
+      //   `/api/admin/procedure?page=${pageIndex}&size=10`,
+      //   {
+      //     headers: {
+      //       Authorization: `Bearer ${idToken}`,
+      //     },
+      //   }
+      // );
 
-      setProcedures(res.data.content);
-      setTotalPages(res.data.totalpage)
-      // toast.success("更新完了");
+      // setProcedures(res.data.content);
+      // setTotalPages(res.data.totalpage);
+      // // toast.success("更新完了");
+      await fetchProcedure();
       setIsEditModalOpen(false);
     } catch (e) {
       console.error("データ更新失敗");
@@ -135,24 +175,28 @@ export const AdminProcedureList = () => {
           Authorization: `Bearer ${idToken}`,
         },
       });
-      
-      const res = await axios.get(`/api/admin/procedure?page=${pageIndex}&size=10`, {
-        headers: {
-          Authorization: `Bearer ${idToken}`,
-        },
-      });
-      // toast.success("削除完了");
-      setProcedures(res.data.content);
+
+      // const res = await axios.get(
+      //   `/api/admin/procedure?page=${pageIndex}&size=10`,
+      //   {
+      //     headers: {
+      //       Authorization: `Bearer ${idToken}`,
+      //     },
+      //   }
+      // );
+      // // toast.success("削除完了");
+      // setProcedures(res.data.content);
+      await fetchProcedure();
     } catch (e) {
       console.error("削除失敗", e);
     }
   };
 
-  const paginate = (pageNumber:number) => setDisplayPage(pageNumber);
+  const paginate = (pageNumber: number) => setDisplayPage(pageNumber);
 
   return (
     <div className="min-h-screen bg-gray-900">
-      <div className="p-8 max-w-3xl mx-auto">
+      <div className="p-8 max-w-5xl mx-auto">
         <h2 className="text-2xl text-white font-bold mb-4 border-b pb-2">
           📚 投稿済み記事
         </h2>
@@ -239,46 +283,86 @@ export const AdminProcedureList = () => {
           {procedures.map((procedure) => (
             <div
               key={procedure.slug}
-              className="flex items-start bg-gray-800 text-white rounded-lg px-4 py-3 shadow-sm hover:shadow-md"
+              className="flex flex-col sm:flex-row bg-gray-800 text-white rounded-lg px-4 py-3 shadow-sm hover:shadow-md overflow-hidden"
             >
               {/* 左側：基本情報 */}
-              <div className="w-1/3 pr-4 text-sm space-y-1">
-                <p className="text-gray-400">StepNumber: {procedure.stepNumber}</p>
-                <p className="font-semibold text-lg">{procedure.title}</p>
-                <p className="text-gray-400">Slug: {procedure.slug}</p>
-                <p className="text-gray-400">カテゴリー: {procedure.category}</p>
+              <div className="sm:w-[240px] w-full shrink-0 sm:pr-4 text-sm space-y-1 mb-4 sm:mb-0">
+                <p className="text-gray-400">
+                  StepNumber: {procedure.stepNumber}
+                </p>
+                <p className="font-semibold text-lg break-words">
+                  {procedure.title}
+                </p>
+                <p className="text-gray-400 break-words">
+                  Slug: {procedure.slug}
+                </p>
+                <p className="text-gray-400">
+                  カテゴリー: {procedure.category}
+                </p>
                 <p className="text-gray-500 text-xs">
-                  投稿日: {dayjs(procedure.createdAt).format("YYYY/MM/DD HH:mm")}
+                  投稿日:{" "}
+                  {dayjs(procedure.createdAt).format("YYYY/MM/DD HH:mm")}
                 </p>
               </div>
 
-              {/* 中央：縦線 */}
-              <div className="border-l border-gray-600 h-full mx-4" />
+              {/* 中央：縦線（PCのみ） */}
+              <div className="hidden sm:block border-l border-gray-600 h-full mx-4" />
 
-              {/* 中央右：コンテンツ本文（長文・折り返し） */}
-              <div className="flex-1 text-sm text-gray-200 break-words pr-4">
-                {procedure.content.slice(0, 300)}
+              {/* 中央右：手順要約（Markdown） */}
+              <div className="prose prose-invert max-w-none text-sm text-gray-200 break-words flex-grow mb-4 sm:mb-0 sm:pr-4 overflow-x-auto">
+                <ReactMarkdown
+                  children={procedure.content.slice(0, 500)}
+                  components={{
+                    code({ className, children, ...props }) {
+                      const match = /language-(\w+)/.exec(className || "");
+                      const codeString = Array.isArray(children)
+                        ? children.join("")
+                        : String(children);
+
+                      return match ? (
+                        <SyntaxHighlighter
+                          style={oneDark}
+                          language={match[1]}
+                          PreTag="div"
+                          className="not-prose"
+                          {...props}
+                        >
+                          {codeString.replace(/\n$/, "")}
+                        </SyntaxHighlighter>
+                      ) : (
+                        <code className={className} {...props}>
+                          {children}
+                        </code>
+                      );
+                    },
+                    pre: ({ children }) => <>{children}</>,
+                  }}
+                />
               </div>
 
-              {/* 右端：編集・削除ボタン */}
-              <div className="flex flex-col space-y-2 items-end">
+              {/* 右端：操作ボタン */}
+              <div className="flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2 items-start sm:items-end w-full sm:w-auto">
                 <button
                   onClick={() => togglePublish(procedure.id)}
-                  className={`text-sm ${
-                    procedure.published ? "text-green-400" : "text-yellow-400"
-                  } hover:underline`}
+                  className={`px-3 py-1 rounded text-sm font-semibold border w-full sm:w-auto ${
+                    procedure.published
+                      ? "bg-green-600 text-white border-green-700 hover:bg-green-500"
+                      : "bg-yellow-500 text-black border-yellow-600 hover:bg-yellow-400"
+                  }`}
                 >
-                  {procedure.published ? "公開中 → 非公開に" : "非公開 → 公開に"}
+                  {procedure.published ? "公開中" : "非公開"}
                 </button>
+
                 <button
                   onClick={() => handleEdit(procedure.id)}
-                  className="text-blue-400 hover:text-blue-200 text-sm"
+                  className="px-3 py-1 rounded text-sm font-semibold bg-blue-600 text-white border border-blue-700 hover:bg-blue-500 w-full sm:w-auto"
                 >
                   編集
                 </button>
+
                 <button
                   onClick={() => handleDelete(procedure.id)}
-                  className="text-red-400 hover:text-red-200 text-sm"
+                  className="px-3 py-1 rounded text-sm font-semibold bg-red-600 text-white border border-red-700 hover:bg-red-500 w-full sm:w-auto"
                 >
                   削除
                 </button>
@@ -291,7 +375,7 @@ export const AdminProcedureList = () => {
           totalPages={totalPages}
           maxPageLinks={5}
           paginate={paginate}
-          />
+        />
       </div>
     </div>
   );

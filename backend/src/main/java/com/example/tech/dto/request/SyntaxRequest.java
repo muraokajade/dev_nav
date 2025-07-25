@@ -11,5 +11,6 @@ public class SyntaxRequest {
     private String slug;
     private String title;
     private String category;
+    private String summary;
     private String content;
 }

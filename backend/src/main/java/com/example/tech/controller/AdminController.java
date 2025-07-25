@@ -33,16 +33,22 @@ public class AdminController {
     private final ProcedureService procedureService;
 
     @GetMapping("/articles")
-    public ResponseEntity<List<ArticleDTO>> getAllArticle(@RequestHeader(name = "Authorization") String token)
+    public ResponseEntity<Page<ArticleDTO>> getAllArticle(@RequestHeader(name = "Authorization") String token,
+                                                          @RequestParam int page,
+                                                          @RequestParam int size)
     {
-        List<ArticleDTO> articles = adminService.getAllArticles();
+        Pageable pageable = PageRequest.of(page,size);
+        Page<ArticleDTO> articles = adminService.getAllArticles(pageable);
         return ResponseEntity.ok(articles);
     }
 
     @GetMapping("/syntaxes")
-    public ResponseEntity<List<SyntaxDTO>> getAllSyntax(@RequestHeader(name = "Authorization") String token)
+    public ResponseEntity<Page<SyntaxDTO>> getAllSyntax(@RequestHeader(name = "Authorization") String token,
+                                                        @RequestParam int page,
+                                                        @RequestParam int size)
     {
-        List<SyntaxDTO> articles = adminService.getAllSyntax();
+        Pageable pageable = PageRequest.of(page,size);
+        Page<SyntaxDTO> articles = adminService.getAllSyntax(pageable);
         return ResponseEntity.ok(articles);
     }
 
@@ -299,6 +305,15 @@ public class AdminController {
 
         firebaseAuthService.verifyAdminAndGetEmail(token);
         procedureService.deleteById(id);
+        return ResponseEntity.ok("削除完了");
+    }
+
+    @DeleteMapping("syntaxes/{id}")
+    public ResponseEntity<?> deleteSyntax(@RequestHeader(name = "Authorization") String token,
+                                                 @PathVariable Long id)
+    {
+        firebaseAuthService.verifyAdminAndGetEmail(token);
+        adminService.deleteSyntaxById(id);
         return ResponseEntity.ok("削除完了");
     }
 }

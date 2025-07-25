@@ -13,6 +13,7 @@ public class ArticleRequest {
     private String title;
     private String adminEmail;
     private String category;
+    private String summary;
     private String content;
     private MultipartFile image;
 }

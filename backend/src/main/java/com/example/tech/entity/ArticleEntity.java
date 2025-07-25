@@ -31,6 +31,8 @@ public class ArticleEntity {
     private String authorName;  // ←追加
     private String category;
     @Column(columnDefinition = "TEXT")
+    private String summary;
+    @Column(columnDefinition = "TEXT")
     private String content;
     private String imageUrl;
     @CreationTimestamp

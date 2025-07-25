@@ -27,6 +27,8 @@ public class SyntaxEntity {
     private String authorName;
     private String category;
     @Column(columnDefinition = "TEXT")
+    private String summary;
+    @Column(columnDefinition = "TEXT")
     private String content;
     @CreationTimestamp
     private LocalDateTime createdAt;

@@ -10,6 +10,7 @@ export const AddArticleForm = () => {
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
+  const [summary, setSummary] = useState("");
   const [content, setContent] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isPreviewOpen, setIsPreviewOpen] = useState(false);
@@ -21,7 +22,7 @@ export const AddArticleForm = () => {
     "Firebase",
     "Tailwind",
     "Other",
-    "環境開発"
+    "環境開発",
   ];
 
   const { idToken, loading } = useAuth();
@@ -39,8 +40,9 @@ export const AddArticleForm = () => {
     formData.append("slug", slug);
     formData.append("title", title);
     formData.append("category", category);
+    formData.append("summary", summary);
     formData.append("content", content);
-    if(imageFile) {
+    if (imageFile) {
       formData.append("image", imageFile);
     }
 
@@ -54,6 +56,7 @@ export const AddArticleForm = () => {
       setSlug("");
       setTitle("");
       setCategory("");
+      setSummary("");
       setContent("");
       setImageFile(null);
     } catch (err) {
@@ -98,6 +101,14 @@ export const AddArticleForm = () => {
               </option>
             ))}
           </select>
+          <label>summary</label>
+          <textarea
+            className="w-full  text-black px-3 py-2 rounded mb-4"
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
+            placeholder="記事の要約を入力（または自動生成）"
+            rows={6}
+          />
 
           <MarkdownTextarea
             value={content}

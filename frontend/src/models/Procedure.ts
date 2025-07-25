@@ -9,4 +9,5 @@ export interface Procedure {
   createdAt: string;
   updatedAt: string;
   published: boolean;
+  summary:string
 }

@@ -6,6 +6,7 @@ export const AddSyntaxForm = () => {
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
+  const [summary, setSummary] = useState("");
   const [content, setContent] = useState("");
   const categories = [
     "Spring",
@@ -29,7 +30,7 @@ export const AddSyntaxForm = () => {
     try {
       await axios.post(
         "/api/admin/add-syntax",
-        { slug, title, category, content },
+        { slug, title, category, summary, content },
         {
           headers: {
             Authorization: `Bearer ${idToken}`,
@@ -39,6 +40,7 @@ export const AddSyntaxForm = () => {
       setSlug("");
       setTitle("");
       setCategory("");
+      setSummary("");
       setContent("");
       alert("投稿完了");
     } catch (err) {
@@ -75,6 +77,13 @@ export const AddSyntaxForm = () => {
               </option>
             ))}
           </select>
+          <textarea
+            className="w-full  text-black px-3 py-2 rounded mb-4"
+            value={summary}
+            onChange={(e) => setSummary(e.target.value)}
+            placeholder="記事の要約を入力（または自動生成）"
+            rows={6}
+          />
           <textarea
             className="w-full text-black border p-2"
             value={content}

@@ -1,6 +1,6 @@
 import React, { useCallback, useEffect, useState } from "react";
-import { Comments } from "../models/Comments"; 
-import { useAuth } from "../context/useAuthContext"; 
+import { Comments } from "../models/Comments";
+import { useAuth } from "../context/useAuthContext";
 import axios from "axios";
 
 export const ReviewComments: React.FC<{
@@ -15,15 +15,21 @@ export const ReviewComments: React.FC<{
   const { idToken } = useAuth();
 
   // fetchCommentsをuseCallbackで定義
-  const fetchComments = useCallback(() => {
-    axios
-      .get(`/api/review-comments?articleId=${articleId}`)
-      .then((res) => setComments(res.data))
-      .catch((e) => console.error("取得失敗", e));
+  const fetchComments = useCallback(async () => {
+    try {
+      const res = await axios.get(
+        `/api/review-comments?articleId=${articleId}`
+      );
+      setComments(res.data);
+    } catch (e) {
+      console.error("取得失敗", e);
+    }
   }, [articleId]);
 
   useEffect(() => {
-    fetchComments();
+    (async () => {
+      await fetchComments();
+    })();
   }, [fetchComments]);
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -41,18 +47,17 @@ export const ReviewComments: React.FC<{
     }
   };
 
-  const handleEdit = (id: number) => {};
-  const handleDelete = async(id: number) => {
+  const handleDelete = async (id: number) => {
     const ok = window.confirm("本当に削除してよいですか？");
-    if(!ok) return;
+    if (!ok) return;
     try {
-        await axios.delete(`/api/review-comments/${id}`, {
-          headers: { Authorization: `Bearer ${idToken}` },
-        });
-        fetchComments(); // 再取得
-      } catch (e) {
-        alert("削除に失敗しました");
-      }
+      await axios.delete(`/api/review-comments/${id}`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      await fetchComments(); // 再取得
+    } catch (e) {
+      alert("削除に失敗しました");
+    }
   };
   const handleUpdate = async (id: number) => {
     try {

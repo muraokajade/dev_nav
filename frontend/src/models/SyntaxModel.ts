@@ -7,4 +7,5 @@ export interface SyntaxModel {
   updatedAt: string;
   published: boolean;
   category: string;
+  summary:string
   }

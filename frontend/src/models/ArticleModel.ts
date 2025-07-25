@@ -8,4 +8,5 @@ export interface ArticleModel {
   updatedAt: string;
   published: boolean;
   category: string;
+  summary:string
 }

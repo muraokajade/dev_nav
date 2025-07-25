@@ -7,25 +7,29 @@ import { AdminQAPage } from "./components/AdminQAPage";
 import { AdminDashboard } from "./components/AdminDashboard";
 import { AddProcedureForm } from "./components/AddProcedureForm";
 import { AdminProcedureList } from "./components/AdminProcedureList";
-// ...必要なら他のimport
-
+type MenuItem = { key: string; name: string; icon: string };
+type MenuSection = "投稿" | "一覧" | "その他";
 export const AdminPage = () => {
-  // サイドメニューの定義
-  const menus = [
-    { key: "dashboard", name: "ダッシュボード", icon: "🏠" },
-    { key: "add-article", name: "技術記事投稿", icon: "📝" },
-    { key: "add-syntax", name: "基本文法投稿", icon: "📝" },
-    { key: "add-procedure", name: "開発手順投稿", icon: "📝" },
-    { key: "articles", name: "記事一覧", icon: "📄" },
-    { key: "syntaxes", name: "文法一覧", icon: "📄" },
-    { key: "procedures", name: "開発手順一覧", icon: "📄" },
-    { key: "qa", name: "Q&A管理", icon: "❓" },
-  ];
-
-  // 現在アクティブなメニュー
   const [active, setActive] = useState("dashboard");
+  const [openSection, setOpenSection] = useState<MenuSection>("投稿");
 
-  // メイン表示を切り替える
+  const groupedMenus: Record<MenuSection, MenuItem[]> = {
+    投稿: [
+      { key: "add-article", name: "記事投稿", icon: "📝" },
+      { key: "add-syntax", name: "文法投稿", icon: "📝" },
+      { key: "add-procedure", name: "開発投稿", icon: "📝" },
+    ],
+    一覧: [
+      { key: "articles", name: "記事一覧", icon: "📄" },
+      { key: "syntaxes", name: "文法一覧", icon: "📄" },
+      { key: "procedures", name: "手順一覧", icon: "📄" },
+    ],
+    その他: [
+      { key: "dashboard", name: "ダッシュボード", icon: "⚙" },
+      { key: "qa", name: "Q&A管理", icon: "❓" },
+    ],
+  };
+
   const renderContent = () => {
     switch (active) {
       case "dashboard":
@@ -50,28 +54,55 @@ export const AdminPage = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-900 flex">
+    <div className="min-h-screen bg-gray-900 flex flex-col sm:flex-row">
       {/* サイドメニュー */}
-      <aside className="w-56 bg-zinc-950 py-8 flex flex-col gap-2">
-        {menus.map((menu) => (
-          <button
-            key={menu.key}
-            onClick={() => setActive(menu.key)}
-            className={`flex items-center gap-3 px-6 py-3 text-lg font-semibold rounded-l-xl transition
-              ${
-                active === menu.key
-                  ? "bg-blue-700 text-white"
-                  : "bg-zinc-950 text-zinc-300 hover:bg-zinc-800"
-              }`}
-          >
-            <span className="text-2xl">{menu.icon}</span>
-            <span>{menu.name}</span>
-          </button>
-        ))}
+      <aside className="bg-zinc-950 py-4 sm:py-8 sm:w-64 w-full">
+        <div className="flex flex-col gap-4 px-4">
+          {/* 横並びのセクション切替 */}
+          <div className="flex gap-2 justify-center sm:justify-start flex-wrap">
+            {(Object.keys(groupedMenus) as MenuSection[]).map((section) => (
+              <button
+                key={section}
+                onClick={() => setOpenSection(section)}
+                className={`px-3 py-1 text-sm rounded-full font-semibold transition
+                  ${
+                    openSection === section
+                      ? "bg-blue-700 text-white"
+                      : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+                  }`}
+              >
+                {section}
+              </button>
+            ))}
+          </div>
+
+          {/* 選択中セクションのメニューリスト */}
+          <div className="flex flex-col gap-1">
+            {groupedMenus[openSection].map((menu) => (
+              <button
+                key={menu.key}
+                onClick={() => setActive(menu.key)}
+                className={`flex items-center gap-2 px-3 py-2 text-sm font-medium rounded transition 
+                  ${
+                    active === menu.key
+                      ? "bg-blue-700 text-white"
+                      : "text-zinc-300 hover:bg-zinc-800"
+                  }`}
+              >
+                <span>{menu.icon}</span>
+                <span className="truncate">{menu.name}</span>
+              </button>
+            ))}
+          </div>
+        </div>
       </aside>
 
       {/* メインエリア */}
-      <main className="flex-1 bg-gray-950 p-10">{renderContent()}</main>
+      <main className="flex-1 bg-gray-950 p-4 sm:p-10 overflow-x-hidden">
+        <div className="w-full max-w-full overflow-x-auto">
+          {renderContent()}
+        </div>
+      </main>
     </div>
   );
 };

@@ -16,6 +16,7 @@ public class SyntaxDTO {
     private String userEmail;
     private String displayName;
     private String category;
+    private String summary;
     private String content;
     private LocalDateTime createdAt;
     private LocalDateTime updatedAt;

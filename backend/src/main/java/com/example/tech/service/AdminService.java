@@ -12,6 +12,8 @@ import com.example.tech.repository.ArticleRepository;
 import com.example.tech.repository.SyntaxRepository;
 import com.example.tech.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
+import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
 
 import java.util.List;
@@ -38,6 +40,7 @@ public class AdminService {
         entity.setUser(user);
         entity.setCategory(request.getCategory());
         entity.setContent(request.getContent());
+        entity.setSummary(request.getSummary());
         entity.setImageUrl(imageUrl);
         entity.setPublished(true);
         adminRepository.save(entity);
@@ -46,36 +49,28 @@ public class AdminService {
 
     public void postSyntax(SyntaxRequest request, String adminEmail) {
         SyntaxEntity entity = new SyntaxEntity();
+        UserEntity user = userRepository.findUserByEmail(adminEmail)
+                        .orElseThrow(() -> new RuntimeException("ユーザーが存在しません。"));
         entity.setSlug(request.getSlug());
         entity.setTitle(request.getTitle());
         entity.setUserEmail(adminEmail);
+        entity.setAuthorName(user.getDisplayName());
         entity.setCategory(request.getCategory());
+        entity.setSummary(request.getSummary());
         entity.setContent(request.getContent());
         entity.setPublished(true);
         syntaxRepository.save(entity);
     }
 
-    public List<ArticleDTO> getAllArticles() {
-        List<ArticleEntity> entities = adminRepository.findAll();
-        return entities.stream().map(this::convertToArticleDTO).toList();
+    public Page<ArticleDTO> getAllArticles(Pageable pageable) {
+        Page<ArticleEntity> entities = adminRepository.findAll(pageable);
+        return entities.map(this::convertToArticleDTO);
     }
 
 
-    public List<SyntaxDTO> getAllSyntax() {
-        List<SyntaxEntity> entities = syntaxRepository.findAll();
-        return entities.stream().map(entity-> new SyntaxDTO(
-                entity.getId(),
-                entity.getSlug(),
-                entity.getTitle(),
-                entity.getUserEmail(),
-                entity.getUser() != null ? entity.getUser().getDisplayName() : "不明",
-                entity.getCategory(),
-                entity.getContent(),
-                entity.getCreatedAt(),
-                entity.getUpdatedAt(),
-                entity.isPublished()
-
-        )).toList();
+    public Page<SyntaxDTO> getAllSyntax(Pageable pageable) {
+        Page<SyntaxEntity> entities = syntaxRepository.findAll(pageable);
+        return entities.map(this::convertToSyntaxDTO);
     }
 
 
@@ -110,6 +105,7 @@ public class AdminService {
                 entity.getUserEmail(),
                 entity.getUser().getDisplayName(),
                 entity.getCategory(),
+                entity.getSummary(),
                 entity.getContent(),
                 entity.getImageUrl(),
                 entity.getCreatedAt(),
@@ -125,6 +121,7 @@ public class AdminService {
                 entity.getUserEmail(),
                 entity.getUser() != null ? entity.getUser().getDisplayName() : "不明",
                 entity.getCategory(),
+                entity.getSummary(),
                 entity.getContent(),
                 entity.getCreatedAt(),
                 entity.getUpdatedAt(),
@@ -147,6 +144,7 @@ public class AdminService {
         entity.setTitle(request.getTitle());
         entity.setUserEmail(adminEmail);
         entity.setCategory(request.getCategory());
+        entity.setSummary(request.getSummary());
         entity.setContent(request.getContent());
         entity.setImageUrl(imageUrl);
         entity.setPublished(true);
@@ -161,6 +159,9 @@ public class AdminService {
         entity.setTitle(request.getTitle());
         entity.setUserEmail(adminEmail);
         entity.setCategory(request.getCategory());
+        entity.setSummary(request.getSummary());
+        entity.setContent(request.getContent());
+        entity.setPublished(true);
 
         syntaxRepository.save(entity);
     }
@@ -169,6 +170,13 @@ public class AdminService {
         ArticleEntity entity = articleRepository.findById(id)
                 .orElseThrow(() ->new RuntimeException("記事が見つかりません。"));
 
-        adminRepository.deleteById(id);
+        articleRepository.deleteById(id);
+    }
+
+    public void deleteSyntaxById(Long id) {
+        SyntaxEntity entity = syntaxRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("記事が見つかりません。"));
+
+        syntaxRepository.deleteById(id);
     }
 }
