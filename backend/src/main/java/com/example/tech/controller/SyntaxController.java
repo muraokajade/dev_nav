@@ -1,6 +1,5 @@
 package com.example.tech.controller;
 
-import com.example.tech.dto.ArticleDTO;
 import com.example.tech.dto.SyntaxDTO;
 import com.example.tech.service.SyntaxService;
 import lombok.RequiredArgsConstructor;
@@ -20,7 +19,7 @@ public class SyntaxController {
 
     @GetMapping
     public ResponseEntity<Page<SyntaxDTO>> getAllSyntaxes(@RequestParam int page,
-                                                           @RequestParam int size) {
+                                                          @RequestParam int size) {
         Pageable pageable = PageRequest.of(page, size);
         Page<SyntaxDTO> syntaxDTOS = syntaxService.getAllArticles(pageable);
         return ResponseEntity.ok(syntaxDTOS);

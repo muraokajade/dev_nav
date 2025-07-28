@@ -1,14 +1,14 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
-import { ArticleModel } from "../../models/ArticleModel";
+import { ArticleModel } from "../../../models/ArticleModel";
 import axios from "axios";
-import { useAuth } from "../../context/useAuthContext";
-import { usePagination } from "../../hooks/usePagination";
-import { Pagination } from "../../utils/Pagination";
-export const SyntaxList = () => {
+import { useAuth } from "../../../context/useAuthContext";
+import { usePagination } from "../../../hooks/usePagination";
+import { Pagination } from "../../../utils/Pagination";
+export const TechList = () => {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
-  const [syntaxes, setSyntaxes] = useState<ArticleModel[]>([]);
+  const [articles, setArticles] = useState<ArticleModel[]>([]);
   const [readArticleIds, setReadArticleIds] = useState<number[]>([]);
   const { displayPage, setDisplayPage, pageIndex, totalPages, setTotalPages } =
     usePagination();
@@ -19,37 +19,49 @@ export const SyntaxList = () => {
     "Firebase",
     "Tailwind",
     "Other",
-    "環境開発"
+    "環境開発",
   ];
 
   const { idToken } = useAuth();
-  // //既読未読記事の取得
-  // useEffect(() => {
-  //   axios
-  //     .get("/api/syntaxes/read/all", {
-  //       headers: { Authorization: `Bearer ${idToken}` },
-  //     })
-  //     .then((res) => setReadArticleIds(res.data ?? []))
-  //     .catch(() => setReadArticleIds([]));
-  // }, [idToken]);
+  // console.log("idToken", idToken);
 
-  // //公開中文法記事の取得
+  //既読未読記事の取得
   useEffect(() => {
-    const fetchsyntaxes = async () => {
+    if (!idToken) return;
+    const fetchReadedArticles = async () => {
       try {
-        const res = await axios.get(`/api/syntaxes?page=${pageIndex}&size=10`);
-        const publishedSyntaxes: ArticleModel[] = res.data.content;
+        const res = await axios.get(
+          `/api/articles/read?page=${pageIndex}&size=10`,
+          {
+            headers: { Authorization: `Bearer ${idToken}` },
+          }
+        );
         console.log(res.data);
-        setSyntaxes(publishedSyntaxes);
-        setTotalPages(res.data.totalPages);
+        setReadArticleIds(res.data.content ?? []);
       } catch (e) {
-        console.error("文法記事取得失敗", e);
+        console.error(e);
+        setReadArticleIds([]);
       }
     };
-    fetchsyntaxes();
+    fetchReadedArticles();
+  }, [idToken, pageIndex]);
+
+  //公開中記事の取得
+  useEffect(() => {
+    const fetchArticles = async () => {
+      try {
+        const res = await axios.get(`/api/articles?page=${pageIndex}&size=10`);
+        const publishedArticles: ArticleModel[] = res.data.content;
+        setArticles(publishedArticles);
+        setTotalPages(res.data.totalPages);
+      } catch (e) {
+        console.error("記事取得失敗", e);
+      }
+    };
+    fetchArticles();
   }, [pageIndex]);
 
-  const filteredSyntaxes = syntaxes.filter((item) => {
+  const filteredArticles = articles.filter((item) => {
     const matchesCategory = selectedCategory
       ? item.category === selectedCategory
       : true;
@@ -60,9 +72,9 @@ export const SyntaxList = () => {
     return matchesCategory && matchesSearch;
   });
 
-  const syntaxesByCategory = categories.map((cat) => ({
+  const articlesByCategory = categories.map((cat) => ({
     category: cat,
-    syntaxes: filteredSyntaxes.filter((a) => a.category === cat),
+    articles: filteredArticles.filter((a) => a.category === cat),
   }));
 
   const paginate = (pageNumber: number) => setDisplayPage(pageNumber);
@@ -71,7 +83,7 @@ export const SyntaxList = () => {
     <div className="min-h-screen bg-gray-900">
       <div className="p-8 max-w-3xl mx-auto">
         <div className="p-6 text-white">
-          <h1 className="text-3xl font-bold mb-6">基本文法</h1>
+          <h1 className="text-3xl font-bold mb-6">技術スタック一覧</h1>
 
           <div className="flex flex-col sm:flex-row gap-4 mb-6">
             <input
@@ -96,25 +108,29 @@ export const SyntaxList = () => {
             </select>
           </div>
           <div>
-            {syntaxesByCategory.map(({ category, syntaxes }) => (
+            {articlesByCategory.map(({ category, articles }) => (
               <div key={category} className="mb-8">
                 <h2 className="text-2xl font-bold mb-4">{category}</h2>
                 <ul className="space-y-2">
-                  {syntaxes.length === 0 && (
+                  {articles.length === 0 && (
                     <li className="text-gray-400">
                       このカテゴリの記事はありません
                     </li>
                   )}
-                  {syntaxes.map((item, i) => {
+                  {articles.map((item, i) => {
                     const isRead = readArticleIds.includes(item.id);
-                    console.log(item);
                     return (
                       <li key={item.id}>
                         <Link
-                          to={`/syntaxes/${item.id}-${item.slug}`}
+                          to={`/articles/${item.id}-${item.slug}`}
                           className="block p-4 rounded bg-gray-800 hover:bg-gray-700 transition"
                         >
                           <div className="flex items-center gap-4">
+                            <img
+                              src={item.imageUrl || "/default-thumbnail.jpg"}
+                              alt={item.title}
+                              className="w-16 h-16 object-cover rounded"
+                            />
                             <div className="flex flex-col">
                               <span className="text-lg font-semibold mb-4">
                                 {item.title}

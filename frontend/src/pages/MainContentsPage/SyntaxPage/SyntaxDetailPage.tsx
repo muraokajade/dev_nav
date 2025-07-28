@@ -4,12 +4,13 @@ import { Link, useParams } from "react-router-dom";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import dayjs from "dayjs";
-import { useAuth } from "../../context/useAuthContext";
-import axios from "axios";
-import { LikeButton } from "../../utils/LikeButton";
-import { ArticleDetailActions } from "../ArticleDetailPage/components/ArticleDetailActions"; 
 
-export const ProcedureDetailPage = () => {
+import { useAuth } from "../../../context/useAuthContext";
+import axios from "axios";
+import { LikeButton } from "../../../utils/LikeButton";
+import { SyntaxDetailActions } from "./SyntaxDetailActions"; 
+
+export const SyntaxDetailPage = () => {
   const { idAndSlug } = useParams();
   const id = idAndSlug?.split("-")[0];
   const { idToken } = useAuth();
@@ -107,13 +108,13 @@ export const ProcedureDetailPage = () => {
   // 記事メタ＆本文取得
   useEffect(() => {
     if (!id) return;
-    axios.get(`/api/procedures/${id}`).then((res) => {
+    axios.get(`/api/syntaxes/${id}`).then((res) => {
       console.log(res.data);
       setTitle(res.data.title);
-      setAuthor(res.data.authorName ?? "（不明）");
+      console.log(res.data.displayName);
+      setAuthor(res.data.displayName ?? "（不明）");
       setCreatedAt(res.data.createdAt ?? "");
       setCategory(res.data.category ?? "");
-      setImageUrl(res.data.imageUrl ?? "");
       setContent(res.data.content);
       setArticleId(res.data.id);
     });
@@ -182,7 +183,7 @@ export const ProcedureDetailPage = () => {
       <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-start md:items-center gap-4 mt-8">
         <div className="flex-1">
           {articleId && myUserId != null && (
-            <ArticleDetailActions articleId={articleId} myUserId={myUserId} />
+            <SyntaxDetailActions articleId={articleId} myUserId={myUserId} />
           )}
         </div>
         <div className="flex-shrink-0 flex items-center">

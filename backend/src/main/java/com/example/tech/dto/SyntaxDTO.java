@@ -15,6 +15,7 @@ public class SyntaxDTO {
     private String title;
     private String userEmail;
     private String displayName;
+    private String authorName;
     private String category;
     private String summary;
     private String content;

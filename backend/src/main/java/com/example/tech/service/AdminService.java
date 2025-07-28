@@ -1,7 +1,7 @@
 package com.example.tech.service;
 
-import com.example.tech.dto.SyntaxDTO;
 import com.example.tech.dto.ArticleDTO;
+import com.example.tech.dto.SyntaxDTO;
 import com.example.tech.dto.request.ArticleRequest;
 import com.example.tech.dto.request.SyntaxRequest;
 import com.example.tech.entity.ArticleEntity;
@@ -15,8 +15,6 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
-
-import java.util.List;
 
 @Service
 @RequiredArgsConstructor
@@ -82,8 +80,8 @@ public class AdminService {
         adminRepository.save(entity);
     }
 
-    public void toggleSyntaxPublished(String slug) {
-        SyntaxEntity entity = syntaxRepository.findBySlug(slug)
+    public void toggleSyntaxPublished(Long id) {
+        SyntaxEntity entity = syntaxRepository.findById(id)
                 .orElseThrow(()-> new RuntimeException("項目が見つかりません"));
 
         entity.setPublished(!entity.published());
@@ -120,6 +118,7 @@ public class AdminService {
                 entity.getTitle(),
                 entity.getUserEmail(),
                 entity.getUser() != null ? entity.getUser().getDisplayName() : "不明",
+                entity.getAuthorName(),
                 entity.getCategory(),
                 entity.getSummary(),
                 entity.getContent(),

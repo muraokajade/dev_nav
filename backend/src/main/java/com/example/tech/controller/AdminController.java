@@ -6,7 +6,6 @@ import com.example.tech.dto.SyntaxDTO;
 import com.example.tech.dto.request.ArticleRequest;
 import com.example.tech.dto.request.ProcedureRequest;
 import com.example.tech.dto.request.SyntaxRequest;
-import com.example.tech.entity.ProcedureEntity;
 import com.example.tech.service.FirebaseAuthService;
 import com.example.tech.service.AdminService;
 import com.example.tech.service.ProcedureService;
@@ -20,7 +19,6 @@ import org.springframework.web.multipart.MultipartFile;
 
 import java.io.File;
 import java.io.IOException;
-import java.util.List;
 
 @RestController
 @CrossOrigin("http://localhost:3000")
@@ -147,12 +145,12 @@ public class AdminController {
         return ResponseEntity.ok("公開非公開反転しました。");
     }
 
-    @PutMapping("/syntaxes/{slug}/toggle")
+    @PutMapping("/syntaxes/{id}/toggle")
     public ResponseEntity<?> toggleSyntaxesPublished(@RequestHeader(name = "Authorization")String token,
-                                                    @PathVariable String slug)
+                                                    @PathVariable Long id)
     {
         String adminEmail = firebaseAuthService.verifyAdminAndGetEmail(token);
-        adminService.toggleSyntaxPublished(slug);
+        adminService.toggleSyntaxPublished(id);
         return ResponseEntity.ok("公開非公開反転");
     }
 

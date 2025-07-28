@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import axios from "axios";
 import { useAuth } from "../context/useAuthContext";
 
@@ -16,15 +16,29 @@ export const useReviewScores = (articleId: number, myUserId: number) => {
   const { idToken } = useAuth();
 
   // 全体分
+
+  const fetchAllScores = useCallback(async () => {
+    try {
+      const res = await axios.get(
+        `/api/review-scores/all?articleId=${articleId}`,
+        {
+          headers: { Authorization: `Bearer ${idToken}` },
+        }
+      );
+      setScores(res.data.content);
+    } catch (e) {
+      setScores([]);
+      setLoading(false);
+    }
+  }, [articleId, idToken]);
+
   useEffect(() => {
-    axios
-      .get(`/api/review-scores/all?articleId=${articleId}`, {
-        headers: { Authorization: `Bearer ${idToken}` },
-      })
-      .then((res) => setScores(res.data ?? []))
-      .catch(() => setScores([]));
-    setLoading(false);
-  }, [articleId]);
+    (async () => {
+      await fetchAllScores();
+    })();
+  }, [idToken, fetchAllScores]);
+
+
 
   // 自分の分
   useEffect(() => {
@@ -44,7 +58,6 @@ export const useReviewScores = (articleId: number, myUserId: number) => {
     };
     fetchScore();
   }, [articleId, idToken]);
-
 
   // 送信系（myScoreがあればPUT、なければPOST）
   const submitScore = async (score: number) => {
@@ -67,11 +80,12 @@ export const useReviewScores = (articleId: number, myUserId: number) => {
         );
       }
       // ★送信後に再取得することで、myScoreが最新化され、次回はPUTに切り替わる
-      const res = await axios.get(`/api/review-scores?articleId=${articleId}`, {
-        headers: { Authorization: `Bearer ${idToken}` },
-      });
-      console.log(res.data);
-      setMyScore(res.data?.score ?? null);
+      // const res = await axios.get(`/api/review-scores?articleId=${articleId}`, {
+      //   headers: { Authorization: `Bearer ${idToken}` },
+      // });
+      // console.log(res.data);
+      // setMyScore(res.data?.score ?? null);
+      await fetchAllScores();
     } catch (e) {
       setError("スコア取得に失敗しました。");
     } finally {

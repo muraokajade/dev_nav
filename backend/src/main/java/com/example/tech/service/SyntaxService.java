@@ -1,14 +1,11 @@
 package com.example.tech.service;
 
-import com.example.tech.dto.ArticleDTO;
 import com.example.tech.dto.SyntaxDTO;
-import com.example.tech.entity.ArticleEntity;
 import com.example.tech.entity.SyntaxEntity;
 import com.example.tech.repository.SyntaxRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 
 @Service
@@ -26,6 +23,7 @@ public class SyntaxService {
                 entity.getTitle(),
                 entity.getUserEmail(),
                 entity.getUser() != null ? entity.getUser().getDisplayName() : "不明",
+                entity.getAuthorName(),
                 entity.getCategory(),
                 entity.getSummary(),
                 entity.getContent(),
@@ -36,22 +34,9 @@ public class SyntaxService {
     }
 
     public SyntaxDTO findById(Long id) {
-        SyntaxEntity syntax = syntaxRepository.findById(id)
+        SyntaxEntity syntax = syntaxRepository.findByIdWithUser(id)
                 .orElseThrow(() -> new RuntimeException("記事が見つかりません。"));
 
-        SyntaxDTO syntaxDTO = new SyntaxDTO(
-                syntax.getId(),
-                syntax.getSlug(),
-                syntax.getCategory(),
-                syntax.getUserEmail(),
-                syntax.getUser() != null ? syntax.getUser().getDisplayName() : "不明",
-                syntax.getCategory(),
-                syntax.getSummary(),
-                syntax.getContent(),
-                syntax.getCreatedAt(),
-                syntax.getUpdatedAt(),
-                syntax.isPublished()
-        );
-        return syntaxDTO;
+        return convertToDTO(syntax);
     }
 }

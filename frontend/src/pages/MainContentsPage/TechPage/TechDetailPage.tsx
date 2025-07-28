@@ -4,11 +4,10 @@ import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import dayjs from "dayjs";
-import { useAuth } from "../../context/useAuthContext";
+import { useAuth } from "../../../context/useAuthContext";
 import axios from "axios";
-import { LikeButton } from "../../utils/LikeButton";
-import { ArticleDetailActions } from "./components/ArticleDetailActions";
-import { SampleStar } from "../../utils/SampleStar";
+import { LikeButton } from "../../../utils/LikeButton";
+import { TechDetailActions } from "./TechDetailActions";
 
 export const ArticleDetailPage = () => {
   const { idAndSlug } = useParams();
@@ -192,13 +191,12 @@ export const ArticleDetailPage = () => {
           }}
         />
       </div>
-      <SampleStar />
 
       {/* レビュー・コメント・Q&Aタブ */}
       <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-start md:items-center gap-4 mt-8">
         <div className="flex-1">
           {articleId && myUserId != null && (
-            <ArticleDetailActions articleId={articleId} myUserId={myUserId} />
+            <TechDetailActions articleId={articleId} myUserId={myUserId} />
           )}
         </div>
         <div className="flex-shrink-0 flex items-center">

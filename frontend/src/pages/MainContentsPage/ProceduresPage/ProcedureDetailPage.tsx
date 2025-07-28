@@ -1,20 +1,22 @@
 import React, { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
-import { Link, useParams } from "react-router-dom";
+import { Link, useLocation, useParams } from "react-router-dom";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import dayjs from "dayjs";
-
-import { useAuth } from "../../context/useAuthContext";
+import { useAuth } from "../../../context/useAuthContext";
 import axios from "axios";
-import { LikeButton } from "../../utils/LikeButton";
-import { SyntaxDetailActions } from "./components/SyntaxDetailActions"; 
+import { LikeButton } from "../../../utils/LikeButton";
+import { TechDetailActions } from "../TechPage/TechDetailActions";
 
-export const SyntaxDetailPage = () => {
+export const ProcedureDetailPage = () => {
   const { idAndSlug } = useParams();
   const id = idAndSlug?.split("-")[0];
   const { idToken } = useAuth();
-  //console.log(idToken);
+  // 追加：クエリストリングから戻るページ番号取得
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const backPage = params.get("page") || 1;
 
   // リッチ化用：記事メタ情報
   const [title, setTitle] = useState("");
@@ -108,12 +110,13 @@ export const SyntaxDetailPage = () => {
   // 記事メタ＆本文取得
   useEffect(() => {
     if (!id) return;
-    axios.get(`/api/syntaxes/${id}`).then((res) => {
+    axios.get(`/api/procedures/${id}`).then((res) => {
       console.log(res.data);
       setTitle(res.data.title);
       setAuthor(res.data.authorName ?? "（不明）");
       setCreatedAt(res.data.createdAt ?? "");
       setCategory(res.data.category ?? "");
+      setImageUrl(res.data.imageUrl ?? "");
       setContent(res.data.content);
       setArticleId(res.data.id);
     });
@@ -141,9 +144,13 @@ export const SyntaxDetailPage = () => {
         {/* 著者・日付・カテゴリ */}
         <div className="flex items-center gap-4 mb-6 text-gray-400 text-sm">
           <span>著者: {author}</span>
-          {createdAt && <span>投稿日: {dayjs(createdAt).format("YYYY/MM/DD")}</span>}
+          {createdAt && (
+            <span>投稿日: {dayjs(createdAt).format("YYYY/MM/DD")}</span>
+          )}
           {category && (
-            <span className="bg-blue-500 px-2 py-0.5 rounded text-white">{category}</span>
+            <span className="bg-blue-500 px-2 py-0.5 rounded text-white">
+              {category}
+            </span>
           )}
         </div>
 
@@ -182,7 +189,7 @@ export const SyntaxDetailPage = () => {
       <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-start md:items-center gap-4 mt-8">
         <div className="flex-1">
           {articleId && myUserId != null && (
-            <SyntaxDetailActions articleId={articleId} myUserId={myUserId} />
+            <TechDetailActions articleId={articleId} myUserId={myUserId} />
           )}
         </div>
         <div className="flex-shrink-0 flex items-center">
@@ -202,9 +209,14 @@ export const SyntaxDetailPage = () => {
 
       {/* 戻るボタン */}
       <div className="max-w-4xl mx-auto py-8">
-        <Link to="/tech">
+        <Link to={`/procedures?page=${backPage}`}>
           <p className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition duration-200">
-            技術記事一覧に戻る
+            開発手順一覧
+          </p>
+        </Link>
+        <Link to="/procedures">
+          <p className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition duration-200">
+            次へ
           </p>
         </Link>
       </div>

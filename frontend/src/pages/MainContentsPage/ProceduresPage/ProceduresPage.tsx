@@ -1,11 +1,11 @@
 // src/pages/ProceduresPage.tsx
 
 import React, { useEffect, useState } from "react";
-import { Link } from "react-router-dom";
-import { usePagination } from "../../hooks/usePagination";
-import { Procedure } from "../../models/Procedure";
+import { Link, useLocation } from "react-router-dom";
+import { usePagination } from "../../../hooks/usePagination";
+import { Procedure } from "../../../models/Procedure";
 import axios from "axios";
-import { Pagination } from "../../utils/Pagination";
+import { Pagination } from "../../../utils/Pagination";
 
 // セクション見出し定義（major番号: タイトル）
 const sectionTitles: Record<string, string> = {
@@ -21,7 +21,10 @@ const sectionTitles: Record<string, string> = {
 
 export const ProceduresPage = () => {
   const [procedures, setProcedures] = useState<Procedure[]>([]);
-  const { totalPages, displayPage, pageIndex, setDisplayPage, setTotalPages } = usePagination();
+  const location = useLocation();
+  const params = new URLSearchParams(location.search);
+  const initialPage = parseInt(params.get("page") || "1", 10);
+  const { totalPages, displayPage, pageIndex, setDisplayPage, setTotalPages } = usePagination(initialPage);
 
   // APIで手順データを取得しセット
   useEffect(() => {
@@ -61,7 +64,7 @@ export const ProceduresPage = () => {
                 .map((item) => (
                   <li key={item.id}>
                     <Link
-                      to={`/procedures/${item.id}-${item.slug}`}
+                      to={`/procedures/${item.id}-${item.slug}?page=${displayPage}`}
                       className="block p-4 bg-gray-800 rounded hover:bg-blue-800 transition"
                     >
                       <span className="text-blue-400 font-bold mr-2">

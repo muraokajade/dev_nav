@@ -1,13 +1,13 @@
 import { Link } from "react-router-dom";
 import { useState } from "react";
-import { useAuth } from "../../context/useAuthContext"; 
-import { auth } from "../../libs/firebase"; 
+import { useAuth } from "../../context/useAuthContext";
+import { auth } from "../../libs/firebase";
 import { signOut } from "firebase/auth";
 import { useNavigate } from "react-router-dom";
 
 export const Navbar = () => {
   const [isOpen, setIsOpen] = useState(false);
-  const { currentUser, isAuthenticated } = useAuth();
+  const { currentUser, isAuthenticated, isAdmin } = useAuth();
 
   const navigate = useNavigate();
 
@@ -58,9 +58,11 @@ export const Navbar = () => {
           <Link to="/mypage" className="text-white hover:text-blue-300">
             マイページ
           </Link>
-          <Link to="/admin" className="text-white hover:text-blue-300">
-            管理者専用
-          </Link>
+          {isAdmin && (
+            <Link to="/admin" className="text-white hover:text-blue-300">
+              管理者専用
+            </Link>
+          )}
         </div>
 
         {/* PC表示 */}
@@ -95,6 +97,17 @@ export const Navbar = () => {
           <Link to="/basics" className="block text-white hover:text-blue-300">
             基本文法
           </Link>
+          <Link to="/procedures" className="text-white hover:text-blue-300">
+            開発手順書
+          </Link>
+          <Link to="/mypage" className="text-white hover:text-blue-300">
+            マイページ
+          </Link>
+          {isAdmin && (
+            <Link to="/admin" className="text-white hover:text-blue-300">
+              管理者専用
+            </Link>
+          )}
           {isAuthenticated ? (
             <>
               <span className="block text-white">
