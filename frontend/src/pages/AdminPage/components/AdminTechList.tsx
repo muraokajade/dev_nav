@@ -8,8 +8,9 @@ import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import dayjs from "dayjs";
 import { Pagination } from "../../../utils/Pagination";
 import { usePagination } from "../../../hooks/usePagination";
+import { Link } from "react-router-dom";
 
-export const AdminArticleList = () => {
+export const AdminTechList = () => {
   const [articles, setArticles] = useState<ArticleModel[]>([]);
   const [article, setArticle] = useState<ArticleModel | null>(null);
   const { loading, currentUser, idToken } = useAuth();
@@ -50,33 +51,11 @@ export const AdminArticleList = () => {
   }, [pageIndex, idToken, setTotalPages]);
 
   useEffect(() => {
-    if(!loading)
-    (async() => {
-      await fetchArticles();
-    })();
-  },[loading,fetchArticles]);
-
-  // useEffect(() => {
-  //   const fetchArticles = async () => {
-  //     if (loading) return;
-  //     try {
-  //       const res = await axios.get(
-  //         `/api/admin/articles?page=${pageIndex}&size=10`,
-  //         {
-  //           headers: {
-  //             Authorization: `Bearer ${idToken}`,
-  //           },
-  //         }
-  //       );
-  //       console.log("取得した記事一覧:", res.data);
-  //       setArticles(res.data.content);
-  //       setTotalPages(res.data.totalPages);
-  //     } catch (e) {
-  //       console.error("記事取得失敗", e);
-  //     }
-  //   };
-  //   fetchArticles();
-  // }, [loading, currentUser, idToken]);
+    if (!loading)
+      (async () => {
+        await fetchArticles();
+      })();
+  }, [loading, fetchArticles]);
 
   const togglePublish = async (slug: string) => {
     if (loading) return;
@@ -86,13 +65,7 @@ export const AdminArticleList = () => {
           Authorization: `Bearer ${idToken}`,
         },
       });
-      // 再取得
-      // const updated = await axios.get("/api/admin/articles", {
-      //   headers: {
-      //     Authorization: `Bearer ${idToken}`,
-      //   },
-      // });
-      // setArticles(updated.data);
+
       await fetchArticles();
     } catch (e) {
       console.error("公開状態切替失敗", e);
@@ -145,13 +118,6 @@ export const AdminArticleList = () => {
           Authorization: `Bearer ${idToken}`,
         },
       });
-      // const refreshed = await axios.get("/api/admin/articles", {
-      //   headers: {
-      //     Authorization: `Bearer ${idToken}`,
-      //   },
-      // });
-
-      // setArticles(refreshed.data);
       await fetchArticles();
       setIsEditModalOpen(false);
     } catch (e) {
@@ -169,13 +135,6 @@ export const AdminArticleList = () => {
         },
       });
       console.log("削除成功");
-      // const res = await axios.get("/api/admin/articles", {
-      //   headers: {
-      //     Authorization: `Bearer ${idToken}`,
-      //   },
-      // });
-      // console.log("取得した記事一覧:", res.data);
-      // setArticles(res.data);
       await fetchArticles();
     } catch (e) {
       console.error("削除失敗", e);
@@ -278,9 +237,13 @@ export const AdminArticleList = () => {
             >
               {/* 左側：基本情報 */}
               <div className="sm:w-[240px] w-full shrink-0 sm:pr-4 text-sm space-y-1 mb-4 sm:mb-0">
-                <p className="font-semibold text-lg break-words">
+                <Link
+                  to={`/tech/${article.id}-${article.slug}`}
+                  className="text-3xl hover:underline text-blue-200"
+                >
                   {article.title}
-                </p>
+                </Link>
+
                 <p className="text-gray-400 break-words">
                   Slug: {article.slug}
                 </p>

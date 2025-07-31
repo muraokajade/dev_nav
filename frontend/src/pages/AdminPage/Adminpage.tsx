@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { AddArticleForm } from "./components/AddArticleForm";
+import { AddArticleForm } from "./components/AddTechForm";
 import { AddSyntaxForm } from "./components/AddSyntaxForm";
-import { AdminArticleList } from "./components/AdminArticleList";
+import { AdminArticleList } from "./components/AdminTechList";
 import { AdminSyntaxList } from "./components/AdminSyntaxList";
 import { AdminQAPage } from "./components/AdminQAPage";
 import { AdminDashboard } from "./components/AdminDashboard";

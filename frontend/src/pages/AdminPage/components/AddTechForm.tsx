@@ -6,7 +6,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { MarkdownToolbar } from "../../../utils/MarkdownToolbar";
 import { MarkdownTextarea } from "../../../utils/MarkdownTextarea";
-export const AddArticleForm = () => {
+export const AddTechForm = () => {
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");

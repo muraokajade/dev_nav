@@ -7,8 +7,8 @@ import { TechList } from "./pages/MainContentsPage/TechPage/TechList";
 import { AdminRoute } from "./routes/AdminRoute";
 import { AdminPage } from "./pages/AdminPage/Adminpage";
 import { Login } from "./pages/CommonPage/Login";
-import { AddArticleForm } from "./pages/AdminPage/components/AddArticleForm";
-import { AdminArticleList } from "./pages/AdminPage/components/AdminArticleList";
+import { AddTechForm } from "./pages/AdminPage/components/AddTechForm";
+import { AdminTechList } from "./pages/AdminPage/components/AdminTechList";
 import { AddSyntaxForm } from "./pages/AdminPage/components/AddSyntaxForm";
 import { AdminSyntaxList } from "./pages/AdminPage/components/AdminSyntaxList";
 import { ArticleDetailPage } from "./pages/MainContentsPage/TechPage/TechDetailPage";
@@ -17,7 +17,7 @@ import { MyPage } from "./pages/MyPage/MyPage";
 import { Register } from "./pages/CommonPage/Register";
 import { AdminQAPage } from "./pages/AdminPage/components/AdminQAPage";
 import { SyntaxList } from "./pages/MainContentsPage/SyntaxPage/SyntaxList";
-import { SyntaxDetailPage } from "./pages/MainContentsPage/SyntaxPage/SyntaxDetailPage"; 
+import { SyntaxDetailPage } from "./pages/MainContentsPage/SyntaxPage/SyntaxDetailPage";
 import { Footer } from "./pages/CommonPage/Footer";
 import { About } from "./pages/CommonPage/About";
 import { PrivacyPolicy } from "./pages/CommonPage/PrivacyPolicy";
@@ -38,7 +38,7 @@ export default function App() {
           <Route path="/syntaxes" element={<SyntaxList />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/articles/:idAndSlug" element={<ArticleDetailPage />} />
+          <Route path="/tech/:idAndSlug" element={<ArticleDetailPage />} />
           <Route path="/syntaxes/:idAndSlug" element={<SyntaxDetailPage />} />
           <Route path="/procedures" element={<ProceduresPage />} />
           <Route
@@ -68,7 +68,7 @@ export default function App() {
             path="/admin/add-article"
             element={
               <AdminRoute>
-                <AddArticleForm />
+                <AddTechForm />
               </AdminRoute>
             }
           />
@@ -96,7 +96,7 @@ export default function App() {
             path="/admin/articles"
             element={
               <AdminRoute>
-                <AdminArticleList />
+                <AdminTechList/>
               </AdminRoute>
             }
           />

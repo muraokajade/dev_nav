@@ -66,43 +66,12 @@ export const AdminProcedureList = () => {
           Authorization: `Bearer ${idToken}`,
         },
       });
-      // 再取得
-      // const res = await axios.get(
-      //   `/api/admin/procedure?page=${pageIndex}&size=10`,
-      //   {
-      //     headers: {
-      //       Authorization: `Bearer ${idToken}`,
-      //     },
-      //   }
-      // );
-      // setProcedures(res.data.content);
       await fetchProcedure();
     } catch (e) {
       console.error("公開状態切替失敗", e);
     }
   };
 
-  // useEffect(() => {
-  //   const fetchProcedure = async () => {
-  //     if (loading) return;
-  //     try {
-  //       const res = await axios.get(
-  //         `/api/admin/procedure?page=${pageIndex}&size=10`,
-  //         {
-  //           headers: {
-  //             Authorization: `Bearer ${idToken}`,
-  //           },
-  //         }
-  //       );
-  //       console.log("取得した記事一覧:", res.data);
-  //       setProcedures(res.data.content);
-  //       setTotalPages(res.data.totalPages);
-  //     } catch (e) {
-  //       console.error("記事取得失敗", e);
-  //     }
-  //   };
-  //   fetchProcedure();
-  // }, [loading, currentUser, idToken, pageIndex]);
 
   const handleEdit = async (id: number) => {
     if (loading) return;
@@ -147,18 +116,6 @@ export const AdminProcedureList = () => {
           Authorization: `Bearer ${idToken}`,
         },
       });
-      // const res = await axios.get(
-      //   `/api/admin/procedure?page=${pageIndex}&size=10`,
-      //   {
-      //     headers: {
-      //       Authorization: `Bearer ${idToken}`,
-      //     },
-      //   }
-      // );
-
-      // setProcedures(res.data.content);
-      // setTotalPages(res.data.totalpage);
-      // // toast.success("更新完了");
       await fetchProcedure();
       setIsEditModalOpen(false);
     } catch (e) {
@@ -175,17 +132,6 @@ export const AdminProcedureList = () => {
           Authorization: `Bearer ${idToken}`,
         },
       });
-
-      // const res = await axios.get(
-      //   `/api/admin/procedure?page=${pageIndex}&size=10`,
-      //   {
-      //     headers: {
-      //       Authorization: `Bearer ${idToken}`,
-      //     },
-      //   }
-      // );
-      // // toast.success("削除完了");
-      // setProcedures(res.data.content);
       await fetchProcedure();
     } catch (e) {
       console.error("削除失敗", e);

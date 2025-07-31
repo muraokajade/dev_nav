@@ -5,6 +5,9 @@ import axios from "axios";
 import { useAuth } from "../../../context/useAuthContext";
 import { usePagination } from "../../../hooks/usePagination";
 import { Pagination } from "../../../utils/Pagination";
+import ReactMarkdown from "react-markdown";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 export const TechList = () => {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -122,15 +125,17 @@ export const TechList = () => {
                     return (
                       <li key={item.id}>
                         <Link
-                          to={`/articles/${item.id}-${item.slug}`}
+                          to={`/tech/${item.id}-${item.slug}`}
                           className="block p-4 rounded bg-gray-800 hover:bg-gray-700 transition"
                         >
                           <div className="flex items-center gap-4">
-                            <img
-                              src={item.imageUrl || "/default-thumbnail.jpg"}
-                              alt={item.title}
-                              className="w-16 h-16 object-cover rounded"
-                            />
+                            {item.imageUrl && (
+                              <img
+                                src={item.imageUrl || "/default-thumbnail.jpg"}
+                                alt={item.title}
+                                className="w-16 h-16 object-cover rounded"
+                              />
+                            )}
                             <div className="flex flex-col">
                               <span className="text-lg font-semibold mb-4">
                                 {item.title}
@@ -144,9 +149,22 @@ export const TechList = () => {
                                   </span>
                                 )}
                               </span>
-                              <p className="text-sm text-gray-300">
-                                {item.content.slice(0, 300)}
-                              </p>
+                              <div className="text-sm text-gray-300 whitespace-pre-wrap break-words">
+                                {item.summary
+                                  .replace(/#### /g, "")
+                                  .replace(/### /g, "")
+                                  .replace(/[#>*`-]+/g, "")
+                                  .replace("想定読者", "【想定読者】")
+                                  .replace(
+                                    "注意ポイントまとめ",
+                                    "【注意ポイントまとめ】"
+                                  )
+                                  .replace(
+                                    "対応例（Java）",
+                                    "【対応例（Java）】"
+                                  )
+                                  .slice(0, 300)}
+                              </div>
                             </div>
                           </div>
                         </Link>
