@@ -28,7 +28,6 @@ public class MessageService {
     public void postMessage(String userEmail, MessageRequest request) {
         UserEntity user = userRepository.findUserByEmail(userEmail)
                 .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません。"));
-        Long userId = user.getId();
 
         MessageEntity message = new MessageEntity();
 

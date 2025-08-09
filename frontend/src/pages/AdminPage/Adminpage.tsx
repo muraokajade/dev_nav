@@ -1,7 +1,7 @@
 import { useState } from "react";
-import { AddArticleForm } from "./components/AddTechForm";
+import { AddTechForm } from "./components/AddTechForm";
 import { AddSyntaxForm } from "./components/AddSyntaxForm";
-import { AdminArticleList } from "./components/AdminTechList";
+import { AdminTechList } from "./components/AdminTechList";
 import { AdminSyntaxList } from "./components/AdminSyntaxList";
 import { AdminQAPage } from "./components/AdminQAPage";
 import { AdminDashboard } from "./components/AdminDashboard";
@@ -17,12 +17,12 @@ export const AdminPage = () => {
     投稿: [
       { key: "add-article", name: "記事投稿", icon: "📝" },
       { key: "add-syntax", name: "文法投稿", icon: "📝" },
-      { key: "add-procedure", name: "開発投稿", icon: "📝" },
+      { key: "add-procedure", name: "開発手順投稿", icon: "📝" },
     ],
     一覧: [
       { key: "articles", name: "記事一覧", icon: "📄" },
       { key: "syntaxes", name: "文法一覧", icon: "📄" },
-      { key: "procedures", name: "手順一覧", icon: "📄" },
+      { key: "procedures", name: "開発手順一覧", icon: "📄" },
     ],
     その他: [
       { key: "dashboard", name: "ダッシュボード", icon: "⚙" },
@@ -35,13 +35,13 @@ export const AdminPage = () => {
       case "dashboard":
         return <AdminDashboard />;
       case "add-article":
-        return <AddArticleForm />;
+        return <AddTechForm />;
       case "add-syntax":
         return <AddSyntaxForm />;
       case "add-procedure":
         return <AddProcedureForm />;
       case "articles":
-        return <AdminArticleList />;
+        return <AdminTechList />;
       case "syntaxes":
         return <AdminSyntaxList />;
       case "procedures":

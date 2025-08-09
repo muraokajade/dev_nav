@@ -17,11 +17,8 @@ export const AdminQuestionPage: React.FC<Props> = ({
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
-    console.log("submit", answer); // ←これを追加
     if (answer.trim()) {
-      console.log("onAnswer will call with:", answer); // ここは出る？
       onAnswer(answer);
-      console.log("onAnswer called!"); // ここは出る？
       setEditMode(false);
       setAnswer("");
     }

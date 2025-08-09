@@ -11,28 +11,25 @@ export const AdminQAPage = () => {
   const { idToken } = useAuth();
 
   // 1. 関数として宣言（useCallbackでメモ化も推奨！）
-  const fetchMessages = useCallback(() => {
-    axios
-      .get("/api/messages/admin/questions?page=0&size=5", {
-        headers: { Authorization: `Bearer ${idToken}` },
-      })
-      .then((res) => setMessages(res.data));
+  const fetchMessages = useCallback(async () => {
+    try {
+      const res = await axios.get(
+        "/api/messages/admin/questions?page=0&size=5",
+        {
+          headers: { Authorization: `Bearer ${idToken}` },
+        }
+      );
+      setMessages(res.data);
+    } catch (e) {
+      console.error("メッセージ取得失敗");
+    }
   }, [idToken]);
 
   useEffect(() => {
-    fetchMessages();
+    (async() => {
+      await fetchMessages();
+    })()
   }, [fetchMessages]);
-
-  useEffect(() => {
-    // 管理者用Q&A一覧APIで全件取得
-    axios
-      .get("/api/messages/admin/questions?page=0&size=5", {
-        headers: { Authorization: `Bearer ${idToken}` },
-      })
-      .then((res) => {
-        setMessages(res.data);
-      });
-  }, [idToken]);
 
   // 回答送信（1件ごと）
   const handleAnswer = async (id: number, answer: string) => {

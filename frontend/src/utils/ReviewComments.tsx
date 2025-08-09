@@ -3,10 +3,15 @@ import { Comments } from "../models/Comments";
 import { useAuth } from "../context/useAuthContext";
 import axios from "axios";
 
+/**
+ * articleId, procedureId どちらか一方必須
+ * 必要な方だけ親から渡せばOK！
+ */
 export const ReviewComments: React.FC<{
-  articleId: number;
+  articleId?: number;
+  procedureId?: number;
   myUserId: number;
-}> = ({ articleId, myUserId }) => {
+}> = ({ articleId, procedureId, myUserId }) => {
   const [comments, setComments] = useState<Comments[]>([]);
   const [input, setInput] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
@@ -14,17 +19,21 @@ export const ReviewComments: React.FC<{
 
   const { idToken } = useAuth();
 
-  // fetchCommentsをuseCallbackで定義
+  // どちらを使うか判定
+  const idParamKey = articleId ? "articleId" : procedureId ? "procedureId" : null;
+  const idValue = articleId ?? procedureId;
+
+      // コメント取得
   const fetchComments = useCallback(async () => {
     try {
       const res = await axios.get(
-        `/api/review-comments?articleId=${articleId}`
+        `/api/review-comments?${idParamKey}=${idValue}`
       );
       setComments(res.data);
     } catch (e) {
       console.error("取得失敗", e);
     }
-  }, [articleId]);
+  }, [idParamKey, idValue]);
 
   useEffect(() => {
     (async () => {
@@ -32,21 +41,34 @@ export const ReviewComments: React.FC<{
     })();
   }, [fetchComments]);
 
+  // idがどちらも未指定ならエラー表示
+  if (!idParamKey || idValue == null) {
+    return (
+      <section className="bg-red-100 text-red-700 p-4 rounded">
+        コメント機能のIDが指定されていません
+      </section>
+    );
+  }
+
+
+  // 投稿
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     if (!idToken) return;
     try {
       await axios.post(
         "/api/review-comments",
-        { articleId, comment: input },
+        { [idParamKey]: idValue, comment: input },
         { headers: { Authorization: `Bearer ${idToken}` } }
       );
       setInput("");
+      await fetchComments();
     } catch (e) {
       alert("失敗しました");
     }
   };
 
+  // 削除
   const handleDelete = async (id: number) => {
     const ok = window.confirm("本当に削除してよいですか？");
     if (!ok) return;
@@ -54,11 +76,13 @@ export const ReviewComments: React.FC<{
       await axios.delete(`/api/review-comments/${id}`, {
         headers: { Authorization: `Bearer ${idToken}` },
       });
-      await fetchComments(); // 再取得
+      await fetchComments();
     } catch (e) {
       alert("削除に失敗しました");
     }
   };
+
+  // 編集
   const handleUpdate = async (id: number) => {
     try {
       await axios.put(

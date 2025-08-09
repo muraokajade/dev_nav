@@ -13,7 +13,7 @@ import { Link } from "react-router-dom";
 export const AdminTechList = () => {
   const [articles, setArticles] = useState<ArticleModel[]>([]);
   const [article, setArticle] = useState<ArticleModel | null>(null);
-  const { loading, currentUser, idToken } = useAuth();
+  const { loading, idToken } = useAuth();
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");

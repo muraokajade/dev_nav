@@ -15,7 +15,10 @@ const sectionTitles: Record<string, string> = {
   "4": "セクション4:Spring実際に管理者として記事投稿をする(Insomnia or Postman)",
   "5": "セクション5:React(フロントエンド)を実装してフォーム画面から管理者CRUD実装",
   "6": "セクション6:管理者として作成した記事を非ログインユーザーに公開",
-  "7": "セクション7:記事詳細ページのユーザーアクション機能の作成"
+  "7": "セクション7:記事詳細ページのユーザーアクション機能の作成",
+  "8": "セクション8:レビューコメントの実装",
+  "9": "セクション9:Q&A機能の実装",
+  "10": "セクション10:マイページ機能の実装",
   // 必要に応じて追加
 };
 
@@ -24,7 +27,8 @@ export const ProceduresPage = () => {
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const initialPage = parseInt(params.get("page") || "1", 10);
-  const { totalPages, displayPage, pageIndex, setDisplayPage, setTotalPages } = usePagination(initialPage);
+  const { totalPages, displayPage, pageIndex, setDisplayPage, setTotalPages } =
+    usePagination(initialPage);
 
   // APIで手順データを取得しセット
   useEffect(() => {
@@ -59,7 +63,9 @@ export const ProceduresPage = () => {
             <ul className="space-y-3">
               {items
                 .sort((a, b) =>
-                  a.stepNumber.localeCompare(b.stepNumber, "ja", { numeric: true })
+                  a.stepNumber.localeCompare(b.stepNumber, "ja", {
+                    numeric: true,
+                  })
                 )
                 .map((item) => (
                   <li key={item.id}>

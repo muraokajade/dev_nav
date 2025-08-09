@@ -9,6 +9,7 @@ import { Pagination } from "../../../utils/Pagination";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { Link } from "react-router-dom";
 
 export const AdminProcedureList = () => {
   const [procedures, setProcedures] = useState<Procedure[]>([]);
@@ -89,7 +90,7 @@ export const AdminProcedureList = () => {
       setTitle(res.data.title);
       setSummary(res.data.summary);
       setContent(res.data.content);
-      setCategory(res.data.sectionTitle);
+      setCategory(res.data.category);
 
       setIsEditModalOpen(true);
     } catch (err) {
@@ -236,9 +237,12 @@ export const AdminProcedureList = () => {
                 <p className="text-gray-400">
                   StepNumber: {procedure.stepNumber}
                 </p>
-                <p className="font-semibold text-lg break-words">
+                <Link
+                  to={`/procedures/${procedure.id}-${procedure.slug}`}
+                  className="text-3xl hover:underline text-blue-200"
+                >
                   {procedure.title}
-                </p>
+                </Link>
                 <p className="text-gray-400 break-words">
                   Slug: {procedure.slug}
                 </p>
@@ -257,7 +261,7 @@ export const AdminProcedureList = () => {
               {/* 中央右：手順要約（Markdown） */}
               <div className="prose prose-invert max-w-none text-sm text-gray-200 break-words flex-grow mb-4 sm:mb-0 sm:pr-4 overflow-x-auto">
                 <ReactMarkdown
-                  children={procedure.content.slice(0, 500)}
+                  children={procedure.content.slice(0, 300)}
                   components={{
                     code({ className, children, ...props }) {
                       const match = /language-(\w+)/.exec(className || "");

@@ -1,6 +1,6 @@
-import { useEffect, useState } from "react";
-import { useAuth } from "../context/useAuthContext"; 
-import { MessageResponse } from "../models/MessageResponse"; 
+import { useCallback, useEffect, useState } from "react";
+import { useAuth } from "../context/useAuthContext";
+import { MessageResponse } from "../models/MessageResponse";
 import axios from "axios";
 
 export const Messages: React.FC<{
@@ -18,24 +18,32 @@ export const Messages: React.FC<{
   const [error, setError] = useState<string | null>(null);
   const { idToken } = useAuth();
 
+  const fetchMessages = useCallback(async () => {
+    try {
+      const res = await axios.get(`/api/messages?articleId=${articleId}`);
+      setMessages(res.data);
+    } catch (e) {
+      setError("メッセージ取得失敗");
+    }
+  }, [articleId]);
   // メッセージ一覧取得
   useEffect(() => {
-    axios
-      .get(`/api/messages?articleId=${articleId}`)
-      .then((res) => setMessages(res.data))
-      .catch(() => setError("取得失敗"));
-  }, [articleId]);
+    (async() => {
+      await fetchMessages();
+    })();
+  }, [fetchMessages]);
 
   const handleSubmit = async () => {
     if (!idToken) return;
     try {
-      axios.post(
+      await axios.post(
         `/api/messages/add`,
         { articleId, title, question },
         { headers: { Authorization: `Bearer ${idToken}` } }
       );
       setTitle("");
       setQuestion("");
+      await fetchMessages();
     } catch (e) {
       setError("投稿失敗");
     }
