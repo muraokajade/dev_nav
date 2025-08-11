@@ -49,7 +49,7 @@ public class UserController {
         UserStatusDTO status = userStatusService.getStatus(userId);
         return status;
     }
-    @GetMapping("/user/actions/calender")
+    @GetMapping("/user/actions/calendar")
     public List<CalendarActionDTO> getCalenderActions(@RequestHeader("Authorization") String token,
                                                       @RequestParam int year,
                                                       @RequestParam int month)
@@ -67,14 +67,7 @@ public class UserController {
     }
 
 
-    @PostMapping("/articles/read")
-    public ResponseEntity<?> registerArticleRead(@RequestHeader("Authorization") String token,
-                                                 @RequestBody ArticleReadRequest request)
-    {
-        String userEmail = firebaseAuthService.verifyAndGetEmail(token);
-        articleReadService.postArticleRead(userEmail,request);
-        return ResponseEntity.ok("読了しました。");
-    }
+
 
 
 }

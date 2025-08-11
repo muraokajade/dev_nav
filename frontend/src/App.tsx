@@ -11,7 +11,7 @@ import { AddTechForm } from "./pages/AdminPage/components/AddTechForm";
 import { AdminTechList } from "./pages/AdminPage/components/AdminTechList";
 import { AddSyntaxForm } from "./pages/AdminPage/components/AddSyntaxForm";
 import { AdminSyntaxList } from "./pages/AdminPage/components/AdminSyntaxList";
-import { ArticleDetailPage } from "./pages/MainContentsPage/TechPage/TechDetailPage";
+import { TechDetailPage } from "./pages/MainContentsPage/TechPage/TechDetailPage";
 import { MypageRoute } from "./routes/MyPageRoute";
 import { MyPage } from "./pages/MyPage/MyPage";
 import { Register } from "./pages/CommonPage/Register";
@@ -38,7 +38,7 @@ export default function App() {
           <Route path="/syntaxes" element={<SyntaxList />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/tech/:idAndSlug" element={<ArticleDetailPage />} />
+          <Route path="/tech/:idAndSlug" element={<TechDetailPage />} />
           <Route path="/syntaxes/:idAndSlug" element={<SyntaxDetailPage />} />
           <Route path="/procedures" element={<ProceduresPage />} />
           <Route

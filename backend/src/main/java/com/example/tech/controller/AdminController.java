@@ -136,12 +136,12 @@ public class AdminController {
         adminService.postSyntax(request, adminEmail);
         return ResponseEntity.ok("投稿完了");
     }
-    @PutMapping("/articles/{slug}/toggle")
+    @PutMapping("/articles/toggle/{id}")
     public ResponseEntity<?> toggleArticlePublished(@RequestHeader(name = "Authorization")String token,
-                                             @PathVariable String slug)
+                                             @PathVariable Long id)
     {
         String adminEmail = firebaseAuthService.verifyAdminAndGetEmail(token);
-        adminService.togglePublished(slug);
+        adminService.togglePublished(id);
         return ResponseEntity.ok("公開非公開反転しました。");
     }
 

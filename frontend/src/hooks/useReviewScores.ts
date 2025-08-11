@@ -79,12 +79,6 @@ export const useReviewScores = (articleId: number, myUserId: number) => {
           { headers: { Authorization: `Bearer ${idToken}` } }
         );
       }
-      // ★送信後に再取得することで、myScoreが最新化され、次回はPUTに切り替わる
-      // const res = await axios.get(`/api/review-scores?articleId=${articleId}`, {
-      //   headers: { Authorization: `Bearer ${idToken}` },
-      // });
-      // console.log(res.data);
-      // setMyScore(res.data?.score ?? null);
       await fetchAllScores();
     } catch (e) {
       setError("スコア取得に失敗しました。");

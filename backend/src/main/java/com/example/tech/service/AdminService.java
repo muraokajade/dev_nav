@@ -41,7 +41,7 @@ public class AdminService {
         entity.setSummary(request.getSummary());
         entity.setImageUrl(imageUrl);
         entity.setPublished(true);
-        adminRepository.save(entity);
+        articleRepository.save(entity);
 
     }
 
@@ -61,7 +61,7 @@ public class AdminService {
     }
 
     public Page<ArticleDTO> getAllArticles(Pageable pageable) {
-        Page<ArticleEntity> entities = adminRepository.findAll(pageable);
+        Page<ArticleEntity> entities = articleRepository.findAll(pageable);
         return entities.map(this::convertToArticleDTO);
     }
 
@@ -72,12 +72,12 @@ public class AdminService {
     }
 
 
-    public void togglePublished(String slug) {
-        ArticleEntity entity = adminRepository.findBySlug(slug)
+    public void togglePublished(Long id) {
+        ArticleEntity entity = articleRepository.findById(id)
                 .orElseThrow(() -> new RuntimeException("記事が見つかりません。"));
         entity.setPublished(!entity.published());//boolean反転
 
-        adminRepository.save(entity);
+        articleRepository.save(entity);
     }
 
     public void toggleSyntaxPublished(Long id) {

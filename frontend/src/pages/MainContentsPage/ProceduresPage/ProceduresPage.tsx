@@ -1,10 +1,10 @@
 // src/pages/ProceduresPage.tsx
 
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
+import axios from "axios";
 import { usePagination } from "../../../hooks/usePagination";
 import { Procedure } from "../../../models/Procedure";
-import axios from "axios";
 import { Pagination } from "../../../utils/Pagination";
 
 // セクション見出し定義（major番号: タイトル）
@@ -13,77 +13,124 @@ const sectionTitles: Record<string, string> = {
   "2": "セクション2:firebase × Reactで管理者ユーザー作成 + 認証機能実装",
   "3": "セクション3:Spring × firebaseで管理者権限確認",
   "4": "セクション4:Spring実際に管理者として記事投稿をする(Insomnia or Postman)",
-  "5": "セクション5:React(フロントエンド)を実装してフォーム画面から管理者CRUD実装",
+  "5": "セクション5:React(画面)を実装してSpringと連携しながら管理者専用のCRUD機能実装",
   "6": "セクション6:管理者として作成した記事を非ログインユーザーに公開",
-  "7": "セクション7:記事詳細ページのユーザーアクション機能の作成",
-  "8": "セクション8:レビューコメントの実装",
-  "9": "セクション9:Q&A機能の実装",
-  "10": "セクション10:マイページ機能の実装",
-  // 必要に応じて追加
+  "7": "セクション7:記事詳細ページのユーザーアクション機能の作成・いいね機能・読了機能",
+  "8": "セクション8:レビュー点数(スターレビュー)の実装",
+  "9": "セクション9:レビューコメントの実装",
+  "10": "セクション10:Q&A機能の実装",
+  "11": "セクション11:マイページ機能の実装",
 };
 
+// 全角→半角数字／全空白除去／ハイフン統一
+const toHalfWidthDigits = (s: string) =>
+  (s || "").replace(/[０-９]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0));
+
+const normalizeStep = (s: string) =>
+  toHalfWidthDigits(s)
+    .replace(/[‐–—−－]/g, "-")
+    .replace(/\s+/g, "")
+    .trim();
+
+// "major-minor" → [major, minor]
+const parseStep = (raw: string): [number, number] => {
+  const s = normalizeStep(raw);
+  const m = s.match(/^(\d+)-(\d+)$/);
+  if (!m) return [Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER];
+  return [parseInt(m[1], 10), parseInt(m[2], 10)];
+};
+
+type Row = Procedure & { major: number; minor: number; stepNumber: string };
+
 export const ProceduresPage = () => {
-  const [procedures, setProcedures] = useState<Procedure[]>([]);
+  const [procedures, setProcedures] = useState<Row[]>([]);
+
+  // URL ?page 初期値
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const initialPage = parseInt(params.get("page") || "1", 10);
-  const { totalPages, displayPage, pageIndex, setDisplayPage, setTotalPages } =
+
+  // クライアント側ページング（1ページ10件のまま）
+  const { totalPages, displayPage, setDisplayPage, setTotalPages } =
     usePagination(initialPage);
+  const pageSize = 10;
 
-  // APIで手順データを取得しセット
+  // --- 全ページ一括取得 → 正規化 → 数値ソート → クライアントページング ---
   useEffect(() => {
-    const fetchProcedures = async () => {
-      const res = await axios.get(`/api/procedures?page=${pageIndex}&size=10`);
-      setProcedures(res.data.content);
-      setTotalPages(res.data.totalPages);
+    const fetchAll = async () => {
+      // まず1ページ取り、総ページ数を把握
+      const first = await axios.get(`/api/procedures?page=0&size=50`);
+      const total = Number(first.data.totalPages) || 1;
+
+      // 残りページもまとめて取得
+      const rest = await Promise.all(
+        Array.from({ length: total - 1 }, (_, i) =>
+          axios.get(`/api/procedures?page=${i + 1}&size=50`)
+        )
+      );
+
+      const content: Procedure[] = [
+        ...first.data.content,
+        ...rest.flatMap((r) => r.data.content),
+      ];
+
+      // 正規化＆major/minor数値化
+      const normalized: Row[] = content.map((p) => {
+        const step = normalizeStep(p.stepNumber);
+        const [major, minor] = parseStep(step);
+        return { ...p, stepNumber: step, major, minor };
+      });
+
+      // 数値で完全ソート
+      normalized.sort((a, b) =>
+        a.major !== b.major ? a.major - b.major : a.minor - b.minor
+      );
+
+      setProcedures(normalized);
+      setTotalPages(Math.ceil(normalized.length / pageSize));
     };
-    fetchProcedures();
-  }, [pageIndex, setTotalPages]);
 
-  // stepNumberのx-xxのxだけでグループ化
-  const grouped = procedures.reduce((acc, item) => {
-    const major = item.stepNumber.split("-")[0]; // 例: "2-04" → "2"
-    if (!acc[major]) acc[major] = [];
-    acc[major].push(item);
-    return acc;
-  }, {} as Record<string, Procedure[]>);
+    fetchAll();
+  }, [setTotalPages]);
 
-  // ページ送り関数
+  // 表示スライス
+  const start = (displayPage - 1) * pageSize;
+  const visible = useMemo(
+    () => procedures.slice(start, start + pageSize),
+    [procedures, start]
+  );
+
   const paginate = (pageNumber: number) => setDisplayPage(pageNumber);
 
   return (
     <div className="text-white p-8 max-w-2xl mx-auto">
       <h1 className="text-3xl font-bold mb-8">開発手順 一覧</h1>
-      <ul className="space-y-3">
-        {Object.entries(grouped).map(([major, items]) => (
-          <div key={major} className="mb-8">
-            <h2 className="text-xl mb-4">
-              {sectionTitles[major] || `セクション${major}`}
-            </h2>
-            <ul className="space-y-3">
-              {items
-                .sort((a, b) =>
-                  a.stepNumber.localeCompare(b.stepNumber, "ja", {
-                    numeric: true,
-                  })
-                )
-                .map((item) => (
-                  <li key={item.id}>
-                    <Link
-                      to={`/procedures/${item.id}-${item.slug}?page=${displayPage}`}
-                      className="block p-4 bg-gray-800 rounded hover:bg-blue-800 transition"
-                    >
-                      <span className="text-blue-400 font-bold mr-2">
-                        {item.stepNumber}
-                      </span>
-                      <span>{item.title}</span>
-                    </Link>
-                  </li>
-                ))}
-            </ul>
-          </div>
-        ))}
-      </ul>
+
+      <div className="space-y-3">
+        {visible.map((item, idx) => {
+          const showHeader = idx === 0 || item.major !== visible[idx - 1].major;
+          const majorStr = String(item.major);
+          return (
+            <div key={item.id}>
+              {showHeader && (
+                <h2 className="text-xl mb-4 mt-8">
+                  {sectionTitles[majorStr] || `セクション${majorStr}`}
+                </h2>
+              )}
+              <Link
+                to={`/procedures/${item.id}-${item.slug}?page=${displayPage}`}
+                className="block p-4 bg-gray-800 rounded hover:bg-blue-800 transition"
+              >
+                <span className="text-blue-400 font-bold mr-2">
+                  {item.stepNumber}
+                </span>
+                <span>{item.title}</span>
+              </Link>
+            </div>
+          );
+        })}
+      </div>
+
       {totalPages > 0 && (
         <Pagination
           displayPage={displayPage}

@@ -51,7 +51,10 @@ public class FirebaseTokenFilter extends OncePerRequestFilter {
                 );
                 SecurityContextHolder.getContext().setAuthentication(auth);
             } catch (FirebaseAuthException e) {
-                logger.warn("Firebaseトークンの検証に失敗しました: " + e.getMessage());
+                // ★ ここが重要：401を返してチェーンを打ち切る
+                SecurityContextHolder.clearContext();
+                response.sendError(HttpServletResponse.SC_UNAUTHORIZED, "Invalid or expired token");
+                return;
 
             }
         }

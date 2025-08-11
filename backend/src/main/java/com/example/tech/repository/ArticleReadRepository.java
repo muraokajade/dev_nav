@@ -9,6 +9,7 @@ import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
 import java.util.List;
+import java.util.Optional;
 
 @Repository
 public interface ArticleReadRepository extends JpaRepository<ArticleReadEntity, Long> {
@@ -24,4 +25,5 @@ public interface ArticleReadRepository extends JpaRepository<ArticleReadEntity, 
     // 例: JPAリポジトリで用意
     boolean existsByUserIdAndArticle_Id(Long userId, Long articleId);
 
+    Optional<ArticleReadEntity> findByUserIdAndArticle_Id(Long userId, Long articleId);
 }

@@ -11,8 +11,10 @@ import jakarta.validation.ConstraintViolationException;
 import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDateTime;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -52,5 +54,20 @@ public class ArticleReadService {
             return;
         }
 
+    }
+
+    @Transactional
+    public boolean deleteArticleRead(String userEmail, Long articleId) {
+        Long userId = userRepository.findUserByEmail(userEmail)
+                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません。"))
+                .getId();
+
+        // 既読があるかを先に検索
+        Optional<ArticleReadEntity> read = articleReadRepository.findByUserIdAndArticle_Id(userId, articleId);
+        if (read.isPresent()) {
+            articleReadRepository.delete(read.get());
+            return true;
+        }
+        return false; // 無かったら何もしない（冪等）
     }
 }

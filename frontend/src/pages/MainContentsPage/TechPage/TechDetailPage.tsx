@@ -9,7 +9,7 @@ import axios from "axios";
 import { LikeButton } from "../../../utils/LikeButton";
 import { TechDetailActions } from "./TechDetailActions";
 
-export const ArticleDetailPage = () => {
+export const TechDetailPage = () => {
   const { idAndSlug } = useParams();
   const id = idAndSlug?.split("-")[0];
   const { idToken } = useAuth();
@@ -59,18 +59,31 @@ export const ArticleDetailPage = () => {
   // 読了機能
   const handleRead = async () => {
     if (!idToken || !articleId) return;
-    try {
-      await axios.post(
-        "/api/articles/read",
-        { articleId },
-        { headers: { Authorization: `Bearer ${idToken}` } }
-      );
-      setIsRead(true);
-      alert("完了");
-    } catch (e) {
-      alert("読了登録失敗");
-      console.error(e);
-      setIsRead(false);
+    if (!isRead) {
+      try {
+        await axios.post(
+          "/api/articles/read",
+          { articleId },
+          { headers: { Authorization: `Bearer ${idToken}` } }
+        );
+        setIsRead(true);
+        alert("完了");
+      } catch (e) {
+        alert("読了登録失敗");
+        console.error(e);
+        setIsRead(false);
+      }
+    } else {
+      try {
+        await axios.delete(`/api/articles/read/${articleId}`, {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        setIsRead(false);
+        alert("読了解除")
+      } catch(e) {
+        alert("解除失敗");
+        setIsRead(true);
+      }
     }
   };
 
@@ -106,6 +119,7 @@ export const ArticleDetailPage = () => {
       });
   }, [articleId, idToken]);
 
+  //myUserId取得
   useEffect(() => {
     if (idToken) {
       axios
@@ -114,19 +128,30 @@ export const ArticleDetailPage = () => {
     }
   }, [idToken]);
 
-  // 記事メタ＆本文取得
+  // 記事メタ(articleId)＆本文取得
   useEffect(() => {
-    if (!id) return;
-    axios.get(`/api/articles/${id}`).then((res) => {
-      console.log(res.data);
-      setTitle(res.data.title);
-      setAuthor(res.data.authorName ?? "（不明）");
-      setCreatedAt(res.data.createdAt ?? "");
-      setCategory(res.data.category ?? "");
-      setImageUrl(res.data.imageUrl ?? "");
-      setContent(res.data.content);
-      setArticleId(res.data.id);
-    });
+    if (!id) return
+    let ignore = false; // アンマウント後のsetState防止
+    (async () => {
+      try {
+        const { data } = await axios.get(`/api/articles/${id}`);
+        if (ignore) return;
+
+        setTitle(data.title);
+        setAuthor(data.authorName ?? "（不明）");
+        setCreatedAt(data.createdAt ?? "");
+        setCategory(data.category ?? "");
+        setImageUrl(data.imageUrl ?? "");
+        setContent(data.content);
+        setArticleId(data.id);
+      } catch (e) {
+        console.error("記事取得失敗", e);
+      }
+    })();
+
+    return () => {
+      ignore = true;
+    };
   }, [id]);
 
   return (
@@ -206,7 +231,7 @@ export const ArticleDetailPage = () => {
                 ? "bg-green-500 cursor-not-allowed"
                 : "bg-blue-600 hover:bg-blue-700"
             }`}
-            disabled={isRead}
+            
             onClick={handleRead}
           >
             {isRead ? "読了済み" : "この記事を読了する"}

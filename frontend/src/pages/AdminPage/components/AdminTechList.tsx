@@ -19,8 +19,8 @@ export const AdminTechList = () => {
   const [category, setCategory] = useState("");
   const [summary, setSummary] = useState("");
   const [content, setContent] = useState("");
-  const [imageFile, setImageFile] = useState<File | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  const [imageFile, setImageFile] = useState<File | null>(null);
   const { totalPages, pageIndex, displayPage, setDisplayPage, setTotalPages } =
     usePagination();
   const categories = [
@@ -57,10 +57,10 @@ export const AdminTechList = () => {
       })();
   }, [loading, fetchArticles]);
 
-  const togglePublish = async (slug: string) => {
+  const togglePublish = async (id: number) => {
     if (loading) return;
     try {
-      await axios.put(`/api/admin/articles/${slug}/toggle`, null, {
+      await axios.put(`/api/admin/articles/toggle/${id}`, null, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
@@ -80,15 +80,14 @@ export const AdminTechList = () => {
           Authorization: `Bearer ${idToken}`,
         },
       });
-      const article = res.data;
-      setArticle(article);
+      setArticle(res.data);
 
       // 編集対象の記事情報をステートにセット
-      setSlug(article.slug);
-      setTitle(article.title);
-      setSummary(article.summary);
-      setContent(article.content);
-      setCategory(article.category);
+      setSlug(res.data.slug);
+      setTitle(res.data.title);
+      setSummary(res.data.summary);
+      setContent(res.data.content);
+      setCategory(res.data.category);
 
       setIsEditModalOpen(true);
     } catch (err) {
@@ -291,7 +290,7 @@ export const AdminTechList = () => {
               {/* 右端：編集・削除ボタン */}
               <div className="flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2 items-start sm:items-end w-full sm:w-auto">
                 <button
-                  onClick={() => togglePublish(article.slug)}
+                  onClick={() => togglePublish(article.id)}
                   className={`px-3 py-1 rounded text-sm font-semibold border w-full sm:w-auto ${
                     article.published
                       ? "bg-green-600 text-white border-green-700 hover:bg-green-500"

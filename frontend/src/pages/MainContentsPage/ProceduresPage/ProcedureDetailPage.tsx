@@ -1,5 +1,5 @@
 import React, { useEffect, useState } from "react";
-import ReactMarkdown from "react-markdown";
+import ReactMarkdown, { type Components } from "react-markdown";
 import { Link, useLocation, useParams } from "react-router-dom";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -12,13 +12,14 @@ import { TechDetailActions } from "../TechPage/TechDetailActions";
 export const ProcedureDetailPage = () => {
   const { idAndSlug } = useParams();
   const id = idAndSlug?.split("-")[0];
+  const [chapter, number] = (idAndSlug ?? "").split("-");
+  const nextNumber = String(Number(number) + 1).padStart(2, "0");
+  const nextSlug = `${chapter}-${nextNumber}`;
   const { idToken } = useAuth();
-  // 追加：クエリストリングから戻るページ番号取得
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const backPage = params.get("page") || 1;
 
-  // リッチ化用：記事メタ情報
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [createdAt, setCreatedAt] = useState("");
@@ -31,7 +32,70 @@ export const ProcedureDetailPage = () => {
   const [isRead, setIsRead] = useState(false);
   const [myUserId, setMyUserId] = useState<number | null>(null);
 
-  // いいね
+  // --- コピー付きハイライター ---
+  const CopyableHighlighter = ({
+    language,
+    code,
+  }: {
+    language: string;
+    code: string;
+  }) => {
+    const [copied, setCopied] = useState(false);
+    const doCopy = async () => {
+      try {
+        await navigator.clipboard.writeText(code);
+        setCopied(true);
+        setTimeout(() => setCopied(false), 1500);
+      } catch (e) {
+        console.error("Copy failed", e);
+      }
+    };
+    return (
+      <div className="relative not-prose group">
+        <button
+          onClick={doCopy}
+          className={`absolute top-2 right-2 z-10 rounded px-2 py-1 text-xs font-semibold shadow
+            ${
+              copied
+                ? "bg-green-600 text-white"
+                : "bg-zinc-700/80 hover:bg-zinc-600 text-white"
+            }
+          `}
+        >
+          {copied ? "Copied!" : "Copy"}
+        </button>
+        <SyntaxHighlighter
+          style={oneDark}
+          language={language}
+          PreTag="div"
+          customStyle={{ margin: 0, borderRadius: "0.75rem" }}
+        >
+          {code.replace(/\n$/, "")}
+        </SyntaxHighlighter>
+      </div>
+    );
+  };
+
+  // --- ReactMarkdown の components を型定義 ---
+  const markdownComponents: Components = {
+    code({ className, children, ...props }) {
+      const match = /language-(\w+)/.exec(className || "");
+      const codeString = String(children ?? "");
+      if (!match) {
+        return (
+          <code className={className} {...props}>
+            {children}
+          </code>
+        );
+      }
+      return <CopyableHighlighter language={match[1]} code={codeString} />;
+    },
+    pre({ children }) {
+      return <>{children}</>;
+    },
+  };
+
+  // --- いいね処理 ---
   const handleLike = async () => {
     if (!idToken) return;
     if (liked) {
@@ -59,7 +123,6 @@ export const ProcedureDetailPage = () => {
     }
   };
 
-  // 読了
   const handleRead = async () => {
     if (!idToken || !articleId) return;
     try {
@@ -76,14 +139,14 @@ export const ProcedureDetailPage = () => {
     }
   };
 
+  // --- 各種データ取得 ---
   useEffect(() => {
     if (!idToken || !articleId) return;
     axios
       .get(`/api/articles/read/status?articleId=${articleId}`, {
         headers: { Authorization: `Bearer ${idToken}` },
       })
-      .then((res) => setIsRead(res.data.read ?? false))
-      .catch(() => setIsRead(false));
+      .then((res) => setIsRead(res.data.read ?? false));
   }, [idToken, articleId]);
 
   useEffect(() => {
@@ -93,7 +156,6 @@ export const ProcedureDetailPage = () => {
         headers: { Authorization: `Bearer ${idToken}` },
       })
       .then((res) => {
-        console.log(res.data);
         setLiked(res.data.liked);
         setLikeCount(res.data.count);
       });
@@ -107,11 +169,9 @@ export const ProcedureDetailPage = () => {
     }
   }, [idToken]);
 
-  // 記事メタ＆本文取得
   useEffect(() => {
     if (!id) return;
     axios.get(`/api/procedures/${id}`).then((res) => {
-      console.log(res.data);
       setTitle(res.data.title);
       setAuthor(res.data.authorName ?? "（不明）");
       setCreatedAt(res.data.createdAt ?? "");
@@ -122,14 +182,11 @@ export const ProcedureDetailPage = () => {
     });
   }, [id]);
 
+  // --- JSX ---
   return (
     <div className="min-h-screen bg-gray-900">
-      {/* いいねボタン */}
       <LikeButton liked={liked} count={likeCount} onClick={handleLike} />
-
-      {/* リッチ化された記事カード */}
       <div className="prose prose-invert max-w-4xl mx-auto py-10 bg-zinc-900 rounded-2xl shadow-2xl mb-8">
-        {/* サムネイル（必要に応じて） */}
         {imageUrl && (
           <img
             src={imageUrl}
@@ -137,11 +194,7 @@ export const ProcedureDetailPage = () => {
             className="w-full h-64 object-cover rounded-xl mb-8"
           />
         )}
-
-        {/* タイトル */}
         <h1 className="text-4xl font-bold mb-4">{title}</h1>
-
-        {/* 著者・日付・カテゴリ */}
         <div className="flex items-center gap-4 mb-6 text-gray-400 text-sm">
           <span>著者: {author}</span>
           {createdAt && (
@@ -153,39 +206,8 @@ export const ProcedureDetailPage = () => {
             </span>
           )}
         </div>
-
-        {/* 本文 */}
-        <ReactMarkdown
-          children={content}
-          components={{
-            code({ className, children, ...props }: any) {
-              const match = /language-(\w+)/.exec(className || "");
-              const codeString = Array.isArray(children)
-                ? children.join("")
-                : String(children);
-
-              return match ? (
-                <SyntaxHighlighter
-                  style={oneDark}
-                  language={match[1]}
-                  PreTag="div"
-                  className="not-prose"
-                  {...props}
-                >
-                  {codeString.replace(/\n$/, "")}
-                </SyntaxHighlighter>
-              ) : (
-                <code className={className} {...props}>
-                  {children}
-                </code>
-              );
-            },
-            pre: ({ children }) => <>{children}</>,
-          }}
-        />
+        <ReactMarkdown components={markdownComponents}>{content}</ReactMarkdown>
       </div>
-
-      {/* レビュー・コメント・Q&Aタブ */}
       <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-start md:items-center gap-4 mt-8">
         <div className="flex-1">
           {articleId && myUserId != null && (
@@ -206,16 +228,14 @@ export const ProcedureDetailPage = () => {
           </button>
         </div>
       </div>
-
-      {/* 戻るボタン */}
       <div className="max-w-4xl mx-auto py-8">
         <Link to={`/procedures?page=${backPage}`}>
-          <p className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition duration-200">
+          <p className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition">
             開発手順一覧
           </p>
         </Link>
-        <Link to="/procedures">
-          <p className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition duration-200">
+        <Link to={`/procedures/${nextSlug}`}>
+          <p className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition">
             次へ
           </p>
         </Link>
