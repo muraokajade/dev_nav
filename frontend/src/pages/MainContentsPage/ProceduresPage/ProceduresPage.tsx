@@ -103,7 +103,7 @@ export const ProceduresPage = () => {
   const paginate = (pageNumber: number) => setDisplayPage(pageNumber);
 
   return (
-    <div className="text-white p-8 max-w-2xl mx-auto">
+    <div className="text-white p-8 max-w-5xl mx-auto">
       <h1 className="text-3xl font-bold mb-8">開発手順 一覧</h1>
 
       <div className="space-y-3">

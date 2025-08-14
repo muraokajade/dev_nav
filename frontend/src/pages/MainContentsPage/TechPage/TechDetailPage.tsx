@@ -106,6 +106,7 @@ export const TechDetailPage = () => {
     fetchReadStatus();
   }, [idToken, articleId]);
 
+  
   useEffect(() => {
     if (!idToken || !articleId) return;
     axios
@@ -160,7 +161,7 @@ export const TechDetailPage = () => {
       <LikeButton liked={liked} count={likeCount} onClick={handleLike} />
 
       {/* リッチ化された記事カード */}
-      <div className="prose prose-invert max-w-4xl mx-auto py-10 bg-zinc-900 rounded-2xl shadow-2xl mb-8">
+      <div className="prose prose-invert text-white max-w-4xl mx-auto py-10 bg-zinc-900 rounded-2xl shadow-2xl mb-8">
         {/* サムネイル（必要に応じて） */}
         {imageUrl && (
           <img

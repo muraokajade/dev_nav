@@ -55,6 +55,7 @@ export const Navbar = () => {
           <Link to="/procedures" className="text-white hover:text-blue-300">
             開発手順書
           </Link>
+          {/* ★追加 */}
           <Link to="/mypage" className="text-white hover:text-blue-300">
             マイページ
           </Link>
@@ -100,6 +101,7 @@ export const Navbar = () => {
           <Link to="/procedures" className="text-white hover:text-blue-300">
             開発手順書
           </Link>
+          {/* ★追加 */}
           <Link to="/mypage" className="text-white hover:text-blue-300">
             マイページ
           </Link>

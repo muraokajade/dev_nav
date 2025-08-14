@@ -26,6 +26,8 @@ import { ProcedureDetailPage } from "./pages/MainContentsPage/ProceduresPage/Pro
 import { ProceduresPage } from "./pages/MainContentsPage/ProceduresPage/ProceduresPage";
 import { AddProcedureForm } from "./pages/AdminPage/components/AddProcedureForm";
 import { AdminProcedureList } from "./pages/AdminPage/components/AdminProcedureList";
+import { StartPage } from "./pages/StartPage/StartPage";
+import { ArticlesPage } from "./pages/ArticlePage/ArticlePage";
 
 export default function App() {
   return (
@@ -34,6 +36,8 @@ export default function App() {
         <Navbar />
         <Routes>
           <Route path="/" element={<Home />} />
+          <Route path="/start" element={<StartPage />} />
+          <Route path="/articles" element={<ArticlesPage />} />
           <Route path="/tech" element={<TechList />} />
           <Route path="/syntaxes" element={<SyntaxList />} />
           <Route path="/login" element={<Login />} />
@@ -96,7 +100,7 @@ export default function App() {
             path="/admin/articles"
             element={
               <AdminRoute>
-                <AdminTechList/>
+                <AdminTechList />
               </AdminRoute>
             }
           />

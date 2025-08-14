@@ -81,7 +81,7 @@ export const TechList = () => {
 
   return (
     <div className="min-h-screen bg-gray-900">
-      <div className="p-8 max-w-3xl mx-auto">
+      <div className="p-8 max-w-5xl mx-auto">
         <div className="p-6 text-white">
           <h1 className="text-3xl font-bold mb-6">技術スタック一覧</h1>
 

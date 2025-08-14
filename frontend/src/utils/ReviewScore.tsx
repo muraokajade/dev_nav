@@ -1,5 +1,5 @@
 import React, { useState, useEffect } from "react";
-import { useReviewScores } from "../hooks/useReviewScores"; 
+import { useReviewScores } from "../hooks/useReviewScores";
 
 type StarRatingProps = {
   value: number; // 0〜5, 0.5刻み
@@ -97,6 +97,7 @@ export const ReviewScore: React.FC<{ articleId: number; myUserId: number }> = ({
 }) => {
   const { scores, myScore, loading, submitScore, average, error } =
     useReviewScores(articleId, myUserId);
+  console.log(scores);
   const [tempScore, setTempScore] = useState(myScore ?? 0);
 
   // myScore更新時にUIにも反映
@@ -106,12 +107,10 @@ export const ReviewScore: React.FC<{ articleId: number; myUserId: number }> = ({
 
   return (
     <section className="bg-zinc-900 rounded-xl p-6 my-8 shadow-lg max-w-3xl text-zinc-100">
-      <h3 className="font-bold mb-3 text-lg text-zinc-200">
-        レビュー点数
-      </h3>
+      <h3 className="font-bold mb-3 text-lg text-zinc-200">レビュー点数</h3>
       <div className="flex items-center gap-3">
         <StarRatingSVG value={tempScore} onChange={setTempScore} />
-        
+
         <button
           className={`ml-2 px-4 py-1 rounded font-semibold shadow transition 
             ${
@@ -132,7 +131,9 @@ export const ReviewScore: React.FC<{ articleId: number; myUserId: number }> = ({
         ) : (
           <span className="text-zinc-400">まだスコアなし</span>
         )}
-        <span className="ml-3 text-zinc-400 text-sm">({scores.length}人)</span>
+        <span className="ml-3 text-zinc-400 text-sm">
+          ({Array.isArray(scores) ? scores.length : 0}人)
+        </span>
       </div>
       {myScore !== null && (
         <div className="mt-2 text-green-300 text-sm">

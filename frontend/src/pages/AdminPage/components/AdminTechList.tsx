@@ -231,7 +231,7 @@ export const AdminTechList = () => {
         <div className="space-y-2">
           {articles.map((article) => (
             <div
-              key={article.slug}
+              key={article.id}
               className="flex flex-col sm:flex-row items-start bg-gray-800 text-white rounded-lg px-4 py-3 shadow-sm hover:shadow-md overflow-hidden"
             >
               {/* 左側：基本情報 */}

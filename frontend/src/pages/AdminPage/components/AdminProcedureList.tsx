@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import axios from "axios";
 import { ArticleModel } from "../../../models/ArticleModel";
 import { useAuth } from "../../../context/useAuthContext";
@@ -33,6 +33,7 @@ export const AdminProcedureList = () => {
     "Tailwind",
     "Other",
   ];
+  const pageSize = 10; // 1ページの件数（必要なら state 化してもOK）
   // console.log(idToken);
 
   const fetchProcedure = useCallback(async () => {
@@ -50,14 +51,14 @@ export const AdminProcedureList = () => {
     } catch (e) {
       console.error(e);
     }
-  }, [pageIndex, idToken,setTotalPages]);
+  }, [pageIndex, idToken, setTotalPages]);
 
   useEffect(() => {
-    if(!loading)
-    (async () => {
-      await fetchProcedure();
-    })();
-  },[loading,fetchProcedure])
+    if (!loading)
+      (async () => {
+        await fetchProcedure();
+      })();
+  }, [loading, fetchProcedure]);
 
   const togglePublish = async (id: number) => {
     if (loading) return;
@@ -72,7 +73,6 @@ export const AdminProcedureList = () => {
       console.error("公開状態切替失敗", e);
     }
   };
-
 
   const handleEdit = async (id: number) => {
     if (loading) return;
@@ -140,6 +140,8 @@ export const AdminProcedureList = () => {
   };
 
   const paginate = (pageNumber: number) => setDisplayPage(pageNumber);
+
+
 
   return (
     <div className="min-h-screen bg-gray-900">

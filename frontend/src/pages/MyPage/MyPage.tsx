@@ -1,3 +1,4 @@
+// MyPage.tsx（UI整形・機能はそのまま）
 import React, { useEffect, useState } from "react";
 import axios from "axios";
 import { LevelBar } from "./components/LevelBar";
@@ -26,6 +27,18 @@ type StatusMine = {
   }>;
 };
 type CalendarDay = { date: string; actions: number };
+
+// 汎用カード（見た目統一）
+const Card: React.FC<{ className?: string; children: React.ReactNode }> = ({
+  className = "",
+  children,
+}) => (
+  <div
+    className={`rounded-2xl bg-white/5 border border-white/10 shadow-sm ${className}`}
+  >
+    {children}
+  </div>
+);
 
 export const MyPage = () => {
   const { idToken } = useAuth();
@@ -64,9 +77,7 @@ export const MyPage = () => {
             headers: { Authorization: `Bearer ${idToken}` },
           }),
         ]);
-
         setUser(meRes.data as Me);
-
         const s = statusRes.data as StatusMine;
         setActionStatus(s);
         setLevel(s.level);
@@ -79,7 +90,7 @@ export const MyPage = () => {
     })();
   }, [idToken]);
 
-  // カレンダー取得（calendar に統一）
+  // カレンダー取得
   useEffect(() => {
     if (!idToken) return;
     (async () => {
@@ -89,103 +100,146 @@ export const MyPage = () => {
           { headers: { Authorization: `Bearer ${idToken}` } }
         );
         setCalendarDays((res.data as CalendarDay[]) ?? []);
-      } catch (e) {
+      } catch {
         setCalendarDays([]);
       }
     })();
   }, [idToken, year, month]);
 
   // 月移動
-  const prevMonth = () => {
-    if (month === 1) {
-      setYear((y) => y - 1);
-      setMonth(12);
-    } else {
-      setMonth((m) => m - 1);
-    }
-  };
-  const nextMonth = () => {
-    if (month === 12) {
-      setYear((y) => y + 1);
-      setMonth(1);
-    } else {
-      setMonth((m) => m + 1);
-    }
-  };
+  const prevMonth = () =>
+    month === 1
+      ? (setYear((y) => y - 1), setMonth(12))
+      : setMonth((m) => m - 1);
+  const nextMonth = () =>
+    month === 12
+      ? (setYear((y) => y + 1), setMonth(1))
+      : setMonth((m) => m + 1);
 
-  // liked: 表示用に必須プロパティへ変換
-  const likedForList: Article[] = (actionStatus?.likedArticles ?? []).map((a) => ({
-    id: a.id,
-    title: a.title,
-    authorName: a.authorName ?? a.author?.displayName ?? "不明",
-  }));
+  // liked: 表示用に整形
+  const likedForList: Article[] = (actionStatus?.likedArticles ?? []).map(
+    (a) => ({
+      id: a.id,
+      title: a.title,
+      authorName: a.authorName ?? a.author?.displayName ?? "不明",
+    })
+  );
 
-  // レンダリング
+  // ---- UI ----
   if (userError || actionError) {
     return (
-      <div className="text-red-500 p-8">
-        {userError && <div>{userError}</div>}
-        {actionError && <div>{actionError}</div>}
-      </div>
+      <main className="min-h-screen bg-gray-900 text-white">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 py-10">
+          <Card className="p-6 border-red-400/20 bg-red-500/10">
+            <h1 className="text-xl font-semibold text-red-300 mb-2">
+              読み込みエラー
+            </h1>
+            {userError && <div className="text-red-200">{userError}</div>}
+            {actionError && <div className="text-red-200">{actionError}</div>}
+          </Card>
+        </div>
+      </main>
     );
   }
 
   if (!user || !actionStatus) {
-    return <div className="text-white p-6">Loading...</div>;
+    return (
+      <main className="min-h-screen bg-gray-900 text-white">
+        <div className="max-w-5xl mx-auto px-4 md:px-6 py-10">
+          <Card className="p-6 animate-pulse">
+            <div className="h-6 w-40 bg-white/10 rounded mb-4" />
+            <div className="h-3 w-56 bg-white/10 rounded mb-2" />
+            <div className="h-2 w-full bg-white/10 rounded" />
+          </Card>
+        </div>
+      </main>
+    );
   }
 
   return (
-    <div className="min-h-screen bg-gray-900 text-white">
-      <div className="max-w-4xl mx-auto py-4 px-2 sm:px-0">
-        {/* タイトル＆2カラム */}
-        <div className="flex flex-col sm:flex-row items-start gap-4 sm:gap-8 mb-8">
+    <main className="min-h-screen bg-gray-900 text-white">
+      <div className="max-w-5xl mx-auto px-4 md:px-6 py-10">
+        {/* 見出し */}
+        <header className="mb-8">
+          <h1 className="text-3xl md:text-4xl font-extrabold">マイページ</h1>
+        </header>
+
+        {/* 上段：プロフィール + カレンダー */}
+        <section className="grid md:grid-cols-[1.2fr,1fr] gap-6 mb-10">
           {/* 左：プロフィール＆レベル */}
-          <div className="flex-1 w-full mb-6 sm:mb-0">
-            <h1 className="text-2xl sm:text-3xl font-bold mb-4 sm:mb-6">マイページ</h1>
-            <div className="mb-2">
-              <div className="text-xl sm:text-2xl font-semibold">{user.displayName}</div>
-              <div className="text-gray-400 text-xs sm:text-sm">{user.email}</div>
+          <Card className="p-6">
+            <div className="mb-3">
+              <div className="text-xl md:text-2xl font-semibold">
+                {user.displayName}
+              </div>
+              <div className="text-sm text-gray-400">{user.email}</div>
             </div>
             <div className="flex items-center gap-2 mb-2">
-              <span className="font-bold text-base sm:text-lg">Lv.{level}</span>
-              <span className="text-xs sm:text-sm text-gray-400">EXP: {exp}%</span>
+              <span className="font-bold">Lv.{level}</span>
+              <span className="text-sm text-gray-400">EXP: {exp}%</span>
             </div>
             <LevelBar level={level} exp={exp} />
-          </div>
+          </Card>
 
           {/* 右：カレンダー */}
-          <div className="flex-1 w-full flex flex-col">
-            <div className="bg-white/10 w-full sm:w-2/3 shadow-lg rounded-2xl p-4 sm:p-6">
-              <h2 className="text-lg sm:text-xl font-bold mb-2 text-center text-white">学習カレンダー</h2>
-              <div className="flex justify-center">
-                <ProgressCalendar
-                  days={calendarDays}
-                  year={year}
-                  month={month}
-                  onPrevMonth={prevMonth}
-                  onNextMonth={nextMonth}
-                />
-              </div>
+          <Card className="p-4 md:p-6">
+            <h2 className="text-base md:text-lg font-semibold text-white text-center mb-3">
+              学習カレンダー
+            </h2>
+            <div className="flex justify-center">
+              <ProgressCalendar
+                days={calendarDays}
+                year={year}
+                month={month}
+                onPrevMonth={prevMonth}
+                onNextMonth={nextMonth}
+              />
             </div>
-          </div>
-        </div>
+          </Card>
+        </section>
 
-        {/* アクションサマリー */}
-        <div className="grid grid-cols-2 sm:grid-cols-4 gap-2 sm:gap-4 mb-8">
-          <ActionCard label="記事読了数" value={actionStatus.articlesRead} icon="📖" />
-          <ActionCard label="レビュー数" value={actionStatus.reviews} icon="⭐" />
-          <ActionCard label="いいね数" value={actionStatus.likes} icon="💖" />
-          <ActionCard label="コメント数" value={actionStatus.comments} icon="💬" />
-        </div>
+        {/* KPI */}
+        <section className="mb-10">
+          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+            <ActionCard
+              label="記事読了数"
+              value={actionStatus.articlesRead}
+              icon="📖"
+            />
+            <ActionCard
+              label="レビュー数"
+              value={actionStatus.reviews}
+              icon="⭐"
+            />
+            <ActionCard label="いいね数" value={actionStatus.likes} icon="💖" />
+            <ActionCard
+              label="コメント数"
+              value={actionStatus.comments}
+              icon="💬"
+            />
+          </div>
+        </section>
 
         {/* いいね済み記事一覧 */}
-        <div className="mb-10">
-          <LikedArticlesList articles={likedForList} />
-        </div>
+        <section className="mb-10">
+          <h2 className="text-lg font-semibold mb-3">いいねした記事一覧</h2>
+          <Card className="p-0 divide-y divide-white/10">
+            <LikedArticlesList
+              articles={likedForList}
+              showTitle={false}
+              variant="bare"
+            />
+          </Card>
+        </section>
 
         {/* 履歴 */}
-        <ActionHistoryList />
+        <section className="mb-4 md:mb-8">
+          <h2 className="text-lg font-semibold mb-3">直近のアクション履歴</h2>
+          <Card className="p-0 divide-y divide-white/10">
+            <ActionHistoryList showTitle={false} variant="bare" />
+          </Card>
+        </section>
       </div>
-    </div>
+    </main>
   );
 };

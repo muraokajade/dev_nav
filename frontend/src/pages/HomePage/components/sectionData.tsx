@@ -12,7 +12,7 @@ export const sections: SectionItem[] = [
     key: "intro",
     title: (
       <div className="flex items-center mt-16">
-        <MiniCanvas3D size={100} />
+        <MiniCanvas3D size={60} />
         <span className="text-blue-400">Dev</span>
         <span className="text-white">Nav</span>
         <span className="text-blue-600">+</span>
@@ -43,7 +43,7 @@ export const sections: SectionItem[] = [
     title: (
       <>
         <span className="flex items-center gap-3 text-2xl font-semibold mb-3 text-white">
-          <MiniCanvas3D size={100} />
+          <MiniCanvas3D size={60} />
           主な機能①
         </span>
       </>
@@ -73,7 +73,7 @@ export const sections: SectionItem[] = [
     title: (
       <>
         <span className="flex items-center gap-3 text-2xl font-semibold mb-3 text-white">
-          <MiniCanvas3D size={100} />
+          <MiniCanvas3D size={60} />
           主な機能②
         </span>
       </>
@@ -100,7 +100,7 @@ export const sections: SectionItem[] = [
     title: (
       <>
         <span className="flex items-center gap-3 text-2xl font-semibold mb-3 text-white">
-          <MiniCanvas3D size={100} />
+          <MiniCanvas3D size={60} />
           主な機能③
         </span>
       </>
@@ -129,7 +129,7 @@ export const sections: SectionItem[] = [
     title: (
       <>
         <span className="flex items-center gap-3 text-2xl font-semibold mb-3 text-white">
-          <MiniCanvas3D size={100} />
+          <MiniCanvas3D size={60} />
           主な機能④
         </span>
       </>
@@ -158,7 +158,7 @@ export const sections: SectionItem[] = [
     key: "environment",
     title: (
       <div className="flex items-center gap-4 mt-16">
-        <MiniCanvas3D size={100} />
+        <MiniCanvas3D size={60} />
         <span className="text-2xl font-semibold text-white">
           開発環境について
         </span>
@@ -174,10 +174,10 @@ export const sections: SectionItem[] = [
             メインIDE: <b>IntelliJ IDEA（バックエンド）、Visual Studio Code（フロントエンド）</b>
           </li>
           <li>
-            バックエンド: <b>Spring Boot 3.x</b>
+            バックエンド: <b>Spring Boot 3.x + Java 17</b>
           </li>
           <li>
-            フロントエンド: <b>React 18 + TypeScript</b>
+            フロントエンド: <b>React 19 + TypeScript</b>
           </li>
           <li>
             インフラ: <b>Vercel（フロント）、Render.com（API）</b>
@@ -219,7 +219,7 @@ export const sections: SectionItem[] = [
     key: "about",
     title: (
       <div className="flex items-center gap-4 mt-16">
-        <MiniCanvas3D size={100} />
+        <MiniCanvas3D size={60} />
         <span className="text-2xl font-semibold text-white">
           このサイトについて
         </span>

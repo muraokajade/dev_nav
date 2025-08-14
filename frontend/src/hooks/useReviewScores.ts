@@ -25,7 +25,7 @@ export const useReviewScores = (articleId: number, myUserId: number) => {
           headers: { Authorization: `Bearer ${idToken}` },
         }
       );
-      setScores(res.data.content);
+      setScores(res.data);
     } catch (e) {
       setScores([]);
       setLoading(false);
