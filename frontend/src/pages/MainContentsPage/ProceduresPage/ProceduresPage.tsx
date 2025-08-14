@@ -24,7 +24,9 @@ const sectionTitles: Record<string, string> = {
 
 // 全角→半角数字／全空白除去／ハイフン統一
 const toHalfWidthDigits = (s: string) =>
-  (s || "").replace(/[０-９]/g, (ch) => String.fromCharCode(ch.charCodeAt(0) - 0xfee0));
+  (s || "").replace(/[０-９]/g, (ch) =>
+    String.fromCharCode(ch.charCodeAt(0) - 0xfee0)
+  );
 
 const normalizeStep = (s: string) =>
   toHalfWidthDigits(s)
@@ -113,18 +115,33 @@ export const ProceduresPage = () => {
           return (
             <div key={item.id}>
               {showHeader && (
-                <h2 className="text-xl mb-4 mt-8">
+                <h2 className="text-xl tracking-wide text-white/80 mt-10 mb-3 flex items-center gap-2">
+                  <span className="inline-block h-px w-6 bg-white/15" />
                   {sectionTitles[majorStr] || `セクション${majorStr}`}
                 </h2>
               )}
+
               <Link
                 to={`/procedures/${item.id}-${item.slug}?page=${displayPage}`}
-                className="block p-4 bg-gray-800 rounded hover:bg-blue-800 transition"
+                className="group block rounded-lg p-4 bg-white/5 ring-1 ring-white/10 hover:bg-white/7 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 transition"
               >
-                <span className="text-blue-400 font-bold mr-2">
-                  {item.stepNumber}
-                </span>
-                <span>{item.title}</span>
+                <div className="flex items-start gap-3">
+                  <span className="shrink-0 h-7 px-2 rounded bg-sky-500/20 text-sky-300 text-sm grid place-items-center font-semibold">
+                    {item.stepNumber}
+                  </span>
+                  <div className="min-w-0">
+                    <h3 className="text-base font-semibold leading-snug line-clamp-2">
+                      {item.title}
+                    </h3>
+                    <p className="mt-1 text-sm text-white/60 line-clamp-1">
+                      {sectionTitles[String(item.major)] ??
+                        `セクション${item.major}`}
+                    </p>
+                  </div>
+                  <span className="ml-auto opacity-50 group-hover:opacity-100">
+                    ›
+                  </span>
+                </div>
               </Link>
             </div>
           );

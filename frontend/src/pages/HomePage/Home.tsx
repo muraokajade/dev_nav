@@ -22,21 +22,34 @@ export const Home = () => {
   }, []);
 
   // 3Dロゴの座標・スケール
-  const reactPos: [number, number, number] = isMobile ? [-2, 0, 0] : [-4, 0, 0];
-  const springPos: [number, number, number] = isMobile ? [2, 0, 0] : [4, 0, 0];
+  const reactPos: [number, number, number] = isMobile
+    ? [-1.7, 0.1, 0]
+    : [-4, 0, 0];
+  const springPos: [number, number, number] = isMobile
+    ? [1.7, 0.1, 0]
+    : [4, 0, 0];
   const tsPos: [number, number, number] = isMobile
-    ? [-0.8, -1.2, 0]
+    ? [-0.4, -1.25, 0]
     : [-1.6, -1.8, 0];
   const javaPos: [number, number, number] = isMobile
-    ? [3.0, -1.2, 0]
+    ? [2.8, -1.25, 0]
     : [6.0, -1.8, 0];
-  const reactScale: [number, number, number] = [0.7, 0.7, 1];
-  const springScale: [number, number, number] = [0.8, -0.7, 1];
-  const tsScale: [number, number, number] = [0.19, -0.19, 1];
-  const javaScale: [number, number, number] = [0.26, -0.26, 1.5];
+
+  const reactScale: [number, number, number] = isMobile
+    ? [0.5, -0.5, 1]
+    : [0.62, -0.62, 1];
+  const springScale: [number, number, number] = isMobile
+    ? [0.5, -0.5, 1]
+    : [0.62, -0.62, 1];
+  const tsScale: [number, number, number] = isMobile
+    ? [0.11, -0.11, 1]
+    : [0.24, -0.24, 1];
+  const javaScale: [number, number, number] = isMobile
+    ? [0.22, -0.22, 1.875]
+    : [0.52, -0.52, 1.875];
 
   return (
-    <div className="relative min-h-screen w-full bg-gray-950">
+    <div className="relative min-h-screen w-full bg-gray-900">
       {/* HERO 背景：ラジアル + フェード */}
       <div
         aria-hidden
@@ -66,7 +79,7 @@ export const Home = () => {
           initial={{ opacity: 0, y: 20 }}
           animate={{ opacity: 1, y: 0 }}
           transition={{ delay: 0.1, duration: 0.5 }}
-          className="mt-4 text-base md:text-lg leading-relaxed text-gray-300 text-center max-w-2xl"
+          className="mt-4 text-base md:text-lg leading-snug text-gray-300 text-center max-w-3xl"
         >
           日本語で統合教材が少ない領域を網羅。TypeScript ×
           Java、実装→設計→デプロイまで一気通貫で学べます。
@@ -81,14 +94,14 @@ export const Home = () => {
         >
           <Link
             to="/start"
-            className="min-w-[160px] px-6 py-3 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-semibold shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 text-center"
+            className="transition-colors duration-200 min-w-[160px] px-6 py-3 rounded-xl bg-sky-500 hover:bg-sky-600 text-white font-semibold shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-300 text-center"
             aria-label="学習を始める"
           >
             学習を始める
           </Link>
           <Link
             to="/articles"
-            className="min-w-[160px] px-6 py-3 rounded-xl border border-white/15 bg-white/10 hover:bg-white/20 text-white backdrop-blur text-center"
+            className="transition-colors duration-200 min-w-[160px] px-6 py-3 rounded-xl border border-white/15 bg-white/20 hover:bg-white/20 text-white backdrop-blur text-center"
             aria-label="記事を探す"
           >
             記事を探す

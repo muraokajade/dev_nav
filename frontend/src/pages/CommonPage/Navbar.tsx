@@ -46,21 +46,21 @@ export const Navbar = () => {
 
         {/* 中央：リンク（PCのみ表示） */}
         <div className="hidden md:flex space-x-6">
-          <Link to="/tech" className="text-white hover:text-blue-300">
+          <Link to="/tech" onClick={() => setIsOpen(false)} className="text-white hover:text-blue-300">
             技術スタック
           </Link>
-          <Link to="/syntaxes" className="text-white hover:text-blue-300">
+          <Link to="/syntaxes" onClick={() => setIsOpen(false)} className="text-white hover:text-blue-300">
             基本文法
           </Link>
-          <Link to="/procedures" className="text-white hover:text-blue-300">
+          <Link to="/procedures" onClick={() => setIsOpen(false)} className="text-white hover:text-blue-300">
             開発手順書
           </Link>
           {/* ★追加 */}
-          <Link to="/mypage" className="text-white hover:text-blue-300">
+          <Link to="/mypage" onClick={() => setIsOpen(false)} className="text-white hover:text-blue-300">
             マイページ
           </Link>
           {isAdmin && (
-            <Link to="/admin" className="text-white hover:text-blue-300">
+            <Link to="/admin" onClick={() => setIsOpen(false)} className="text-white hover:text-blue-300">
               管理者専用
             </Link>
           )}
@@ -72,7 +72,10 @@ export const Navbar = () => {
             <>
               {/* <span className="text-white">ようこそ, {currentUser?.displayName}</span> */}
               <button
-                onClick={handleLogout}
+                onClick={() => {
+                  handleLogout();
+                  setIsOpen(false); // メニューを閉じる
+                }}
                 className="bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
               >
                 ログアウト
@@ -81,6 +84,7 @@ export const Navbar = () => {
           ) : (
             <Link
               to="/login"
+              onClick={() => setIsOpen(false)}
               className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
             >
               ログイン
@@ -91,22 +95,42 @@ export const Navbar = () => {
 
       {/* モバイルメニュー */}
       {isOpen && (
-        <div className="md:hidden mt-2 space-y-2 px-4">
-          <Link to="/tech" className="block text-white hover:text-blue-300">
+        <div className="md:hidden flex flex-col px-4 py-3 space-y-2 text-lg text-center">
+          <Link
+            to="/tech"
+            onClick={() => setIsOpen(false)}
+            className="block text-white hover:text-blue-300"
+          >
             技術スタック
           </Link>
-          <Link to="/basics" className="block text-white hover:text-blue-300">
+          <Link
+            to="/syntaxes"
+            onClick={() => setIsOpen(false)}
+            className="block text-white hover:text-blue-300"
+          >
             基本文法
           </Link>
-          <Link to="/procedures" className="text-white hover:text-blue-300">
+          <Link
+            to="/procedures"
+            onClick={() => setIsOpen(false)}
+            className="text-white hover:text-blue-300"
+          >
             開発手順書
           </Link>
           {/* ★追加 */}
-          <Link to="/mypage" className="text-white hover:text-blue-300">
+          <Link
+            to="/mypage"
+            onClick={() => setIsOpen(false)}
+            className="text-white hover:text-blue-300"
+          >
             マイページ
           </Link>
           {isAdmin && (
-            <Link to="/admin" className="text-white hover:text-blue-300">
+            <Link
+              to="/admin"
+              onClick={() => setIsOpen(false)}
+              className="text-white hover:text-blue-300"
+            >
               管理者専用
             </Link>
           )}
@@ -116,8 +140,11 @@ export const Navbar = () => {
                 ようこそ, {currentUser?.email}
               </span>
               <button
-                onClick={handleLogout}
-                className="block w-full bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
+                onClick={() => {
+                  handleLogout();
+                  setIsOpen(false); // メニューを閉じる
+                }}
+                className="block md:w-full mx-auto  bg-red-500 text-white px-4 py-2 rounded hover:bg-red-600"
               >
                 ログアウト
               </button>
@@ -125,7 +152,8 @@ export const Navbar = () => {
           ) : (
             <Link
               to="/login"
-              className="block bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
+              onClick={() => setIsOpen(false)}
+              className="block md:w-full mx-auto bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
             >
               ログイン
             </Link>

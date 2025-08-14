@@ -68,7 +68,7 @@ export const AdminPage = () => {
   return (
     <div className="min-h-screen bg-gray-900 flex flex-col sm:flex-row">
       {/* サイドメニュー */}
-      <aside className="bg-zinc-950 py-4 sm:py-8 sm:w-64 w-full">
+      <aside className="bg-gray-900 py-4 sm:py-8 sm:w-64 w-full">
         <div className="flex flex-col gap-4 px-4">
           {/* セクション切替 */}
           <div className="flex gap-2 justify-center sm:justify-start flex-wrap">
@@ -102,7 +102,7 @@ export const AdminPage = () => {
       </aside>
 
       {/* メインエリア */}
-      <main className="flex-1 bg-gray-950 p-4 sm:p-10 overflow-x-hidden">
+      <main className="flex-1 bg-gray-900 p-4 sm:p-10 overflow-x-hidden">
         <div className="w-full max-w-full overflow-x-auto">{renderContent()}</div>
       </main>
     </div>

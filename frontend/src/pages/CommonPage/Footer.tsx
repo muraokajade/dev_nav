@@ -4,11 +4,13 @@ import { Link } from "react-router-dom";
 export const Footer = () => {
   return (
     <footer className="bg-gray-900 text-gray-100 pt-12 pb-6 mt-auto shadow-inner border-t border-gray-800">
-      <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-start gap-8 px-6">
-
+      <div className="max-w-5xl mx-auto flex flex-col md:flex-row justify-between items-center md:items-start gap-8 px-6">
         {/* サービスロゴ・コピー */}
-        <div className="mb-4 md:mb-0 flex flex-col items-start">
-          <Link to="/" className="text-3xl font-extrabold flex items-center gap-1 mb-1">
+        <div className="mb-4 md:mb-0 flex flex-col items-center md:items-start">
+          <Link
+            to="/"
+            className="text-3xl font-extrabold flex items-center gap-1 mb-1"
+          >
             <span className="text-blue-400">Dev</span>
             <span className="text-white">Nav</span>
             <span className="text-blue-600">+</span>
@@ -19,13 +21,25 @@ export const Footer = () => {
         </div>
 
         {/* サイトマップ */}
-        <nav className="flex flex-col gap-2 text-base">
-          <Link to="/" className="hover:text-blue-400 transition">トップ</Link>
-          <Link to="/tech" className="hover:text-blue-400 transition">記事一覧</Link>
-          <Link to="/mypage" className="hover:text-blue-400 transition">マイページ</Link>
-          <Link to="/about" className="hover:text-blue-400 transition">運営者情報</Link>
-          <Link to="/contact" className="hover:text-blue-400 transition">お問い合わせ</Link>
-          <Link to="/policy" className="hover:text-blue-400 transition">プライバシーポリシー</Link>
+        <nav className="flex flex-col gap-2 text-lg text-center md:text-left md:text-base">
+          <Link to="/" className="hover:text-blue-400 transition">
+            トップ
+          </Link>
+          <Link to="/tech" className="hover:text-blue-400 transition">
+            記事一覧
+          </Link>
+          <Link to="/mypage" className="hover:text-blue-400 transition">
+            マイページ
+          </Link>
+          <Link to="/about" className="hover:text-blue-400 transition">
+            運営者情報
+          </Link>
+          <Link to="/contact" className="hover:text-blue-400 transition">
+            お問い合わせ
+          </Link>
+          <Link to="/policy" className="hover:text-blue-400 transition">
+            プライバシーポリシー
+          </Link>
         </nav>
 
         {/* SNS／GitHub等 */}

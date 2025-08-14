@@ -85,71 +85,73 @@ export const TechList = () => {
         <div className="p-6 text-white">
           <h1 className="text-3xl font-bold mb-6">技術スタック一覧</h1>
 
-          <div className="flex flex-col sm:flex-row gap-4 mb-6">
-            <input
-              type="text"
-              placeholder="検索ワードを入力"
-              className="px-4 py-2 rounded bg-gray-800 border border-gray-600 focus:outline-none focus:ring focus:border-blue-500 w-full sm:w-1/2"
-              value={search}
-              onChange={(e) => setSearch(e.target.value)}
-            />
-
-            <select
-              className="px-4 py-2 rounded bg-gray-800 border border-gray-600 focus:outline-none focus:ring focus:border-blue-500 text-white"
-              value={selectedCategory}
-              onChange={(e) => setSelectedCategory(e.target.value)}
-            >
-              <option value="">すべてのカテゴリ</option>
-              {categories.map((cat, i) => (
-                <option key={i} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
+          <div className="top-16 z-30 mb-6 bg-gray-900/80 backdrop-blur rounded-lg p-3 ring-1 ring-white/10">
+            <div className="flex flex-col sm:flex-row gap-3">
+              <input
+                placeholder="検索ワードを入力"
+                className="flex-1 h-11 rounded-lg bg-white/5 ring-1 ring-white/10 px-4 outline-none focus:ring-2 focus:ring-sky-400"
+                value={search}
+                onChange={(e) => setSearch(e.target.value)}
+              />
+              <select
+                className="h-11 rounded-lg bg-white/5 ring-1 ring-white/10 px-3 outline-none focus:ring-2 focus:ring-sky-400"
+                value={selectedCategory}
+                onChange={(e) => setSelectedCategory(e.target.value)}
+              >
+                <option value="">すべてのカテゴリ</option>
+                {categories.map((c, i) => (
+                  <option key={i} value={c}>
+                    {c}
+                  </option>
+                ))}
+              </select>
+            </div>
           </div>
           <div>
             {articlesByCategory.map(({ category, articles }) => (
               <div key={category} className="mb-8">
-                <h2 className="text-2xl font-bold mb-4">{category}</h2>
-                <ul className="space-y-2">
+                <h2 className="text-2xl font-bold mt-10 mb-4">{category}</h2>
+                <ul className="space-y-3">
                   {articles.length === 0 && (
-                    <li className="text-gray-400">
+                    <li className="text-white/60">
                       このカテゴリの記事はありません
                     </li>
                   )}
-                  {articles.map((item, i) => {
+                  {articles.map((item) => {
                     const isRead = readArticleIds.includes(item.id);
                     return (
                       <li key={item.id}>
                         <Link
                           to={`/tech/${item.id}-${item.slug}`}
-                          className="block p-4 rounded bg-gray-800 hover:bg-gray-700 transition"
+                          className="block rounded-xl bg-white/5 ring-1 ring-white/10 hover:bg-white/7 transition p-4"
                         >
-                          <div className="flex items-center gap-4">
+                          <div className="flex gap-4">
                             {item.imageUrl && (
                               <img
-                                src={item.imageUrl || "/default-thumbnail.jpg"}
-                                alt={item.title}
-                                className="w-16 h-16 object-cover rounded"
+                                src={item.imageUrl}
+                                alt=""
+                                className="w-16 h-16 rounded object-cover flex-none"
                               />
                             )}
-                            <div className="flex flex-col">
-                              <span className="text-lg font-semibold mb-4">
-                                {item.title}
-                                {isRead ? (
-                                  <span className="ml-2 px-2 py-1 bg-green-600 text-white rounded text-xs">
-                                    既読
-                                  </span>
-                                ) : (
-                                  <span className="ml-2 px-2 py-1 bg-gray-500 text-white rounded text-xs">
-                                    未読
-                                  </span>
-                                )}
-                              </span>
-                              <div className="text-sm text-gray-300 whitespace-pre-wrap break-words">
+                            <div className="min-w-0 w-full">
+                              <div className="flex items-start justify-between gap-3">
+                                <span className="text-lg font-semibold leading-snug line-clamp-2">
+                                  {item.title}
+                                </span>
+                                <span
+                                  className={`shrink-0 h-6 px-2 rounded text-xs grid place-items-center
+                  ${
+                    isRead
+                      ? "bg-emerald-500/20 text-emerald-300"
+                      : "bg-white/10 text-white/70"
+                  }`}
+                                >
+                                  {isRead ? "既読" : "未読"}
+                                </span>
+                              </div>
+                              <p className="mt-2 text-sm text-white/70 line-clamp-3 break-words">
                                 {item.summary
-                                  .replace(/#### /g, "")
-                                  .replace(/### /g, "")
+                                  .replace(/#### |### /g, "")
                                   .replace(/[#>*`-]+/g, "")
                                   .replace("想定読者", "【想定読者】")
                                   .replace(
@@ -159,9 +161,8 @@ export const TechList = () => {
                                   .replace(
                                     "対応例（Java）",
                                     "【対応例（Java）】"
-                                  )
-                                  .slice(0, 300)}
-                              </div>
+                                  )}
+                              </p>
                             </div>
                           </div>
                         </Link>
