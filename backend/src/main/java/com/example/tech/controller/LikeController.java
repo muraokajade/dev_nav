@@ -1,7 +1,7 @@
 package com.example.tech.controller;
 
 import com.example.tech.dto.request.LikeRequest;
-import com.example.tech.dto.response.LikeStatusResponse;
+import com.example.tech.dto.response.LikeStatusDTO;
 import com.example.tech.service.FirebaseAuthService;
 import com.example.tech.service.LikeService;
 import lombok.RequiredArgsConstructor;
@@ -34,13 +34,13 @@ public class LikeController {
     }
 
     @GetMapping("/status")
-    public LikeStatusResponse getStatusResponse(@RequestHeader(name = "Authorization")String token,
+    public LikeStatusDTO getStatusResponse(@RequestHeader(name = "Authorization")String token,
                                                 @RequestParam Long articleId)
     {
         String userEmail = firebaseAuthService.verifyAndGetEmail(token);
         boolean liked = likeService.findByUserIdAndArticleId(userEmail, articleId);
         Long count = likeService.countByArticleId(articleId);
-        return new LikeStatusResponse(liked,count);
+        return new LikeStatusDTO(liked,count);
     }
 
     @GetMapping("/count")

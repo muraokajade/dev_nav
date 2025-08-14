@@ -1,4 +1,5 @@
 package com.example.tech.api;
 
-public class ThreadDto {
-}
+import com.example.tech.domain.*;
+
+public record ThreadDto(Long id, TargetType type, Long refId, Category category) {}

@@ -1,4 +1,5 @@
 package com.example.tech.api;
 
-public class ThreadWithMessagesDto {
-}
+import java.util.List;
+
+public record ThreadWithMessagesDto(ThreadDto thread, List<MessageDto> messages) {}

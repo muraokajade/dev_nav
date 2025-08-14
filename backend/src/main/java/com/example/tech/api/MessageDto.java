@@ -1,4 +1,12 @@
 package com.example.tech.api;
 
-public class MessageDto {
-}
+import java.time.LocalDateTime;
+
+public record MessageDto(
+        Long id,
+        Long threadId,
+        String userId,
+        String body,
+        LocalDateTime createdAt,
+        LocalDateTime updatedAt
+) {}

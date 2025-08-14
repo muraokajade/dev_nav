@@ -1,4 +1,4 @@
-package com.example.tech.entity;
+package com.example.tech.utils;
 
 public final class StepNumber {
     private StepNumber() {}

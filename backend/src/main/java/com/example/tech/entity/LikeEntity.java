@@ -19,12 +19,10 @@ public class LikeEntity {
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    //private Long userId;
     @ManyToOne
     @JoinColumn(name = "user_id")
     private UserEntity user;
 
-    //private Long articleId;
     @ManyToOne
     @JoinColumn(name = "article_id")
     private ArticleEntity article;

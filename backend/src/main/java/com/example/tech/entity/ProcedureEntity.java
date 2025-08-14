@@ -1,5 +1,6 @@
 package com.example.tech.entity;
 
+import com.example.tech.utils.StepNumber;
 import jakarta.persistence.*;
 import lombok.AllArgsConstructor;
 import lombok.Data;
@@ -20,6 +21,19 @@ public class ProcedureEntity {
     private Long id;
 
     private String stepNumber;
+    // 追加（数値で並べ替えるため）
+    @Column(name = "step_major", nullable = false)
+    private int stepMajor;
+
+    @Column(name = "step_minor", nullable = false)
+    private int stepMinor;
+    // 変更時に自動同期しておくと楽
+    @PrePersist @PreUpdate
+    private void syncStepNumbers() {
+        int[] p = StepNumber.parse(stepNumber); // 下のユーティリティ
+        this.stepMajor = p[0];
+        this.stepMinor = p[1];
+    }
     @Column(unique = true)
     private String slug;
     private String title;
@@ -50,3 +64,4 @@ public class ProcedureEntity {
 
 
 }
+

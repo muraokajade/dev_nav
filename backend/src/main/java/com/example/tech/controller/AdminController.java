@@ -13,6 +13,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
+import org.springframework.data.domain.Sort;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 import org.springframework.web.multipart.MultipartFile;
@@ -234,7 +235,7 @@ public class AdminController {
                                                               @RequestParam int size)
     {
         String adminEmail = firebaseAuthService.verifyAdminAndGetEmail(token);
-        Pageable pageable = PageRequest.of(page, size);
+        Pageable pageable = PageRequest.of(page, size, Sort.by("stepMajor","stepMinor"));
         Page<ProcedureDTO> procedureDTOS = procedureService.getAllProcedure(adminEmail,pageable);
         return ResponseEntity.ok(procedureDTOS);
     }

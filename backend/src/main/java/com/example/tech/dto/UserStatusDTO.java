@@ -17,6 +17,5 @@ public class UserStatusDTO {
     private int level;
     private int expPercent;
     private List<ArticleDTO> likedArticles;
-    // 必要に応じて「いいねした記事一覧」など追加
 }
 

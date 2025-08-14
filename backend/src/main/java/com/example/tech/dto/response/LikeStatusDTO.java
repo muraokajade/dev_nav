@@ -7,7 +7,7 @@ import lombok.NoArgsConstructor;
 @Data
 @AllArgsConstructor
 @NoArgsConstructor
-public class LikeStatusResponse {
+public class LikeStatusDTO {
     private boolean liked;
     private Long count;
 }
