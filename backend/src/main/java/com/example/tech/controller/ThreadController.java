@@ -93,41 +93,63 @@ public class ThreadController {
     // POST /api/{type}/{refId}/{category}/messages  … メッセージ作成
     public record PostBody(@NotBlank String body) {}
 
+    /**
+     * メッセージを指定されたスレッド（targetType + refId + category）に追加する。
+     * スレッドが存在しなければ新規作成してからメッセージを追加。
+     */
     @PostMapping("/{type}/{refId}/{category}/messages")
     public ResponseEntity<MessageDto> postMessage(
-            @PathVariable String type,
-            @PathVariable Long refId,
-            @PathVariable String category,
-            @RequestBody PostBody requestBody
+            @PathVariable String type,        // URLパスの {type}（例: "ARTICLE"）を受け取る
+            @PathVariable Long refId,         // URLパスの {refId}（対象記事や手順のID）
+            @PathVariable String category,    // URLパスの {category}（例: "COMMENT"）
+            @RequestBody PostBody requestBody // リクエスト本文 {"body": "コメント内容"}
     ) {
+        // --- 入力バリデーション ---
+        // requestBody自体がnull、bodyがnull、または空文字の場合は400 Bad Request
         if (requestBody == null || requestBody.body() == null || requestBody.body().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "body is required");
         }
 
+        // --- String → Enum変換 ---
+        // パス変数で受け取った文字列をEnum型（TargetType, Category）に変換
+        // 無効な値の場合はparseXxx内で例外（400や422など）を投げる想定
         TargetType targetType = parseTargetType(type);
         Category categoryEnum = parseCategory(category);
+
+        // --- スレッド（会話の箱）の取得 or 作成 ---
+        // 同じ targetType + refId + category のスレッドがあれば取得、なければ新規作成
         ThreadEntity threadEntity = threadService.getOrCreate(targetType, refId, categoryEnum);
 
-        String currentEmail = currentUserEmail(); // ← email で保存
+        // --- 投稿者情報の取得 ---
+        // 現在ログイン中のユーザーのメールアドレスを取得（認証情報から）
+        String currentEmail = currentUserEmail();
 
+        // --- メッセージエンティティの生成 ---
+        // ThreadEntity（箱）に紐づく新しいメッセージ（本文＋投稿者）を作成
         ThreadMessageEntity newMessageEntity = ThreadMessageEntity.builder()
-                .thread(threadEntity)
-                .userId(currentEmail)            // ← userId=email
-                .body(requestBody.body())
+                .thread(threadEntity)      // 紐づけるスレッド
+                .userId(currentEmail)      // 投稿者のID（ここではメールアドレス）
+                .body(requestBody.body())  // メッセージ本文
                 .build();
 
+        // --- メッセージの保存 ---
         ThreadMessageEntity saved = threadMessageRepository.save(newMessageEntity);
 
+        // --- レスポンスDTOの生成 ---
+        // 保存されたエンティティの情報をクライアント向けDTOに詰め直す
         MessageDto response = new MessageDto(
-                saved.getId(),
-                threadEntity.getId(),
-                saved.getUserId(),
-                saved.getBody(),
-                saved.getCreatedAt(),
-                saved.getUpdatedAt()
+                saved.getId(),             // メッセージID
+                threadEntity.getId(),      // 紐づくスレッドID
+                saved.getUserId(),         // 投稿者ID
+                saved.getBody(),           // 本文
+                saved.getCreatedAt(),      // 作成日時
+                saved.getUpdatedAt()       // 更新日時
         );
+
+        // --- 201 Createdでレスポンス返却 ---
         return ResponseEntity.status(201).body(response);
     }
+
 
     // PUT /api/messages/{id}  … メッセージ更新（本人のみ）
     @PutMapping("/messages/{id}")

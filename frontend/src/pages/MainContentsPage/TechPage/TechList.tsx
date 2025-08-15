@@ -85,26 +85,34 @@ export const TechList = () => {
         <div className="p-6 text-white">
           <h1 className="text-3xl font-bold mb-6">技術スタック一覧</h1>
 
-          <div className="top-16 z-30 mb-6 bg-gray-900/80 backdrop-blur rounded-lg p-3 ring-1 ring-white/10">
-            <div className="flex flex-col sm:flex-row gap-3">
-              <input
-                placeholder="検索ワードを入力"
-                className="flex-1 h-11 rounded-lg bg-white/5 ring-1 ring-white/10 px-4 outline-none focus:ring-2 focus:ring-sky-400"
-                value={search}
-                onChange={(e) => setSearch(e.target.value)}
-              />
-              <select
-                className="h-11 rounded-lg bg-white/5 ring-1 ring-white/10 px-3 outline-none focus:ring-2 focus:ring-sky-400"
-                value={selectedCategory}
-                onChange={(e) => setSelectedCategory(e.target.value)}
-              >
-                <option value="">すべてのカテゴリ</option>
-                {categories.map((c, i) => (
-                  <option key={i} value={c}>
-                    {c}
-                  </option>
-                ))}
-              </select>
+          <div className="z-30 mb-6 relative rounded-lg ring-1 ring-white/10">
+            {/* 背景だけに blur を適用（選択肢の座標ズレ防止） */}
+            <div className="absolute inset-0 rounded-lg bg-gray-900/80 md:backdrop-blur pointer-events-none" />
+
+            {/* 中身（blur無し） */}
+            <div className="relative p-3">
+              <div className="flex flex-col sm:flex-row gap-3">
+                <input
+                  placeholder="検索ワードを入力"
+                  className="min-w-0 flex-1 rounded-lg bg-white/5 ring-1 ring-white/10
+                   px-4 py-2 outline-none focus:ring-2 focus:ring-sky-400"
+                  value={search}
+                  onChange={(e) => setSearch(e.target.value)}
+                />
+                <select
+                  className="h-11 w-full sm:w-56 rounded-lg bg-white/5 ring-1 ring-white/10
+                   px-3 outline-none focus:ring-2 focus:ring-sky-400"
+                  value={selectedCategory}
+                  onChange={(e) => setSelectedCategory(e.target.value)}
+                >
+                  <option value="">すべてのカテゴリ</option>
+                  {categories.map((c, i) => (
+                    <option key={i} value={c}>
+                      {c}
+                    </option>
+                  ))}
+                </select>
+              </div>
             </div>
           </div>
           <div>

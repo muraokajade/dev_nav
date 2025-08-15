@@ -18,8 +18,10 @@ public class ThreadMessageEntity {
     @JoinColumn(name = "thread_id", nullable = false)
     private ThreadEntity thread;
 
-    @Column(name = "user_id", nullable = false) private String userId;
-    @Column(name = "body", nullable = false, columnDefinition = "TEXT") private String body;
+    @Column(name = "user_id", nullable = false)
+    private String userId;
+    @Column(name = "body", nullable = false, columnDefinition = "TEXT")
+    private String body;
 
     @CreationTimestamp @Column(name = "created_at", nullable = false) private LocalDateTime createdAt;
     @UpdateTimestamp  @Column(name = "updated_at") private LocalDateTime updatedAt;
