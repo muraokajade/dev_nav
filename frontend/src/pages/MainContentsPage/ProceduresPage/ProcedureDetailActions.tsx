@@ -1,26 +1,25 @@
 import React, { useState } from "react";
 import { ReviewScore } from "../../../utils/ReviewScore";
-import { ReviewComments } from "../../../utils/ReviewComments";
+import { ReviewComments } from "../../../utils/ReviewComments"; // 使っていなければ削除OK
 import { MessagesNew } from "../../../utils/MessagesNew"; 
 import { ThreadComments } from "../../../components/ThreadComments";
 
-export const SyntaxDetailActions: React.FC<{
-  syntaxId: number;
+export const ProcedureDetailActions: React.FC<{
+  procedureId: number;
   myUserId: number;
-}> = ({ syntaxId, myUserId }) => {
-  // タブの状態
+}> = ({ procedureId, myUserId }) => {
+  // タブ状態
   const [activeTab, setActiveTab] = useState<
     "review" | "comment" | "message" | null
   >(null);
 
-  // タブ定義
+  // タブ一覧
   const tabs = [
     { key: "review", label: "レビュー" },
     { key: "comment", label: "コメント" },
     { key: "message", label: "Q&A" },
   ] as const;
 
-  // 全体を一つのカードに
   return (
     <div className="max-w-4xl w-full mx-auto px-4 mt-8">
       {/* タブボタン */}
@@ -41,23 +40,29 @@ export const SyntaxDetailActions: React.FC<{
         ))}
       </div>
 
-      {/* 開閉式エリア */}
+      {/* コンテンツ */}
       {activeTab && (
         <div className="bg-zinc-900 p-6 rounded-2xl shadow-lg animate-fade-in mb-6">
           {activeTab === "review" && (
             <ReviewScore
-              targetType="SYNTAX"
-              refId={syntaxId}
+              targetType="PROCEDURE"
+              refId={procedureId}
               myUserId={myUserId}
             />
           )}
+
           {activeTab === "comment" && (
-            <ThreadComments type="syntax" refId={syntaxId} category="comment" />
+            <ThreadComments
+              type="procedure"
+              refId={procedureId}
+              category="comment"
+            />
           )}
+
           {activeTab === "message" && (
             <MessagesNew
-              targetType="SYNTAX"
-              refId={syntaxId}
+              targetType="PROCEDURE"
+              refId={procedureId}
               myUserId={myUserId}
             />
           )}

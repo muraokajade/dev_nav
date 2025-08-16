@@ -91,12 +91,15 @@ export const StarRatingSVG: React.FC<StarRatingProps> = ({
   );
 };
 
-export const ReviewScore: React.FC<{ articleId: number; myUserId: number }> = ({
-  articleId,
-  myUserId,
+export const ReviewScore:React.FC<{
+  targetType: "ARTICLE" | "SYNTAX" | "PROCEDURE";
+  refId: number;
+  myUserId: number;
+}> = ({
+targetType, refId, myUserId
 }) => {
   const { scores, myScore, loading, submitScore, average, error } =
-    useReviewScores(articleId, myUserId);
+    useReviewScores(targetType, refId, myUserId);
   console.log(scores);
   const [tempScore, setTempScore] = useState(myScore ?? 0);
 

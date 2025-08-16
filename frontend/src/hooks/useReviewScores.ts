@@ -8,29 +8,32 @@ type Score = {
   score: number;
 };
 
-export const useReviewScores = (articleId: number, myUserId: number) => {
+type TargetType = "ARTICLE" | "SYNTAX" | "PROCEDURE";
+
+export const useReviewScores = (
+  targetType: TargetType,
+  refId: number,
+  myUserId: number
+) => {
   const [scores, setScores] = useState<Score[]>([]);
-  const [myScore, setMyScore] = useState<number | null>(null); //自分の投稿
+  const [myScore, setMyScore] = useState<number | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const { idToken } = useAuth();
 
   // 全体分
-
   const fetchAllScores = useCallback(async () => {
     try {
       const res = await axios.get(
-        `/api/review-scores/all?articleId=${articleId}`,
-        {
-          headers: { Authorization: `Bearer ${idToken}` },
-        }
+        `/api/review-scores/${targetType.toLowerCase()}/${refId}`,
+        { headers: { Authorization: `Bearer ${idToken}` } }
       );
       setScores(res.data);
-    } catch (e) {
+    } catch {
       setScores([]);
       setLoading(false);
     }
-  }, [articleId, idToken]);
+  }, [targetType, refId, idToken]);
 
   useEffect(() => {
     (async () => {
@@ -38,50 +41,50 @@ export const useReviewScores = (articleId: number, myUserId: number) => {
     })();
   }, [idToken, fetchAllScores]);
 
-
-
   // 自分の分
   useEffect(() => {
     if (!idToken) return;
     const fetchScore = async () => {
       try {
         const res = await axios.get(
-          `/api/review-scores?articleId=${articleId}`,
+          `/api/review-scores/my/${targetType.toLowerCase()}/${refId}`,
           { headers: { Authorization: `Bearer ${idToken}` } }
         );
         setMyScore(res.data.score ?? null);
-      } catch (e) {
+      } catch {
         setMyScore(null);
       } finally {
         setLoading(false);
       }
     };
     fetchScore();
-  }, [articleId, idToken]);
+  }, [targetType, refId, idToken]);
 
-  // 送信系（myScoreがあればPUT、なければPOST）
+  // 送信系
   const submitScore = async (score: number) => {
     setLoading(true);
     setError(null);
 
     try {
-      //まだ自分のスコアがない時
+      const payload = { score }; // targetType, refId は URL に含まれるから不要でもOK
+
       if (myScore === null) {
         await axios.post(
-          "/api/review-scores",
-          { articleId, score },
+          `/api/review-scores/${targetType.toLowerCase()}/${refId}`,
+          payload,
           { headers: { Authorization: `Bearer ${idToken}` } }
         );
       } else {
         await axios.put(
-          "/api/review-scores",
-          { articleId, score },
+          `/api/review-scores/${targetType.toLowerCase()}/${refId}`,
+          payload,
           { headers: { Authorization: `Bearer ${idToken}` } }
         );
       }
+
       await fetchAllScores();
-    } catch (e) {
-      setError("スコア取得に失敗しました。");
+    } catch {
+      setError("スコア送信に失敗しました。");
     } finally {
       setLoading(false);
     }

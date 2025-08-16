@@ -6,6 +6,7 @@ import axios from "axios";
 import { usePagination } from "../../../hooks/usePagination";
 import { Procedure } from "../../../models/Procedure";
 import { Pagination } from "../../../utils/Pagination";
+import { useReadStatus, ReadTarget } from "../../../hooks/useReadStatus"; // ★ 共通化フック
 
 // セクション見出し定義（major番号: タイトル）
 const sectionTitles: Record<string, string> = {
@@ -57,39 +58,48 @@ export const ProceduresPage = () => {
     usePagination(initialPage);
   const pageSize = 10;
 
+  // 既読状態（共通フックから）
+  const { isRead } = useReadStatus(ReadTarget.Procedures);
+
   // --- 全ページ一括取得 → 正規化 → 数値ソート → クライアントページング ---
   useEffect(() => {
     const fetchAll = async () => {
-      // まず1ページ取り、総ページ数を把握
-      const first = await axios.get(`/api/procedures?page=0&size=50`);
-      const total = Number(first.data.totalPages) || 1;
+      try {
+        // まず1ページ取り、総ページ数を把握
+        const first = await axios.get(`/api/procedures?page=0&size=50`);
+        const total = Number(first.data.totalPages) || 1;
 
-      // 残りページもまとめて取得
-      const rest = await Promise.all(
-        Array.from({ length: total - 1 }, (_, i) =>
-          axios.get(`/api/procedures?page=${i + 1}&size=50`)
-        )
-      );
+        // 残りページもまとめて取得
+        const rest = await Promise.all(
+          Array.from({ length: total - 1 }, (_, i) =>
+            axios.get(`/api/procedures?page=${i + 1}&size=50`)
+          )
+        );
 
-      const content: Procedure[] = [
-        ...first.data.content,
-        ...rest.flatMap((r) => r.data.content),
-      ];
+        const content: Procedure[] = [
+          ...first.data.content,
+          ...rest.flatMap((r) => r.data.content),
+        ];
 
-      // 正規化＆major/minor数値化
-      const normalized: Row[] = content.map((p) => {
-        const step = normalizeStep(p.stepNumber);
-        const [major, minor] = parseStep(step);
-        return { ...p, stepNumber: step, major, minor };
-      });
+        // 正規化＆major/minor数値化
+        const normalized: Row[] = content.map((p) => {
+          const step = normalizeStep(p.stepNumber);
+          const [major, minor] = parseStep(step);
+          return { ...p, stepNumber: step, major, minor };
+        });
 
-      // 数値で完全ソート
-      normalized.sort((a, b) =>
-        a.major !== b.major ? a.major - b.major : a.minor - b.minor
-      );
+        // 数値で完全ソート
+        normalized.sort((a, b) =>
+          a.major !== b.major ? a.major - b.major : a.minor - b.minor
+        );
 
-      setProcedures(normalized);
-      setTotalPages(Math.ceil(normalized.length / pageSize));
+        setProcedures(normalized);
+        setTotalPages(Math.ceil(normalized.length / pageSize));
+      } catch (e) {
+        console.error("手順一覧の取得に失敗しました", e);
+        setProcedures([]);
+        setTotalPages(0);
+      }
     };
 
     fetchAll();
@@ -112,6 +122,7 @@ export const ProceduresPage = () => {
         {visible.map((item, idx) => {
           const showHeader = idx === 0 || item.major !== visible[idx - 1].major;
           const majorStr = String(item.major);
+          const readFlag = isRead(item.id);
           return (
             <div key={item.id}>
               {showHeader && (
@@ -138,8 +149,16 @@ export const ProceduresPage = () => {
                         `セクション${item.major}`}
                     </p>
                   </div>
-                  <span className="ml-auto opacity-50 group-hover:opacity-100">
-                    ›
+                  {/* 既読/未読バッジ */}
+                  <span
+                    className={`ml-auto shrink-0 h-6 px-2 rounded text-xs grid place-items-center transition-opacity opacity-60 group-hover:opacity-100 ${
+                      readFlag
+                        ? "bg-emerald-500/20 text-emerald-300"
+                        : "bg-white/10 text-white/70"
+                    }`}
+                    aria-label={readFlag ? "既読" : "未読"}
+                  >
+                    {readFlag ? "既読" : "未読"}
                   </span>
                 </div>
               </Link>

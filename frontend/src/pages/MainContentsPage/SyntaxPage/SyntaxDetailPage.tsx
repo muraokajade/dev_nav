@@ -8,7 +8,7 @@ import dayjs from "dayjs";
 import { useAuth } from "../../../context/useAuthContext";
 import axios from "axios";
 import { LikeButton } from "../../../utils/LikeButton";
-import { SyntaxDetailActions } from "./SyntaxDetailActions"; 
+import { SyntaxDetailActions } from "./SyntaxDetailActions";
 
 export const SyntaxDetailPage = () => {
   const { idAndSlug } = useParams();
@@ -23,7 +23,7 @@ export const SyntaxDetailPage = () => {
   const [category, setCategory] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [content, setContent] = useState("");
-  const [articleId, setArticleId] = useState<number | null>(null);
+  const [syntaxId, setSyntaxId] = useState<number | null>(null);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isRead, setIsRead] = useState(false);
@@ -34,7 +34,7 @@ export const SyntaxDetailPage = () => {
     if (!idToken) return;
     if (liked) {
       try {
-        await axios.delete(`/api/likes/${articleId}`, {
+        await axios.delete(`/api/syntaxes/likes?syntaxId=${syntaxId}`, {
           headers: { Authorization: `Bearer ${idToken}` },
         });
         setLiked(false);
@@ -44,11 +44,9 @@ export const SyntaxDetailPage = () => {
       }
     } else {
       try {
-        await axios.post(
-          "/api/likes",
-          { articleId },
-          { headers: { Authorization: `Bearer ${idToken}` } }
-        );
+        await axios.post(`/api/syntaxes/likes?syntaxId=${syntaxId}`, null, {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
         setLiked(true);
         setLikeCount((prev) => prev + 1);
       } catch (e) {
@@ -59,11 +57,11 @@ export const SyntaxDetailPage = () => {
 
   // 読了
   const handleRead = async () => {
-    if (!idToken || !articleId) return;
+    if (!idToken || !syntaxId) return;
     try {
       await axios.post(
         "/api/articles/read",
-        { articleId },
+        { syntaxId },
         { headers: { Authorization: `Bearer ${idToken}` } }
       );
       setIsRead(true);
@@ -74,20 +72,32 @@ export const SyntaxDetailPage = () => {
     }
   };
 
+  //読了状態取得
   useEffect(() => {
-    if (!idToken || !articleId) return;
-    axios
-      .get(`/api/articles/read/status?articleId=${articleId}`, {
-        headers: { Authorization: `Bearer ${idToken}` },
-      })
-      .then((res) => setIsRead(res.data.read ?? false))
-      .catch(() => setIsRead(false));
-  }, [idToken, articleId]);
+    if (!idToken || !syntaxId) return;
 
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await axios.get("/api/articles/read/status", {
+          params: { articleId: syntaxId },
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        if (!cancelled) setIsRead(res.data?.read);
+      } catch (e) {
+        if (!cancelled) {
+          setIsRead(false);
+          console.error("読了状態取得失敗");
+        }
+      }
+    })();
+  }, [idToken, syntaxId]);
+
+  //いいね状態取得
   useEffect(() => {
-    if (!idToken || !articleId) return;
+    if (!idToken || !syntaxId) return;
     axios
-      .get(`/api/likes/status?articleId=${articleId}`, {
+      .get(`/api/syntaxes/likes/status?syntaxId=${syntaxId}`, {
         headers: { Authorization: `Bearer ${idToken}` },
       })
       .then((res) => {
@@ -95,8 +105,9 @@ export const SyntaxDetailPage = () => {
         setLiked(res.data.liked);
         setLikeCount(res.data.count);
       });
-  }, [articleId, idToken]);
+  }, [syntaxId, idToken]);
 
+  //api/me
   useEffect(() => {
     if (idToken) {
       axios
@@ -116,7 +127,7 @@ export const SyntaxDetailPage = () => {
       setCreatedAt(res.data.createdAt ?? "");
       setCategory(res.data.category ?? "");
       setContent(res.data.content);
-      setArticleId(res.data.id);
+      setSyntaxId(res.data.id);
     });
   }, [id]);
 
@@ -142,9 +153,13 @@ export const SyntaxDetailPage = () => {
         {/* 著者・日付・カテゴリ */}
         <div className="flex items-center gap-4 mb-6 text-gray-400 text-sm">
           <span>著者: {author}</span>
-          {createdAt && <span>投稿日: {dayjs(createdAt).format("YYYY/MM/DD")}</span>}
+          {createdAt && (
+            <span>投稿日: {dayjs(createdAt).format("YYYY/MM/DD")}</span>
+          )}
           {category && (
-            <span className="bg-blue-500 px-2 py-0.5 rounded text-white">{category}</span>
+            <span className="bg-blue-500 px-2 py-0.5 rounded text-white">
+              {category}
+            </span>
           )}
         </div>
 
@@ -182,8 +197,8 @@ export const SyntaxDetailPage = () => {
       {/* レビュー・コメント・Q&Aタブ */}
       <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-start md:items-center gap-4 mt-8">
         <div className="flex-1">
-          {articleId && myUserId != null && (
-            <SyntaxDetailActions articleId={articleId} myUserId={myUserId} />
+          {syntaxId && myUserId != null && (
+            <SyntaxDetailActions syntaxId={syntaxId} myUserId={myUserId} />
           )}
         </div>
         <div className="flex-shrink-0 flex items-center">

@@ -33,4 +33,6 @@ public class ProcedureController {
         ProcedureDTO procedure = procedureService.getProcedureById(id);
         return ResponseEntity.ok(procedure);
     }
+
+
 }

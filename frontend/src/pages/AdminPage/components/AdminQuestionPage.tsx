@@ -1,5 +1,96 @@
 import { useState } from "react";
+import { Link } from "react-router-dom";
 import { MessageResponse } from "../../../models/MessageResponse";
+
+/**
+ * TargetType enum(ARTICLE/SYNTAX/PROCEDURE) → ルート名
+ */
+const targetEnumToRoute = (t?: string): "articles" | "syntaxes" | "procedures" | undefined => {
+  if (!t) return undefined;
+  switch (t) {
+    case "ARTICLE":
+      return "articles";
+    case "SYNTAX":
+      return "syntaxes";
+    case "PROCEDURE":
+      return "procedures";
+    default:
+      // 既に "articles" 等が来るケースにも一応対応
+      if (t.toLowerCase() === "articles") return "articles";
+      if (t.toLowerCase() === "syntaxes") return "syntaxes";
+      if (t.toLowerCase() === "procedures") return "procedures";
+      return undefined;
+  }
+};
+
+/**
+ * MessageResponse から target & id & title/slug を引き出す（DTO優先・旧プロパティにフォールバック）
+ */
+function resolveLinkInfo(msg: any): {
+  route?: "articles" | "syntaxes" | "procedures";
+  id?: number;
+  title?: string;
+  slug?: string;
+} {
+  // 1) DTO拡張（推奨）: targetType/ contentId / contentTitle / contentSlug
+  const routeFromEnum = targetEnumToRoute(msg.targetType);
+  const idFromDto: number | undefined = msg.contentId ?? undefined;
+  const titleFromDto: string | undefined = msg.contentTitle ?? undefined;
+  const slugFromDto: string | undefined = msg.contentSlug ?? undefined;
+
+  if (routeFromEnum && idFromDto) {
+    return { route: routeFromEnum, id: idFromDto, title: titleFromDto, slug: slugFromDto };
+  }
+
+  // 2) 旧形式: target + contentId
+  if (msg.target && msg.contentId) {
+    const t = targetEnumToRoute(String(msg.target).toUpperCase()) ?? msg.target;
+    const route =
+      t === "articles" || t === "syntaxes" || t === "procedures" ? (t as any) : undefined;
+    return {
+      route,
+      id: msg.contentId,
+      title:
+        msg.contentTitle ??
+        msg.articleTitle ??
+        msg.syntaxTitle ??
+        msg.procedureTitle,
+      slug:
+        msg.contentSlug ??
+        msg.articleSlug ??
+        msg.syntaxSlug ??
+        msg.procedureSlug,
+    };
+  }
+
+  // 3) 専用キーにフォールバック
+  if (msg.articleId) {
+    return {
+      route: "articles",
+      id: msg.articleId,
+      title: msg.articleTitle,
+      slug: msg.articleSlug,
+    };
+  }
+  if (msg.syntaxId) {
+    return {
+      route: "syntaxes",
+      id: msg.syntaxId,
+      title: msg.syntaxTitle,
+      slug: msg.syntaxSlug,
+    };
+  }
+  if (msg.procedureId) {
+    return {
+      route: "procedures",
+      id: msg.procedureId,
+      title: msg.procedureTitle,
+      slug: msg.procedureSlug,
+    };
+  }
+
+  return {};
+}
 
 type Props = {
   message: MessageResponse;
@@ -14,6 +105,12 @@ export const AdminQuestionPage: React.FC<Props> = ({
 }) => {
   const [answer, setAnswer] = useState(message.response || "");
   const [editMode, setEditMode] = useState(false);
+
+  // リンク情報を解決（タイトル/スラッグが無ければIDリンクのみ）
+  const { route, id, title, slug } = resolveLinkInfo(message as any);
+  const linkPath =
+    route && id ? `/${route}/${id}${slug ? `-${slug}` : ""}` : undefined;
+  const linkedTitle = title || "関連コンテンツ";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -42,6 +139,21 @@ export const AdminQuestionPage: React.FC<Props> = ({
           {message.closed ? "対応済み" : "未対応"}
         </span>
       </div>
+
+      {/* 関連タイトル＋リンク（ある場合だけ表示） */}
+      {linkPath && (
+        <div className="mb-2">
+          <Link
+            to={linkPath}
+            className="text-sky-400 hover:underline"
+            target="_blank"
+            rel="noopener noreferrer"
+          >
+            📄 {linkedTitle} を開く
+          </Link>
+        </div>
+      )}
+
       {/* 質問内容 */}
       <div className="text-lg font-bold mb-2">{message.title}</div>
       <div className="mb-4">{message.question}</div>
@@ -63,6 +175,7 @@ export const AdminQuestionPage: React.FC<Props> = ({
               className={`px-4 py-1 rounded bg-blue-600 hover:bg-blue-700 text-white font-bold shadow ${
                 loading ? "opacity-60 cursor-not-allowed" : ""
               }`}
+              disabled={loading}
             >
               {message.closed ? "編集を保存" : "回答を送信"}
             </button>

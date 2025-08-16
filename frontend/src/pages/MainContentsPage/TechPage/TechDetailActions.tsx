@@ -1,14 +1,16 @@
 import React, { useState } from "react";
-import { ReviewScore } from "../../../utils/ReviewScore"; 
-import { ReviewComments } from "../../../utils/ReviewComments"; 
-import { Messages } from "../../../utils/Messages"; 
+import { ReviewScore } from "../../../utils/ReviewScore";
+import { ReviewComments } from "../../../utils/ReviewComments";
+import { MessagesNew } from "../../../utils/MessagesNew"; 
 
 export const TechDetailActions: React.FC<{
   articleId: number;
   myUserId: number;
 }> = ({ articleId, myUserId }) => {
   // タブの状態
-  const [activeTab, setActiveTab] = useState<"review" | "comment" | "message" | null>(null);
+  const [activeTab, setActiveTab] = useState<
+    "review" | "comment" | "message" | null
+  >(null);
 
   // タブ定義
   const tabs = [
@@ -27,9 +29,11 @@ export const TechDetailActions: React.FC<{
             key={tab.key}
             onClick={() => setActiveTab(tab.key === activeTab ? null : tab.key)}
             className={`px-4 py-2 rounded-xl font-bold shadow transition
-              ${activeTab === tab.key
-                ? "bg-blue-600 text-white"
-                : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"}`}
+              ${
+                activeTab === tab.key
+                  ? "bg-blue-600 text-white"
+                  : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+              }`}
           >
             {tab.label}
           </button>
@@ -39,9 +43,23 @@ export const TechDetailActions: React.FC<{
       {/* 開閉式エリア */}
       {activeTab && (
         <div className="bg-zinc-900 p-6 rounded-2xl shadow-lg animate-fade-in mb-6">
-          {activeTab === "review" && <ReviewScore articleId={articleId} myUserId={myUserId} />}
-          {activeTab === "comment" && <ReviewComments articleId={articleId} myUserId={myUserId} />}
-          {activeTab === "message" && <Messages articleId={articleId} myUserId={myUserId} />}
+          {activeTab === "review" && (
+            <ReviewScore
+              targetType="ARTICLE"
+              refId={articleId}
+              myUserId={myUserId}
+            />
+          )}
+          {activeTab === "comment" && (
+            <ReviewComments articleId={articleId} myUserId={myUserId} />
+          )}
+          {activeTab === "message" && (
+            <MessagesNew
+              targetType="ARTICLE"
+              refId={articleId}
+              myUserId={myUserId}
+            />
+          )}
         </div>
       )}
     </div>

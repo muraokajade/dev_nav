@@ -2,6 +2,7 @@ package com.example.tech.repository;
 
 import com.example.tech.dto.CalendarActionDTO;
 import com.example.tech.entity.ReviewScoreEntity;
+import com.example.tech.enums.TargetType;
 import org.springframework.data.jpa.repository.JpaRepository;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
@@ -35,4 +36,19 @@ public interface ReviewScoreRepository extends JpaRepository<ReviewScoreEntity,L
             @Param("end") LocalDateTime end);
 
     Optional<ReviewScoreEntity> findByUserIdAndArticle_Id(Long userId, Long articleId);
+
+    Optional<ReviewScoreEntity> findByUserIdAndSyntax_Id(Long userId, Long syntaxId);
+    Optional<ReviewScoreEntity> findByUserIdAndProcedure_Id(Long userId, Long procedureId);
+
+    List<ReviewScoreEntity> findByArticle_Id(Long articleId);
+    List<ReviewScoreEntity> findBySyntax_Id(Long syntaxId);
+    List<ReviewScoreEntity> findByProcedure_Id(Long procedureId);
+
+
+    Optional<ReviewScoreEntity> findByTargetTypeAndArticle_IdAndUser_Id(TargetType targetType, Long articleId, Long userId);
+
+    Optional<ReviewScoreEntity> findByTargetTypeAndSyntax_IdAndUser_Id(TargetType targetType, Long syntaxId, Long userId);
+
+    Optional<ReviewScoreEntity> findByTargetTypeAndProcedure_IdAndUser_Id(TargetType targetType, Long procedureId, Long userId);
+
 }

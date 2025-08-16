@@ -10,7 +10,7 @@ import { useAuth } from "../../context/useAuthContext";
 
 export const Home = () => {
   const { idToken } = useAuth();
-  // console.log(idToken);
+  console.log(idToken);
 
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" ? window.innerWidth < 640 : false

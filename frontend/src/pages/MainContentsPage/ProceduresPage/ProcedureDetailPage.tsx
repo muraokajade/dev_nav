@@ -7,7 +7,7 @@ import dayjs from "dayjs";
 import { useAuth } from "../../../context/useAuthContext";
 import axios from "axios";
 import { LikeButton } from "../../../utils/LikeButton";
-import { TechDetailActions } from "../TechPage/TechDetailActions";
+import { ProcedureDetailActions } from "./ProcedureDetailActions";
 
 export const ProcedureDetailPage = () => {
   const { idAndSlug } = useParams();
@@ -26,7 +26,10 @@ export const ProcedureDetailPage = () => {
   const [category, setCategory] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [content, setContent] = useState("");
-  const [articleId, setArticleId] = useState<number | null>(null);
+
+  // ★ ここを唯一のIDとして利用
+  const [procedureId, setProcedureId] = useState<number | null>(null);
+
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isRead, setIsRead] = useState(false);
@@ -59,8 +62,7 @@ export const ProcedureDetailPage = () => {
               copied
                 ? "bg-green-600 text-white"
                 : "bg-zinc-700/80 hover:bg-zinc-600 text-white"
-            }
-          `}
+            }`}
         >
           {copied ? "Copied!" : "Copy"}
         </button>
@@ -95,80 +97,71 @@ export const ProcedureDetailPage = () => {
     },
   };
 
-  // --- いいね処理 ---
-  const handleLike = async () => {
-    if (!idToken) return;
-    if (liked) {
-      try {
-        await axios.delete(`/api/likes/${articleId}`, {
-          headers: { Authorization: `Bearer ${idToken}` },
-        });
-        setLiked(false);
-        setLikeCount((prev) => prev - 1);
-      } catch (e) {
-        console.error("削除失敗", e);
-      }
-    } else {
-      try {
-        await axios.post(
-          "/api/likes",
-          { articleId },
-          { headers: { Authorization: `Bearer ${idToken}` } }
-        );
-        setLiked(true);
-        setLikeCount((prev) => prev + 1);
-      } catch (e) {
-        console.error("いいね失敗", e);
-      }
-    }
-  };
+  // // --- いいね処理（※APIが articles ベースなら適宜戻してください） ---
+  // const handleLike = async () => {
+  //   if (!idToken || !procedureId) return;
+  //   if (liked) {
+  //     try {
+  //       await axios.delete(`/api/likes/${procedureId}`, {
+  //         headers: { Authorization: `Bearer ${idToken}` },
+  //       });
+  //       setLiked(false);
+  //       setLikeCount((prev) => prev - 1);
+  //     } catch (e) {
+  //       console.error("削除失敗", e);
+  //     }
+  //   } else {
+  //     try {
+  //       await axios.post(
+  //         "/api/likes",
+  //         { procedureId }, // ← ★ ここも procedureId を送る
+  //         { headers: { Authorization: `Bearer ${idToken}` } }
+  //       );
+  //       setLiked(true);
+  //       setLikeCount((prev) => prev + 1);
+  //     } catch (e) {
+  //       console.error("いいね失敗", e);
+  //     }
+  //   }
+  // };
 
-  const handleRead = async () => {
-    if (!idToken || !articleId) return;
-    try {
-      await axios.post(
-        "/api/articles/read",
-        { articleId },
-        { headers: { Authorization: `Bearer ${idToken}` } }
-      );
+  // --- 読了処理（※APIが articles ベースなら適宜戻してください） ---
+// 読了トグル（articles と同形）
+const handleRead = async () => {
+  if (!idToken || !procedureId) return;
+  try {
+    if (!isRead) {
+      await axios.post("/api/procedures/read", { procedureId }, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
       setIsRead(true);
       alert("完了");
-    } catch (e) {
-      alert("読了登録失敗");
-      console.error(e);
+    } else {
+      await axios.delete(`/api/procedures/read/${procedureId}`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      });
+      setIsRead(false);
+      alert("読了解除");
     }
-  };
+  } catch (e) {
+    alert(isRead ? "解除失敗" : "読了登録失敗");
+    console.error(e);
+  }
+};
+
 
   // --- 各種データ取得 ---
-  useEffect(() => {
-    if (!idToken || !articleId) return;
-    axios
-      .get(`/api/articles/read/status?articleId=${articleId}`, {
-        headers: { Authorization: `Bearer ${idToken}` },
-      })
-      .then((res) => setIsRead(res.data.read ?? false));
-  }, [idToken, articleId]);
-
-  useEffect(() => {
-    if (!idToken || !articleId) return;
-    axios
-      .get(`/api/likes/status?articleId=${articleId}`, {
-        headers: { Authorization: `Bearer ${idToken}` },
-      })
-      .then((res) => {
-        setLiked(res.data.liked);
-        setLikeCount(res.data.count);
-      });
-  }, [articleId, idToken]);
-
+  // 自分のユーザーID
   useEffect(() => {
     if (idToken) {
       axios
         .get("/api/me", { headers: { Authorization: `Bearer ${idToken}` } })
-        .then((res) => setMyUserId(res.data.id));
+        .then((res) => setMyUserId(res.data.id))
+        .catch(() => void 0);
     }
   }, [idToken]);
 
+  // 手順本体
   useEffect(() => {
     if (!id) return;
     axios.get(`/api/procedures/${id}`).then((res) => {
@@ -178,14 +171,26 @@ export const ProcedureDetailPage = () => {
       setCategory(res.data.category ?? "");
       setImageUrl(res.data.imageUrl ?? "");
       setContent(res.data.content);
-      setArticleId(res.data.id);
+      setProcedureId(res.data.id); // ← ★ 正式にセット
     });
   }, [id]);
+
+  // 読了ステータス
+  useEffect(() => {
+    if (!idToken || !procedureId) return;
+    axios
+      .get(`/api/procedures/read/status?procedureId=${procedureId}`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      })
+      .then((res) => setIsRead(res.data.read ?? false))
+      .catch(() => void 0);
+  }, [idToken, procedureId]);
+
+
 
   // --- JSX ---
   return (
     <div className="min-h-screen bg-gray-900">
-      <LikeButton liked={liked} count={likeCount} onClick={handleLike} />
       <div className="prose prose-invert max-w-4xl mx-auto py-10 bg-zinc-900 rounded-2xl shadow-2xl mb-8">
         {imageUrl && (
           <img
@@ -208,12 +213,17 @@ export const ProcedureDetailPage = () => {
         </div>
         <ReactMarkdown components={markdownComponents}>{content}</ReactMarkdown>
       </div>
+
       <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-start md:items-center gap-4 mt-8">
         <div className="flex-1">
-          {articleId && myUserId != null && (
-            <TechDetailActions articleId={articleId} myUserId={myUserId} />
+          {procedureId && myUserId != null && (
+            <ProcedureDetailActions
+              procedureId={procedureId} // ← ★ 正しく渡す
+              myUserId={myUserId}
+            />
           )}
         </div>
+
         <div className="flex-shrink-0 flex items-center">
           <button
             className={`px-4 py-2 rounded text-white font-bold shadow transition ${
@@ -221,14 +231,14 @@ export const ProcedureDetailPage = () => {
                 ? "bg-green-500 cursor-not-allowed"
                 : "bg-blue-600 hover:bg-blue-700"
             }`}
-            disabled={isRead}
             onClick={handleRead}
           >
             {isRead ? "読了済み" : "この記事を読了する"}
           </button>
         </div>
       </div>
-      <div className="max-w-4xl mx-auto py-8">
+
+      <div className="max-w-4xl mx-auto py-8 flex gap-4">
         <Link to={`/procedures?page=${backPage}`}>
           <p className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition">
             開発手順一覧
