@@ -8,6 +8,7 @@ import com.example.tech.enums.TargetType;
 import com.example.tech.service.FirebaseAuthService;
 import com.example.tech.service.MessageService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.Page;
 import org.springframework.data.domain.PageRequest;
 import org.springframework.data.domain.Pageable;
 import org.springframework.http.ResponseEntity;
@@ -65,13 +66,13 @@ public class MessageController {
 //
 //    }
     @GetMapping("/admin/questions")
-    public ResponseEntity<List<MessageResponseDTO>> getAllMessages(@RequestHeader(name = "Authorization") String token,
+    public ResponseEntity<Page<MessageResponseDTO>> getAllMessages(@RequestHeader(name = "Authorization") String token,
                                                                    @RequestParam(defaultValue = "0") int page,
                                                                    @RequestParam(defaultValue = "10")int size)
     {
         String adminEmail = firebaseAuthService.verifyAdminAndGetEmail(token);
         Pageable pageable = PageRequest.of(page,size);
-        List<MessageResponseDTO> messages = messageService.getAllMessages(adminEmail, pageable);
+        Page<MessageResponseDTO> messages = messageService.getAllMessages(adminEmail, pageable);
         return ResponseEntity.ok(messages);
     }
     @PostMapping("admin/questions/{id}/answer")

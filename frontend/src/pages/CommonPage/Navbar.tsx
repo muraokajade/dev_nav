@@ -46,7 +46,7 @@ export const Navbar = () => {
 
         {/* 中央：リンク（PCのみ表示） */}
         <div className="hidden md:flex space-x-6">
-          <Link to="/tech" onClick={() => setIsOpen(false)} className="text-white hover:text-blue-300">
+          <Link to="/articles" onClick={() => setIsOpen(false)} className="text-white hover:text-blue-300">
             技術スタック
           </Link>
           <Link to="/syntaxes" onClick={() => setIsOpen(false)} className="text-white hover:text-blue-300">
@@ -97,7 +97,7 @@ export const Navbar = () => {
       {isOpen && (
         <div className="md:hidden flex flex-col px-4 py-3 space-y-2 text-lg text-center">
           <Link
-            to="/tech"
+            to="/articles"
             onClick={() => setIsOpen(false)}
             className="block text-white hover:text-blue-300"
           >

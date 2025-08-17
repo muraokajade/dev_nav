@@ -130,7 +130,7 @@ export const TechList = () => {
                     return (
                       <li key={item.id}>
                         <Link
-                          to={`/tech/${item.id}-${item.slug}`}
+                          to={`/articles/${item.id}-${item.slug}`}
                           className="block rounded-xl bg-white/5 ring-1 ring-white/10 hover:bg-white/7 transition p-4"
                         >
                           <div className="flex gap-4">

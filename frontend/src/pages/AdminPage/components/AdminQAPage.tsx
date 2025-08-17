@@ -4,6 +4,8 @@ import { MessageResponse } from "../../../models/MessageResponse";
 import { AdminQuestionPage } from "./AdminQuestionPage";
 import axios from "axios";
 import { useAuth } from "../../../context/useAuthContext";
+import { usePagination } from "../../../hooks/usePagination";
+import { Pagination } from "../../../utils/Pagination";
 
 /** 管理UI向けに補完したメッセージ型（子で link を使えるようにする） */
 type EnrichedMessage = MessageResponse & {
@@ -35,7 +37,8 @@ const resolveTargetAndId = (msg: any): { target?: string; id?: number } => {
   if (t1 && msg.contentId) return { target: t1, id: msg.contentId };
 
   // 2) 旧形式（target + contentId）
-  if (msg.target && msg.contentId) return { target: msg.target, id: msg.contentId };
+  if (msg.target && msg.contentId)
+    return { target: msg.target, id: msg.contentId };
 
   // 3) さらにフォールバック（articles/syntaxes/procedures 専用キー）
   if (msg.articleId) return { target: "articles", id: msg.articleId };
@@ -75,7 +78,8 @@ const enrichOne = async (
       const res = await axios.get(`/api/${target}/${id}`, {
         headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
       });
-      title = res.data.title ?? res.data.name ?? res.data.subject ?? title ?? "";
+      title =
+        res.data.title ?? res.data.name ?? res.data.subject ?? title ?? "";
       slug = res.data.slug ?? res.data.pathSlug ?? slug ?? "";
     } catch {
       // 失敗時はIDリンクだけでOK
@@ -91,15 +95,19 @@ const enrichOne = async (
 export const AdminQAPage = () => {
   const [messages, setMessages] = useState<EnrichedMessage[]>([]);
   const { idToken } = useAuth();
+  const { pageIndex, setTotalPages, setDisplayPage, displayPage,totalPages } =
+    usePagination();
 
   /** 1ページ分取得して補完 */
   const fetchMessages = useCallback(async () => {
     try {
       const res = await axios.get(
-        "/api/messages/admin/questions?page=0&size=5",
-        { headers: { Authorization: idToken ? `Bearer ${idToken}` : undefined } }
+        `/api/messages/admin/questions?page=${pageIndex}&size=10`,
+        {
+          headers: { Authorization: idToken ? `Bearer ${idToken}` : undefined },
+        }
       );
-      const raw: MessageResponse[] = res.data ?? [];
+      const raw: MessageResponse[] = res.data.content ?? [];
 
       // 並列で enrich（DTOに揃っていればHTTPは発生しない）
       const enriched = await Promise.all(
@@ -107,11 +115,12 @@ export const AdminQAPage = () => {
       );
 
       setMessages(enriched);
+      setTotalPages(res.data.totalPages);
     } catch (e) {
       console.error("メッセージ取得失敗", e);
       setMessages([]);
     }
-  }, [idToken]);
+  }, [idToken, pageIndex]);
 
   useEffect(() => {
     fetchMessages();
@@ -123,7 +132,9 @@ export const AdminQAPage = () => {
       await axios.post(
         `/api/messages/admin/questions/${id}/answer`,
         { messageId: id, answer },
-        { headers: { Authorization: idToken ? `Bearer ${idToken}` : undefined } }
+        {
+          headers: { Authorization: idToken ? `Bearer ${idToken}` : undefined },
+        }
       );
       alert("回答完了");
       fetchMessages(); // 再取得して表示更新
@@ -131,6 +142,8 @@ export const AdminQAPage = () => {
       alert("回答送信失敗");
     }
   };
+
+  const paginate = (pageNumber:number) => setDisplayPage(pageNumber);
 
   return (
     <div className="min-h-screen bg-gray-900 py-10">
@@ -145,6 +158,12 @@ export const AdminQAPage = () => {
             onAnswer={(answer) => handleAnswer(msg.id, answer)}
           />
         ))}
+        <Pagination
+          displayPage={displayPage}
+          totalPages={totalPages}
+          maxPageLinks={5}
+          paginate={paginate}
+        />
       </div>
     </div>
   );

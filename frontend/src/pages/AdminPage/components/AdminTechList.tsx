@@ -237,8 +237,8 @@ export const AdminTechList = () => {
               {/* 左側：基本情報 */}
               <div className="sm:w-[240px] w-full shrink-0 sm:pr-4 text-sm space-y-1 mb-4 sm:mb-0">
                 <Link
-                  to={`/tech/${article.id}-${article.slug}`}
-                  className="text-3xl hover:underline text-blue-200"
+                  to={`/articles/${article.id}-${article.slug}`}
+                  className="text-3xl hover:underline text-blue-200 break-words whitespace-normal"
                 >
                   {article.title}
                 </Link>

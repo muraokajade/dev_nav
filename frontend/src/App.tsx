@@ -37,12 +37,12 @@ export default function App() {
         <Routes>
           <Route path="/" element={<Home />} />
           <Route path="/start" element={<StartPage />} />
-          <Route path="/articles" element={<ArticlesPage />} />
-          <Route path="/tech" element={<TechList />} />
+          <Route path="/" element={<ArticlesPage />} />
+          <Route path="/articles" element={<TechList />} />
           <Route path="/syntaxes" element={<SyntaxList />} />
           <Route path="/login" element={<Login />} />
           <Route path="/register" element={<Register />} />
-          <Route path="/tech/:idAndSlug" element={<TechDetailPage />} />
+          <Route path="/articles/:idAndSlug" element={<TechDetailPage />} />
           <Route path="/syntaxes/:idAndSlug" element={<SyntaxDetailPage />} />
           <Route path="/procedures" element={<ProceduresPage />} />
           <Route

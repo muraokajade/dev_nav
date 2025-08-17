@@ -218,7 +218,7 @@ export const SyntaxDetailPage = () => {
 
       {/* 戻るボタン */}
       <div className="max-w-4xl mx-auto py-8">
-        <Link to="/tech">
+        <Link to="/syntaxes">
           <p className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition duration-200">
             技術記事一覧に戻る
           </p>

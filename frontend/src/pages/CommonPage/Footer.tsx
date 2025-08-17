@@ -25,7 +25,7 @@ export const Footer = () => {
           <Link to="/" className="hover:text-blue-400 transition">
             トップ
           </Link>
-          <Link to="/tech" className="hover:text-blue-400 transition">
+          <Link to="/articles" className="hover:text-blue-400 transition">
             記事一覧
           </Link>
           <Link to="/mypage" className="hover:text-blue-400 transition">

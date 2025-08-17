@@ -5,7 +5,9 @@ import { MessageResponse } from "../../../models/MessageResponse";
 /**
  * TargetType enum(ARTICLE/SYNTAX/PROCEDURE) → ルート名
  */
-const targetEnumToRoute = (t?: string): "articles" | "syntaxes" | "procedures" | undefined => {
+const targetEnumToRoute = (
+  t?: string
+): "articles" | "syntaxes" | "procedures" | undefined => {
   if (!t) return undefined;
   switch (t) {
     case "ARTICLE":
@@ -39,14 +41,21 @@ function resolveLinkInfo(msg: any): {
   const slugFromDto: string | undefined = msg.contentSlug ?? undefined;
 
   if (routeFromEnum && idFromDto) {
-    return { route: routeFromEnum, id: idFromDto, title: titleFromDto, slug: slugFromDto };
+    return {
+      route: routeFromEnum,
+      id: idFromDto,
+      title: titleFromDto,
+      slug: slugFromDto,
+    };
   }
 
   // 2) 旧形式: target + contentId
   if (msg.target && msg.contentId) {
     const t = targetEnumToRoute(String(msg.target).toUpperCase()) ?? msg.target;
     const route =
-      t === "articles" || t === "syntaxes" || t === "procedures" ? (t as any) : undefined;
+      t === "articles" || t === "syntaxes" || t === "procedures"
+        ? (t as any)
+        : undefined;
     return {
       route,
       id: msg.contentId,
@@ -92,6 +101,15 @@ function resolveLinkInfo(msg: any): {
   return {};
 }
 
+const routeToJaLabel = (route?: "articles" | "syntaxes" | "procedures") =>
+  route === "articles"
+    ? "技術記事"
+    : route === "syntaxes"
+    ? "文法記事"
+    : route === "procedures"
+    ? "開発手順記事"
+    : undefined;
+
 type Props = {
   message: MessageResponse;
   onAnswer: (answer: string) => void; // 回答送信時のコールバック
@@ -111,6 +129,16 @@ export const AdminQuestionPage: React.FC<Props> = ({
   const linkPath =
     route && id ? `/${route}/${id}${slug ? `-${slug}` : ""}` : undefined;
   const linkedTitle = title || "関連コンテンツ";
+
+  const label = routeToJaLabel(route);
+  const labelBg =
+    route === "articles"
+      ? "bg-indigo-700"
+      : route === "syntaxes"
+      ? "bg-emerald-700"
+      : route === "procedures"
+      ? "bg-amber-700"
+      : "bg-zinc-700";
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -138,6 +166,14 @@ export const AdminQuestionPage: React.FC<Props> = ({
         >
           {message.closed ? "対応済み" : "未対応"}
         </span>
+        {/* 追加: 種別バッジ */}
+        {label && (
+          <span
+            className={`ml-2 px-2 py-0.5 rounded-full text-xs font-bold text-white ${labelBg}`}
+          >
+            {label}
+          </span>
+        )}
       </div>
 
       {/* 関連タイトル＋リンク（ある場合だけ表示） */}

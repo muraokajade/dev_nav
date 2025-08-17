@@ -62,12 +62,12 @@ public class MessageService {
     }
 
     // ========== 管理用全件取得（★ここを置き換え） ==========
-    public List<MessageResponseDTO> getAllMessages(String adminEmail, Pageable pageable) {
-        // 管理者割当で絞る場合（なければ findAll(pageable) に戻してOK）
+    public Page<MessageResponseDTO> getAllMessages(String adminEmail, Pageable pageable) {
+        // 1) 元データをページ取得
         Page<MessageEntity> page = messageRepository.findAllWithRefs(pageable);
         List<MessageEntity> list = page.getContent();
 
-        // targetType ごとに関連IDを収集
+        // 2) 関連ID収集（N+1回避用の一括ロードのため）
         Set<Long> articleIds = new HashSet<>();
         Set<Long> syntaxIds = new HashSet<>();
         Set<Long> procedureIds = new HashSet<>();
@@ -86,15 +86,12 @@ public class MessageService {
             }
         }
 
-        // 各ターゲットの title/slug を一括取得して Map 化（N+1回避）
-
-// …
-
+        // 3) 各ターゲットの title/slug を一括取得して Map 化
         Map<Long, ContentBrief> articleMap = articleIds.isEmpty() ? Map.of() :
                 articleRepository.findBriefsByIdIn(articleIds).stream()
                         .collect(Collectors.toMap(
                                 ContentBrief::getId,
-                                (ContentBrief b) -> b,
+                                b -> b,
                                 (a, b) -> a,
                                 LinkedHashMap::new
                         ));
@@ -103,7 +100,7 @@ public class MessageService {
                 syntaxRepository.findBriefsByIdIn(syntaxIds).stream()
                         .collect(Collectors.toMap(
                                 ContentBrief::getId,
-                                (ContentBrief b) -> b,
+                                b -> b,
                                 (a, b) -> a,
                                 LinkedHashMap::new
                         ));
@@ -112,18 +109,19 @@ public class MessageService {
                 procedureRepository.findBriefsByIdIn(procedureIds).stream()
                         .collect(Collectors.toMap(
                                 ContentBrief::getId,
-                                (ContentBrief b) -> b,
+                                b -> b,
                                 (a, b) -> a,
                                 LinkedHashMap::new
                         ));
 
-
-        // DTO 化（title/slug を補完）
-        return list.stream()
+        // 4) DTO 化（title/slug を補完）
+        List<MessageResponseDTO> dtoList = list.stream()
                 .map(e -> toDto(e, articleMap, syntaxMap, procedureMap))
                 .toList();
-    }
 
+        // 5) Page として返却（total は元ページから引き継ぎ）
+        return new PageImpl<>(dtoList, pageable, page.getTotalElements());
+    }
     // ========== DTO化（管理用：title/slug補完あり） ==========
     private MessageResponseDTO toDto(
             MessageEntity e,

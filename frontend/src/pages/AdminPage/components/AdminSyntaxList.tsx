@@ -8,6 +8,7 @@ import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import dayjs from "dayjs";
 import { usePagination } from "../../../hooks/usePagination";
 import { Pagination } from "../../../utils/Pagination";
+import { Link } from "react-router-dom";
 
 export const AdminSyntaxList = () => {
   const [syntaxes, setSyntaxes] = useState<SyntaxModel[]>([]);
@@ -256,9 +257,14 @@ export const AdminSyntaxList = () => {
             >
               {/* 左側：基本情報 */}
               <div className="sm:w-[240px] w-full shrink-0 sm:pr-4 text-sm space-y-1 mb-4 sm:mb-0">
-                <p className="font-semibold text-lg break-words">
+                
+                <Link
+                  to={`/syntaxes/${syntax.id}-${syntax.slug}`}
+                  className="text-3xl hover:underline text-blue-200 break-words whitespace-normal"
+                >
                   {syntax.title}
-                </p>
+                </Link>
+
                 <p className="text-gray-400 break-words">Slug: {syntax.slug}</p>
                 <p className="text-gray-400">カテゴリー: {syntax.category}</p>
                 <p className="text-gray-500 text-xs">
