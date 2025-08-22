@@ -24,7 +24,7 @@ public class SyntaxEntity {
     @JoinColumn(name = "user_id")
     private UserEntity user;
     private String userEmail;
-    private String authorName;
+    private String displayName;
     private String category;
     @Column(columnDefinition = "TEXT")
     private String summary;

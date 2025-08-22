@@ -56,41 +56,49 @@ export const SyntaxDetailPage = () => {
   };
 
   // 読了
+  // 読了トグル
   const handleRead = async () => {
     if (!idToken || !syntaxId) return;
     try {
-      await axios.post(
-        "/api/articles/read",
-        { syntaxId },
-        { headers: { Authorization: `Bearer ${idToken}` } }
-      );
-      setIsRead(true);
-      alert("完了");
+      if (!isRead) {
+        await axios.post(
+          "/api/syntaxes/read",
+          { contentId: syntaxId }, // syntaxIdでもOKだが汎用名に統一
+          { headers: { Authorization: `Bearer ${idToken}` } }
+        );
+        setIsRead(true);
+        alert("完了");
+      } else {
+        await axios.delete(`/api/syntaxes/read/${syntaxId}`, {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        setIsRead(false);
+        alert("読了解除");
+      }
     } catch (e) {
-      alert("読了登録失敗");
       console.error(e);
+      alert(isRead ? "解除失敗" : "読了登録失敗");
     }
   };
 
-  //読了状態取得
+  // 読了状態取得（/api/syntaxes/read/status）
   useEffect(() => {
     if (!idToken || !syntaxId) return;
-
     let cancelled = false;
     (async () => {
       try {
-        const res = await axios.get("/api/articles/read/status", {
-          params: { articleId: syntaxId },
+        const res = await axios.get("/api/syntaxes/read/status", {
+          params: { contentId: syntaxId }, // procedureId/articleId/syntaxId も可
           headers: { Authorization: `Bearer ${idToken}` },
         });
-        if (!cancelled) setIsRead(res.data?.read);
-      } catch (e) {
-        if (!cancelled) {
-          setIsRead(false);
-          console.error("読了状態取得失敗");
-        }
+        if (!cancelled) setIsRead(!!res.data?.read);
+      } catch {
+        if (!cancelled) setIsRead(false);
       }
     })();
+    return () => {
+      cancelled = true;
+    };
   }, [idToken, syntaxId]);
 
   //いいね状態取得
@@ -122,8 +130,8 @@ export const SyntaxDetailPage = () => {
     axios.get(`/api/syntaxes/${id}`).then((res) => {
       console.log(res.data);
       setTitle(res.data.title);
-      console.log(res.data.displayName);
-      setAuthor(res.data.displayName ?? "（不明）");
+      console.log(res.data);
+      setAuthor(res.data.authorName ?? "（不明）");
       setCreatedAt(res.data.createdAt ?? "");
       setCategory(res.data.category ?? "");
       setContent(res.data.content);
@@ -195,20 +203,24 @@ export const SyntaxDetailPage = () => {
       </div>
 
       {/* レビュー・コメント・Q&Aタブ */}
-      <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-start md:items-center gap-4 mt-8">
-        <div className="flex-1">
-          {syntaxId && myUserId != null && (
-            <SyntaxDetailActions syntaxId={syntaxId} myUserId={myUserId} />
-          )}
-        </div>
-        <div className="flex-shrink-0 flex items-center">
+      <div className="max-w-4xl mx-auto mt-8">
+        <div className="flex flex-wrap gap-4 items-center md:justify-between">
+          <div className="flex items-center gap-3">
+            {syntaxId && (
+              <SyntaxDetailActions
+                syntaxId={syntaxId}
+                myUserId={myUserId ?? null}
+              />
+            )}
+          </div>
+
           <button
             className={`px-4 py-2 rounded text-white font-bold shadow transition ${
               isRead
                 ? "bg-green-500 cursor-not-allowed"
                 : "bg-blue-600 hover:bg-blue-700"
             }`}
-            disabled={isRead}
+            style={{ cursor: "pointer" }}
             onClick={handleRead}
           >
             {isRead ? "読了済み" : "この記事を読了する"}

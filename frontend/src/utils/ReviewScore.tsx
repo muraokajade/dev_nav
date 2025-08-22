@@ -91,15 +91,14 @@ export const StarRatingSVG: React.FC<StarRatingProps> = ({
   );
 };
 
-export const ReviewScore:React.FC<{
+export const ReviewScore: React.FC<{
   targetType: "ARTICLE" | "SYNTAX" | "PROCEDURE";
   refId: number;
-  myUserId: number;
-}> = ({
-targetType, refId, myUserId
-}) => {
+  myUserId?: number | null;
+  readonly?: boolean;
+}> = ({ targetType, refId, myUserId, readonly }) => {
   const { scores, myScore, loading, submitScore, average, error } =
-    useReviewScores(targetType, refId, myUserId);
+    useReviewScores(targetType, refId, myUserId ?? undefined);
   console.log(scores);
   const [tempScore, setTempScore] = useState(myScore ?? 0);
 
@@ -107,25 +106,33 @@ targetType, refId, myUserId
   useEffect(() => {
     if (myScore !== null) setTempScore(myScore);
   }, [myScore]);
+  // 閲覧専用時は表示値を myScore→平均→0 の順で使う
+  const displayScore = readonly ? myScore ?? average ?? 0 : tempScore;
 
   return (
     <section className="bg-zinc-900 rounded-xl p-6 my-8 shadow-lg max-w-3xl text-zinc-100">
       <h3 className="font-bold mb-3 text-lg text-zinc-200">レビュー点数</h3>
       <div className="flex items-center gap-3">
-        <StarRatingSVG value={tempScore} onChange={setTempScore} />
+        <StarRatingSVG
+          value={displayScore}
+          onChange={readonly ? undefined : setTempScore}
+          disabled={readonly || loading}
+        />
 
-        <button
-          className={`ml-2 px-4 py-1 rounded font-semibold shadow transition 
-            ${
-              loading || tempScore === myScore
-                ? "bg-zinc-700 text-zinc-400 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700 text-white"
-            }`}
-          disabled={loading || tempScore === myScore}
-          onClick={() => submitScore(tempScore)}
-        >
-          {myScore !== null ? "更新" : "投稿"}
-        </button>
+        {!readonly && (
+          <button
+            className={`ml-2 px-4 py-1 rounded font-semibold shadow transition 
+              ${
+                loading || tempScore === myScore
+                  ? "bg-zinc-700 text-zinc-400 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700 text-white"
+              }`}
+            disabled={loading || tempScore === myScore}
+            onClick={() => submitScore(tempScore)}
+          >
+            {myScore !== null ? "更新" : "投稿"}
+          </button>
+        )}
       </div>
       <div className="mt-5 text-base">
         <span className="text-yellow-400 font-semibold">平均点：</span>
@@ -143,8 +150,8 @@ targetType, refId, myUserId
           あなたのスコア: {myScore}
         </div>
       )}
-      {error && <div className="mt-4 text-red-400 text-sm">{error}</div>}
-      {loading && <div className="mt-4 text-zinc-400 text-sm">通信中...</div>}
+      {!readonly && error && <div className="mt-4 text-red-400 text-sm">{error}</div>}
+      {!readonly && loading && <div className="mt-4 text-zinc-400 text-sm">通信中...</div>}
     </section>
   );
 };

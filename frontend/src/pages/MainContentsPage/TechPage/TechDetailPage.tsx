@@ -56,57 +56,52 @@ export const TechDetailPage = () => {
     }
   };
 
-  // 読了機能
+  // 読了機能（POST/DELETE）— bodyキーも contentId に統一推奨
   const handleRead = async () => {
     if (!idToken || !articleId) return;
-    if (!isRead) {
-      try {
+    try {
+      if (!isRead) {
         await axios.post(
           "/api/articles/read",
-          { articleId },
+          { contentId: articleId }, // ← articleId でも動くが contentId に寄せる
           { headers: { Authorization: `Bearer ${idToken}` } }
         );
         setIsRead(true);
         alert("完了");
-      } catch (e) {
-        alert("読了登録失敗");
-        console.error(e);
-        setIsRead(false);
-      }
-    } else {
-      try {
+      } else {
         await axios.delete(`/api/articles/read/${articleId}`, {
           headers: { Authorization: `Bearer ${idToken}` },
         });
         setIsRead(false);
-        alert("読了解除")
-      } catch(e) {
-        alert("解除失敗");
-        setIsRead(true);
+        alert("読了解除");
       }
+    } catch (e) {
+      console.error(e);
+      alert(isRead ? "解除失敗" : "読了登録失敗");
     }
   };
 
+  // 読了状態取得 — contentId を使い、res.data.read を優先
   useEffect(() => {
     if (!idToken || !articleId) return;
-    const fetchReadStatus = async () => {
+    (async () => {
       try {
-        const res = await axios.get(
-          `/api/articles/read/status?articleId=${articleId}`,
-          {
-            headers: { Authorization: `Bearer ${idToken}` },
-          }
-        );
-        console.log(res.data); // バックエンドでプリミティブ値で返しているのでjsonはtrue or false注意！
-        setIsRead(res.data ?? false);
+        const res = await axios.get(`/api/articles/read/status?articleId=${articleId}`, {
+
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        // 後方互換：{read:true} or true の両方に対応
+        const read =
+          typeof res.data === "object" && res.data !== null
+            ? !!res.data.read
+            : !!res.data;
+        setIsRead(read);
       } catch {
         setIsRead(false);
       }
-    };
-    fetchReadStatus();
+    })();
   }, [idToken, articleId]);
 
-  
   useEffect(() => {
     if (!idToken || !articleId) return;
     axios
@@ -131,7 +126,7 @@ export const TechDetailPage = () => {
 
   // 記事メタ(articleId)＆本文取得
   useEffect(() => {
-    if (!id) return
+    if (!id) return;
     let ignore = false; // アンマウント後のsetState防止
     (async () => {
       try {
@@ -221,8 +216,11 @@ export const TechDetailPage = () => {
       {/* レビュー・コメント・Q&Aタブ */}
       <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-start md:items-center gap-4 mt-8">
         <div className="flex-1">
-          {articleId && myUserId != null && (
-            <TechDetailActions articleId={articleId} myUserId={myUserId} />
+          {articleId && (
+            <TechDetailActions
+              articleId={articleId}
+              myUserId={myUserId ?? null}
+            />
           )}
         </div>
         <div className="flex-shrink-0 flex items-center">
@@ -232,8 +230,8 @@ export const TechDetailPage = () => {
                 ? "bg-green-500 cursor-not-allowed"
                 : "bg-blue-600 hover:bg-blue-700"
             }`}
-            
             onClick={handleRead}
+            style={{ cursor: "pointer" }}
           >
             {isRead ? "読了済み" : "この記事を読了する"}
           </button>

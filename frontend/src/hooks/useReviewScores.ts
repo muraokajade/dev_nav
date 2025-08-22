@@ -13,7 +13,7 @@ type TargetType = "ARTICLE" | "SYNTAX" | "PROCEDURE";
 export const useReviewScores = (
   targetType: TargetType,
   refId: number,
-  myUserId: number
+  myUserId?: number,
 ) => {
   const [scores, setScores] = useState<Score[]>([]);
   const [myScore, setMyScore] = useState<number | null>(null);
@@ -26,14 +26,13 @@ export const useReviewScores = (
     try {
       const res = await axios.get(
         `/api/review-scores/${targetType.toLowerCase()}/${refId}`,
-        { headers: { Authorization: `Bearer ${idToken}` } }
       );
       setScores(res.data);
     } catch {
       setScores([]);
       setLoading(false);
     }
-  }, [targetType, refId, idToken]);
+  }, [targetType, refId]);
 
   useEffect(() => {
     (async () => {

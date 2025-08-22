@@ -6,7 +6,6 @@ import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import dayjs from "dayjs";
 import { useAuth } from "../../../context/useAuthContext";
 import axios from "axios";
-import { LikeButton } from "../../../utils/LikeButton";
 import { ProcedureDetailActions } from "./ProcedureDetailActions";
 
 export const ProcedureDetailPage = () => {
@@ -27,11 +26,9 @@ export const ProcedureDetailPage = () => {
   const [imageUrl, setImageUrl] = useState("");
   const [content, setContent] = useState("");
 
-  // ★ ここを唯一のIDとして利用
+  // 唯一のID
   const [procedureId, setProcedureId] = useState<number | null>(null);
 
-  const [liked, setLiked] = useState(false);
-  const [likeCount, setLikeCount] = useState(0);
   const [isRead, setIsRead] = useState(false);
   const [myUserId, setMyUserId] = useState<number | null>(null);
 
@@ -39,10 +36,7 @@ export const ProcedureDetailPage = () => {
   const CopyableHighlighter = ({
     language,
     code,
-  }: {
-    language: string;
-    code: string;
-  }) => {
+  }: { language: string; code: string }) => {
     const [copied, setCopied] = useState(false);
     const doCopy = async () => {
       try {
@@ -57,12 +51,9 @@ export const ProcedureDetailPage = () => {
       <div className="relative not-prose group">
         <button
           onClick={doCopy}
-          className={`absolute top-2 right-2 z-10 rounded px-2 py-1 text-xs font-semibold shadow
-            ${
-              copied
-                ? "bg-green-600 text-white"
-                : "bg-zinc-700/80 hover:bg-zinc-600 text-white"
-            }`}
+          className={`absolute top-2 right-2 z-10 rounded px-2 py-1 text-xs font-semibold shadow ${
+            copied ? "bg-green-600 text-white" : "bg-zinc-700/80 hover:bg-zinc-600 text-white"
+          }`}
         >
           {copied ? "Copied!" : "Copy"}
         </button>
@@ -78,7 +69,7 @@ export const ProcedureDetailPage = () => {
     );
   };
 
-  // --- ReactMarkdown の components を型定義 ---
+  // --- ReactMarkdown components ---
   const markdownComponents: Components = {
     code({ className, children, ...props }) {
       const match = /language-(\w+)/.exec(className || "");
@@ -97,68 +88,38 @@ export const ProcedureDetailPage = () => {
     },
   };
 
-  // // --- いいね処理（※APIが articles ベースなら適宜戻してください） ---
-  // const handleLike = async () => {
-  //   if (!idToken || !procedureId) return;
-  //   if (liked) {
-  //     try {
-  //       await axios.delete(`/api/likes/${procedureId}`, {
-  //         headers: { Authorization: `Bearer ${idToken}` },
-  //       });
-  //       setLiked(false);
-  //       setLikeCount((prev) => prev - 1);
-  //     } catch (e) {
-  //       console.error("削除失敗", e);
-  //     }
-  //   } else {
-  //     try {
-  //       await axios.post(
-  //         "/api/likes",
-  //         { procedureId }, // ← ★ ここも procedureId を送る
-  //         { headers: { Authorization: `Bearer ${idToken}` } }
-  //       );
-  //       setLiked(true);
-  //       setLikeCount((prev) => prev + 1);
-  //     } catch (e) {
-  //       console.error("いいね失敗", e);
-  //     }
-  //   }
-  // };
-
-  // --- 読了処理（※APIが articles ベースなら適宜戻してください） ---
-// 読了トグル（articles と同形）
-const handleRead = async () => {
-  if (!idToken || !procedureId) return;
-  try {
-    if (!isRead) {
-      await axios.post("/api/procedures/read", { procedureId }, {
-        headers: { Authorization: `Bearer ${idToken}` },
-      });
-      setIsRead(true);
-      alert("完了");
-    } else {
-      await axios.delete(`/api/procedures/read/${procedureId}`, {
-        headers: { Authorization: `Bearer ${idToken}` },
-      });
-      setIsRead(false);
-      alert("読了解除");
+  // 読了トグル（共通仕様：POST/DELETE）
+  const handleRead = async () => {
+    if (!idToken || !procedureId) return;
+    try {
+      if (!isRead) {
+        await axios.post(
+          "/api/procedures/read",
+          { contentId: procedureId }, // ← 統一キー
+          { headers: { Authorization: `Bearer ${idToken}` } }
+        );
+        setIsRead(true);
+        alert("完了");
+      } else {
+        await axios.delete(`/api/procedures/read/${procedureId}`, {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        setIsRead(false);
+        alert("読了解除");
+      }
+    } catch (e) {
+      console.error(e);
+      alert(isRead ? "解除失敗" : "読了登録失敗");
     }
-  } catch (e) {
-    alert(isRead ? "解除失敗" : "読了登録失敗");
-    console.error(e);
-  }
-};
+  };
 
-
-  // --- 各種データ取得 ---
   // 自分のユーザーID
   useEffect(() => {
-    if (idToken) {
-      axios
-        .get("/api/me", { headers: { Authorization: `Bearer ${idToken}` } })
-        .then((res) => setMyUserId(res.data.id))
-        .catch(() => void 0);
-    }
+    if (!idToken) return;
+    axios
+      .get("/api/me", { headers: { Authorization: `Bearer ${idToken}` } })
+      .then((res) => setMyUserId(res.data.id))
+      .catch(() => void 0);
   }, [idToken]);
 
   // 手順本体
@@ -171,67 +132,56 @@ const handleRead = async () => {
       setCategory(res.data.category ?? "");
       setImageUrl(res.data.imageUrl ?? "");
       setContent(res.data.content);
-      setProcedureId(res.data.id); // ← ★ 正式にセット
+      setProcedureId(res.data.id);
     });
   }, [id]);
 
-  // 読了ステータス
+  // 読了ステータス（未ログインなら取得しない）
   useEffect(() => {
     if (!idToken || !procedureId) return;
     axios
-      .get(`/api/procedures/read/status?procedureId=${procedureId}`, {
+      .get("/api/procedures/read/status", {
+        params: { contentId: procedureId }, // ← 統一キー
         headers: { Authorization: `Bearer ${idToken}` },
       })
-      .then((res) => setIsRead(res.data.read ?? false))
-      .catch(() => void 0);
+      .then((res) => {
+        const read =
+          typeof res.data === "object" && res.data !== null ? !!res.data.read : !!res.data;
+        setIsRead(read);
+      })
+      .catch(() => setIsRead(false));
   }, [idToken, procedureId]);
 
-
-
-  // --- JSX ---
   return (
     <div className="min-h-screen bg-gray-900">
       <div className="prose prose-invert max-w-4xl mx-auto py-10 bg-zinc-900 rounded-2xl shadow-2xl mb-8">
         {imageUrl && (
-          <img
-            src={imageUrl}
-            alt={title}
-            className="w-full h-64 object-cover rounded-xl mb-8"
-          />
+          <img src={imageUrl} alt={title} className="w-full h-64 object-cover rounded-xl mb-8" />
         )}
         <h1 className="text-4xl font-bold mb-4">{title}</h1>
         <div className="flex items-center gap-4 mb-6 text-gray-400 text-sm">
           <span>著者: {author}</span>
-          {createdAt && (
-            <span>投稿日: {dayjs(createdAt).format("YYYY/MM/DD")}</span>
-          )}
-          {category && (
-            <span className="bg-blue-500 px-2 py-0.5 rounded text-white">
-              {category}
-            </span>
-          )}
+          {createdAt && <span>投稿日: {dayjs(createdAt).format("YYYY/MM/DD")}</span>}
+          {category && <span className="bg-blue-500 px-2 py-0.5 rounded text-white">{category}</span>}
         </div>
         <ReactMarkdown components={markdownComponents}>{content}</ReactMarkdown>
       </div>
 
+      {/* レビュー・コメント・Q&A */}
       <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-start md:items-center gap-4 mt-8">
         <div className="flex-1">
-          {procedureId && myUserId != null && (
-            <ProcedureDetailActions
-              procedureId={procedureId} // ← ★ 正しく渡す
-              myUserId={myUserId}
-            />
+          {procedureId && (
+            <ProcedureDetailActions procedureId={procedureId} myUserId={myUserId ?? null} />
           )}
         </div>
 
         <div className="flex-shrink-0 flex items-center">
           <button
             className={`px-4 py-2 rounded text-white font-bold shadow transition ${
-              isRead
-                ? "bg-green-500 cursor-not-allowed"
-                : "bg-blue-600 hover:bg-blue-700"
+              isRead ? "bg-green-500" : "bg-blue-600 hover:bg-blue-700"
             }`}
             onClick={handleRead}
+            style={{ cursor: "pointer" }} // 常にpointer
           >
             {isRead ? "読了済み" : "この記事を読了する"}
           </button>

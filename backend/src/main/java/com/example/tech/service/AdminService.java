@@ -52,7 +52,7 @@ public class AdminService {
         entity.setSlug(request.getSlug());
         entity.setTitle(request.getTitle());
         entity.setUserEmail(adminEmail);
-        entity.setAuthorName(user.getDisplayName());
+        entity.setDisplayName(user.getDisplayName());
         entity.setCategory(request.getCategory());
         entity.setSummary(request.getSummary());
         entity.setContent(request.getContent());
@@ -118,7 +118,7 @@ public class AdminService {
                 entity.getTitle(),
                 entity.getUserEmail(),
                 entity.getUser() != null ? entity.getUser().getDisplayName() : "不明",
-                entity.getAuthorName(),
+                entity.getDisplayName(),
                 entity.getCategory(),
                 entity.getSummary(),
                 entity.getContent(),
