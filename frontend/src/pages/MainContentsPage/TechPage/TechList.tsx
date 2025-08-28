@@ -51,6 +51,7 @@ export const TechList = () => {
     const fetchArticles = async () => {
       try {
         const res = await axios.get(`/api/articles?page=${pageIndex}&size=10`);
+        console.log(res.config.url);
         const publishedArticles: ArticleModel[] = res.data.content;
         setArticles(publishedArticles);
         setTotalPages(res.data.totalPages);

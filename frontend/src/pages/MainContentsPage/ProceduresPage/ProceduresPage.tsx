@@ -23,25 +23,31 @@ const sectionTitles: Record<string, string> = {
   "11": "セクション11:マイページ機能の実装",
 };
 
-// 全角→半角数字／全空白除去／ハイフン統一
+// 全角→半角
 const toHalfWidthDigits = (s: string) =>
-  (s || "").replace(/[０-９]/g, (ch) =>
-    String.fromCharCode(ch.charCodeAt(0) - 0xfee0)
-  );
+  (s || "").replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xfee0));
 
-const normalizeStep = (s: string) =>
-  toHalfWidthDigits(s)
-    .replace(/[‐–—−－]/g, "-")
+// 区切り統一・桁解釈・ゼロ詰め
+const normalizeStep = (raw: string) => {
+  const t0 = toHalfWidthDigits(raw)
+    .replace(/[‐–—−－/／⁄・\.．,、]/g, "-")
     .replace(/\s+/g, "")
     .trim();
 
-// "major-minor" → [major, minor]
+  if (/^\d{3}$/.test(t0)) return `${t0[0]}-${t0.slice(1)}`;        // 509 -> 5-09
+  if (/^\d{4}$/.test(t0)) return `${t0.slice(0,2)}-${t0.slice(2)}`; // 1001 -> 10-01
+
+  const m = t0.match(/^(\d+)-(\d+)$/);
+  return m ? `${parseInt(m[1],10)}-${m[2].padStart(2,"0")}` : t0;   // 5-9 -> 5-09
+};
+
 const parseStep = (raw: string): [number, number] => {
   const s = normalizeStep(raw);
-  const m = s.match(/^(\d+)-(\d+)$/);
-  if (!m) return [Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER];
-  return [parseInt(m[1], 10), parseInt(m[2], 10)];
+  const m = s.match(/^(\d+)-(\d{1,2})$/);
+  return m ? [parseInt(m[1],10), parseInt(m[2],10)] 
+           : [Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER];
 };
+
 
 type Row = Procedure & { major: number; minor: number; stepNumber: string };
 

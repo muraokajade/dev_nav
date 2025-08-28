@@ -1,0 +1,9 @@
+spring:
+  application:
+    name: tech
+server:
+  port: ${PORT:8080}
+
+app:
+  cors:
+    allowed-origins: ${ALLOWED_ORIGINS:http://localhost:3000}

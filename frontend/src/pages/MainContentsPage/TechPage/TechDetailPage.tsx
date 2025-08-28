@@ -86,10 +86,12 @@ export const TechDetailPage = () => {
     if (!idToken || !articleId) return;
     (async () => {
       try {
-        const res = await axios.get(`/api/articles/read/status?articleId=${articleId}`, {
-
-          headers: { Authorization: `Bearer ${idToken}` },
-        });
+        const res = await axios.get(
+          `/api/articles/read/status?articleId=${articleId}`,
+          {
+            headers: { Authorization: `Bearer ${idToken}` },
+          }
+        );
         // 後方互換：{read:true} or true の両方に対応
         const read =
           typeof res.data === "object" && res.data !== null
@@ -156,7 +158,7 @@ export const TechDetailPage = () => {
       <LikeButton liked={liked} count={likeCount} onClick={handleLike} />
 
       {/* リッチ化された記事カード */}
-      <div className="prose prose-invert text-white max-w-4xl mx-auto py-10 bg-zinc-900 rounded-2xl shadow-2xl mb-8">
+      <div className="prose prose-invert whitespace-normal text-white max-w-4xl mx-auto py-10 bg-zinc-900 rounded-2xl shadow-2xl mb-8">
         {/* サムネイル（必要に応じて） */}
         {imageUrl && (
           <img
