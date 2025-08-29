@@ -18,13 +18,25 @@
 - 制作者の成果：React × Spring Boot 両面で即戦力を証明し案件獲得へ直結。さらに、**Q&A機能によるフィードバックで教材を継続的に洗練**。
 
 
-## Insomnia テスト（最初の一歩）
-1. 環境変数 `REACT_APP_API_URL=https://backend.devnav.tech` を使用  
-2. Insomnia で `GET https://backend.devnav.tech/actuator/health` → `{"status":"UP"}`  
-3. 主要API例：
-   - `POST /api/auth/login`
-   - `GET /api/articles?limit=20`
-   - `POST /api/likes/{articleId}`
+## Insomnia/Postman テスト（管理者ファースト / ローカル）
+
+この教材は「管理者を先に作る」前提です。まずは Firebase で管理者ユーザーにカスタムクレーム `admin: true` を付与し、IDトークンを取得して `Authorization: Bearer <ID_TOKEN>` で送信します。
+
+1) 動作確認
+- `GET http://localhost:8080/actuator/health` → `{"status":"UP"}`
+
+2) 管理者API（要 Bearer）
+- 記事一覧: `GET http://localhost:8080/api/admin/articles?page=0&size=10`
+- 手順一覧: `GET http://localhost:8080/api/admin/procedure?page=0&size=10`
+- 記事投稿: `POST http://localhost:8080/api/admin/add-article`  
+  - Header: `Authorization: Bearer <ID_TOKEN>`  
+  - Body (multipart/form-data): `image?`, `title`, `content`, …(ArticleRequest)
+- 手順投稿: `POST http://localhost:8080/api/admin/add-procedure`（multipart。同様）
+- シンタックス投稿: `POST http://localhost:8080/api/admin/add-syntax`（JSON）
+
+3) 学習者が触れる公開系
+- 記事一覧: `GET http://localhost:8080/api/articles?limit=20`
+- いいね: `POST http://localhost:8080/api/likes/{articleId}`（**要ログイン**）
 
 ---
 
