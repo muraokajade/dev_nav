@@ -1,7 +1,7 @@
 import { useState } from "react";
 import { Link } from "react-router-dom";
 import { MessageResponse } from "../../../models/MessageResponse";
-
+import dayjs from "dayjs";
 /**
  * TargetType enum(ARTICLE/SYNTAX/PROCEDURE) → ルート名
  */
@@ -156,7 +156,9 @@ export const AdminQuestionPage: React.FC<Props> = ({
         <span className="text-blue-400 font-semibold">
           {message.displayName}
         </span>
-        <span className="ml-2 text-xs text-gray-400">{message.createdAt}</span>
+        <span className="ml-2 text-xs text-gray-400">
+          {dayjs(message.createdAt).format("YYYY/MM/DD HH:mm")}
+        </span>
         <span
           className={`ml-4 px-3 py-1 rounded-full text-xs font-bold ${
             message.closed
@@ -191,14 +193,16 @@ export const AdminQuestionPage: React.FC<Props> = ({
       )}
 
       {/* 質問内容 */}
-      <div className="text-lg font-bold mb-2">{message.title}</div>
-      <div className="mb-4">{message.question}</div>
+      <div className="text-lg text-white font-bold mb-2">
+        タイトル:{message.title}
+      </div>
+      <div className="mb-4 text-white">内容:{message.question}</div>
 
       {/* 回答欄 */}
       {!message.closed || editMode ? (
         <form onSubmit={handleSubmit}>
           <textarea
-            className="w-full bg-zinc-900 resize-none border border-zinc-700 rounded p-2 mb-2 text-white"
+            className="w-full  resize-none border border-zinc-700 rounded p-2 mb-2"
             rows={3}
             placeholder="ここに回答を入力"
             value={answer}

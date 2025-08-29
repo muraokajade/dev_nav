@@ -8,6 +8,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 
+import java.util.Optional;
+
 @Service
 @RequiredArgsConstructor
 public class ThreadService {
@@ -30,5 +32,9 @@ public class ThreadService {
                                 .orElseThrow();
                     }
                 });
+    }
+
+    public Optional<ThreadEntity> find(TargetType targetType, Long refId, Category categoryEnum) {
+        return threadRepository.findByTargetTypeAndRefIdAndCategory(targetType,refId,categoryEnum);
     }
 }

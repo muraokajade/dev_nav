@@ -4,7 +4,7 @@ import * as THREE from "three";
 
 type LogoProps = {
   url: string;
-  position: [x: number, y: number, z:number];
+  position: [x: number, y: number, z: number];
   rotationSpeed?: number;
   scale?: [number, number, number];
   bounce?: boolean;
@@ -47,10 +47,12 @@ export const LogoPlane: React.FC<LogoProps> = ({
         position[1] + Math.sin(performance.now() * 0.002) * 0.2;
     }
   });
+  const image = texture.image as HTMLImageElement;
+  const aspect = image.width / image.height;
 
   return (
     <mesh ref={mesh} position={position} scale={scale}>
-      <planeGeometry args={[5, 5]} />
+      <planeGeometry args={[5 * aspect, 5]} />
       <meshStandardMaterial
         map={texture}
         transparent

@@ -26,21 +26,21 @@ export const Home = () => {
     ? [-1.7, 0.1, 0]
     : [-4, 0, 0];
   const springPos: [number, number, number] = isMobile
-    ? [1.7, 0.1, 0]
-    : [4, 0, 0];
+    ? [1.5, 0.1, 0]
+    : [3.3, 0, 0];
   const tsPos: [number, number, number] = isMobile
     ? [-0.4, -1.25, 0]
     : [-1.6, -1.8, 0];
   const javaPos: [number, number, number] = isMobile
     ? [2.8, -1.25, 0]
-    : [6.0, -1.8, 0];
+    : [5.5, -1.7, 0];
 
   const reactScale: [number, number, number] = isMobile
     ? [0.5, -0.5, 1]
     : [0.62, -0.62, 1];
   const springScale: [number, number, number] = isMobile
-    ? [0.5, -0.5, 1]
-    : [0.62, -0.62, 1];
+    ? [0.20, -0.20, 1]
+    : [0.31, -0.3, 1];
   const tsScale: [number, number, number] = isMobile
     ? [0.11, -0.11, 1]
     : [0.24, -0.24, 1];

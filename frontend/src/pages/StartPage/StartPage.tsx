@@ -78,12 +78,6 @@ export const StartPage = () => {
     return steps.find(s => !isRead(s.route, s.id)) ?? null;
   }, [isLoggedIn, steps, reads]);
 
-  const progress = useMemo(() => ({
-    articles:   (reads.articles   ?? []).length,
-    syntaxes:   (reads.syntaxes   ?? []).length,
-    procedures: (reads.procedures ?? []).length,
-  }), [reads]);
-
   return (
     <main className="max-w-6xl mx-auto px-4 py-10">
       <h1 className="text-3xl md:text-4xl font-extrabold mb-2 text-white">学習を始める</h1>
@@ -126,42 +120,6 @@ export const StartPage = () => {
           );
         })}
       </ol>
-
-      {/* 進捗（ログイン時） */}
-      {isLoggedIn && (
-        <section className="grid md:grid-cols-3 gap-6 mb-12">
-          {[
-            { label: "技術記事 読了",    val: progress.articles },
-            { label: "文法記事 読了",    val: progress.syntaxes },
-            { label: "開発手順記事 読了", val: progress.procedures },
-          ].map((x, idx) => (
-            <div key={idx} className="p-6 rounded-2xl bg-white/5 border border-white/10">
-              <div className="text-gray-300 text-sm">{x.label}</div>
-              <div className="text-3xl font-extrabold text-white mt-1">{x.val}</div>
-            </div>
-          ))}
-        </section>
-      )}
-
-      {/* 今日のチェック */}
-      <section className="p-6 rounded-2xl bg-white/5 border border-white/10 mb-12">
-        <div className="font-semibold mb-4 text-white">今日のチェック</div>
-        <ul className="space-y-3 text-sm">
-          {["ローカル環境を起動できた","API→フロントで一覧を表示できた","GitHubにPushした"].map((t, idx) => (
-            <li key={idx} className="flex items-center">
-              <input
-                type="checkbox"
-                className="mr-3 w-4 h-4 accent-sky-500"
-                checked={!!checks[idx]}
-                onChange={(e) => {
-                  const next = [...checks]; next[idx] = e.target.checked; setChecks(next);
-                }}
-              />
-              <span className="text-gray-300">{t}</span>
-            </li>
-          ))}
-        </ul>
-      </section>
 
       {/* クイックリンク */}
       <section className="grid md:grid-cols-3 gap-4">

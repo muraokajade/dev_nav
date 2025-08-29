@@ -11,6 +11,7 @@ import com.example.tech.repository.ThreadMessageRepository;
 import com.example.tech.service.ThreadService;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
+import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -66,14 +67,24 @@ public class ThreadController {
         TargetType targetType = parseTargetType(type);     // "article" → ARTICLE
         Category categoryEnum = parseCategory(category);   // "comment" → COMMENT
 
-        ThreadEntity threadEntity = threadService.getOrCreate(targetType, refId, categoryEnum);
+        var threadEntity = threadService.find(targetType, refId, categoryEnum);
+        // スレッド未作成 → 200 OK + 空で返す（500にしない）
+        if (threadEntity.isEmpty()) {
+            return new ThreadWithMessagesDto(
+                    new ThreadDto(null,targetType, refId, categoryEnum),
+                    List.of()
+            );
+        }
+
+        var thread = threadEntity.get();
+
 
         List<MessageDto> messageDtoList = threadMessageRepository
-                .findByThreadIdOrderByIdDesc(threadEntity.getId())
+                .findByThreadIdOrderByIdDesc(thread.getId())
                 .stream()
                 .map(messageEntity -> new MessageDto(
                         messageEntity.getId(),
-                        threadEntity.getId(),
+                        thread.getId(),
                         messageEntity.getUserId(),     // ← email 文字列
                         messageEntity.getBody(),
                         messageEntity.getCreatedAt(),
@@ -82,10 +93,10 @@ public class ThreadController {
                 .toList();
 
         ThreadDto threadDto = new ThreadDto(
-                threadEntity.getId(),
-                threadEntity.getTargetType(),
-                threadEntity.getRefId(),
-                threadEntity.getCategory()
+                thread.getId(),
+                thread.getTargetType(),
+                thread.getRefId(),
+                thread.getCategory()
         );
         return new ThreadWithMessagesDto(threadDto, messageDtoList);
     }
