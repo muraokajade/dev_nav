@@ -18,6 +18,11 @@
 - 制作者の成果：React × Spring Boot 両面で即戦力を証明し案件獲得へ直結。さらに、**Q&A機能によるフィードバックで教材を継続的に洗練**。
 
 
+## デモ / スクリーンショット
+- **本番URL**：https://devnav.tech （検証後に記載）
+- **管理画面**：/admin （必要なら）
+- 画像を2〜3枚差し込み（トップ / マイページ / Q&A）
+
 ## Insomnia/Postman テスト（管理者ファースト / ローカル）
 
 この教材は「管理者を先に作る」前提です。まずは Firebase で管理者ユーザーにカスタムクレーム `admin: true` を付与し、IDトークンを取得して `Authorization: Bearer <ID_TOKEN>` で送信します。
@@ -27,28 +32,19 @@
 
 2) 管理者API（要 Bearer）
 - 記事一覧: `GET http://localhost:8080/api/admin/articles?page=0&size=10`
-- 手順一覧: `GET http://localhost:8080/api/admin/procedure?page=0&size=10`
 - 記事投稿: `POST http://localhost:8080/api/admin/add-article`  
   - Header: `Authorization: Bearer <ID_TOKEN>`  
   - Body (multipart/form-data): `image?`, `title`, `content`, …(ArticleRequest)
-- 手順投稿: `POST http://localhost:8080/api/admin/add-procedure`（multipart。同様）
-- シンタックス投稿: `POST http://localhost:8080/api/admin/add-syntax`（JSON）
 
 3) 学習者が触れる公開系
-- 記事一覧: `GET http://localhost:8080/api/articles?limit=20`
+- 記事一覧: `GET http://localhost:8080/api/articles?limit=20`(**未ログイン**)
 - いいね: `POST http://localhost:8080/api/likes/{articleId}`（**要ログイン**）
-
----
-
-## デモ / スクリーンショット
-- **本番URL**：https://devnav.tech （検証後に記載）
-- **管理画面**：/admin （必要なら）
-- 画像を2〜3枚差し込み（トップ / マイページ / Q&A）
 
 ---
 
 ## システム構成
 
+```sql
 [Browser]
 │
 │ HTTPS (Cloudflare)
@@ -56,6 +52,7 @@
 [Vercel: React CRA / TS] ───────→ [Koyeb: Spring Boot API] ──→ [Neon: Postgres]
 ▲ │ CORS: https://devnav.tech, https://www.devnav.tech
 └────────── Public API ──┘
+```
 
 - **Frontend**: React (CRA, TypeScript)
 - **Backend**: Spring Boot 3, JPA, Actuator, CORS
@@ -65,51 +62,61 @@
 ---
 
 ## 主要機能
-- 学習進捗：レベルバー（XP）、カレンダー、アクション履歴
-- コンテンツ：記事読了ボタン、いいね、Q&A
+- 学習進捗(マイページ)：レベルバー（XP）、カレンダー、アクション履歴
+- コンテンツ：記事読了ボタン、いいね、Q&A、コメント、レビュー点数
 - 管理：記事管理、ユーザー管理（予定含む）
-- 記事フォーマット統一（概要・目的・ゴール・エラー対応）
 
 ---
 
-## セットアップ
+## セットアップ（最短ルート）
 
-### 1) Frontend（React CRA）
-```bash
-cd frontend
-cp .env.example .env.local
-# 例
-REACT_APP_API_URL=https://backend.devnav.tech
-npm install
-npm start
-```
+> この教材は「管理者を先に作る」前提です。まず Firebase で管理者ユーザーに `admin: true` を付与しておくこと。
 
-### 2) Backend（Spring Boot）
-```bash
-cd backend
-export JDBC_URL="jdbc:postgresql://<xxx>.neon.tech/<db>?sslmode=require"
-export DB_USER="<user>"
-export DB_PASS="<pass>"
-export SPRING_PROFILES_ACTIVE=prod
-./mvnw spring-boot:run
-```
+### 前提
+- Node.js 18+ / npm
+- Java 17+ / IntelliJ IDEA
+- Firebase（Email/Password 有効化、管理者ユーザー作成）
 
-### CORS（例）
-```java
-@Bean
-CorsConfigurationSource corsConfigurationSource() {
-  CorsConfiguration config = new CorsConfiguration();
-  config.setAllowedOrigins(List.of("https://devnav.tech","https://www.devnav.tech","http://localhost:3000"));
-  config.setAllowedMethods(List.of("GET","POST","PUT","DELETE","OPTIONS"));
-  config.setAllowedHeaders(List.of("*"));
-  config.setAllowCredentials(true);
-  UrlBasedCorsConfigurationSource source = new UrlBasedCorsConfigurationSource();
-  source.registerCorsConfiguration("/**", config);
-  return source;
-}
-```
+### 1) Backend（Spring Initializr → IntelliJで起動）
+1. Spring Initializr で生成（Spring Boot 3, Web, JPA, Validation, Actuator など）
+2. IntelliJ でプロジェクトを開く → `TechApplication` を **dev** プロファイルで実行  
+   - （DB未接続でも起動できる構成ならそのまま。必要なら `application-dev.yml` にローカル設定）
+3. 動作確認  
+   ```bash
+   curl http://localhost:8080/actuator/health
+   # => {"status":"UP"}
+   ```
 
----
+### 2) Frontend（React CRA）
+1. CRA プロジェクトを開く  
+   ```bash
+   cd frontend
+   npm install
+   npm start
+   ```
+2. API のベースURLはローカル前提（必要になったら `.env.local` に定義）  
+   ```bash
+   # 例：必要になった時だけ作成
+   # REACT_APP_API_URL=http://localhost:8080
+   ```
+
+### 3) 管理者トークンでAPI確認（Insomnia/curl）
+- ログインして **IDトークン** を取得 → `Authorization: Bearer <ID_TOKEN>`
+- 例：記事一覧（管理）：  
+  ```
+  GET http://localhost:8080/api/admin/articles?page=0&size=10
+  Header: Authorization: Bearer <ID_TOKEN>
+  ```
+- 例：記事投稿（管理・画像任意 / multipart）：  
+  ```
+  POST http://localhost:8080/api/admin/add-article
+  Header: Authorization: Bearer <ID_TOKEN>
+  Body: image?, title, content, ...
+  ```
+
+### 備考
+- CORS は本番移行時にだけ調整（例：`https://devnav.tech` を許可）。ローカルは `http://localhost:3000` が通ればOK。
+- デプロイ（Vercel/Koyeb/Neon/Cloudflare）は別セクションで後述。
 
 ## デプロイ
 
