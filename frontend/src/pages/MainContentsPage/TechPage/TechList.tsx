@@ -5,8 +5,8 @@ import axios from "axios";
 import { useAuth } from "../../../context/useAuthContext";
 import { usePagination } from "../../../hooks/usePagination";
 import { Pagination } from "../../../utils/Pagination";
-import { get } from "../../../api";
 export const TechList = () => {
+  const baseURL = process.env.REACT_APP_API_URL;
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [articles, setArticles] = useState<ArticleModel[]>([]);
@@ -31,9 +31,12 @@ export const TechList = () => {
     if (!idToken) return;
     const fetchReadedArticles = async () => {
       try {
-        const res = await get(`/api/articles/read?page=${pageIndex}&size=10`, {
-          headers: { Authorization: `Bearer ${idToken}` },
-        });
+        const res = await axios.get(
+          `${baseURL}/api/articles/read?page=${pageIndex}&size=10`,
+          {
+            headers: { Authorization: `Bearer ${idToken}` },
+          }
+        );
         console.log(res.data);
         setReadArticleIds(res.data.content ?? []);
       } catch (e) {
@@ -48,7 +51,9 @@ export const TechList = () => {
   useEffect(() => {
     const fetchArticles = async () => {
       try {
-        const res = await get(`/api/articles?page=${pageIndex}&size=10`);
+        const res = await axios.get(
+          `${baseURL}/api/articles?page=${pageIndex}&size=10`
+        );
         console.log(res.config.url);
         const publishedArticles: ArticleModel[] = res.data.content;
         setArticles(publishedArticles);
