@@ -28,6 +28,7 @@ import { AddProcedureForm } from "./pages/AdminPage/components/AddProcedureForm"
 import { AdminProcedureList } from "./pages/AdminPage/components/AdminProcedureList";
 import { StartPage } from "./pages/StartPage/StartPage";
 import { ArticlesPage } from "./pages/ArticlePage/ArticlePage";
+import TestApiCall from "./TestApiCall";
 
 export default function App() {
   return (
@@ -45,6 +46,7 @@ export default function App() {
           <Route path="/articles/:idAndSlug" element={<TechDetailPage />} />
           <Route path="/syntaxes/:idAndSlug" element={<SyntaxDetailPage />} />
           <Route path="/procedures" element={<ProceduresPage />} />
+          {/* <Route path="/test" element={<TestApiCall />} /> */}
           <Route
             path="/procedures/:idAndSlug"
             element={<ProcedureDetailPage />}
