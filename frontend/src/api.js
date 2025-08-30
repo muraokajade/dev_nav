@@ -2,7 +2,7 @@
 import axios from "axios";
 
 // 環境変数からAPIのベースURLを取得
-const baseURL = process.env.REACT_APP_API_URL || "http://localhost:8000"; // ローカル用のデフォルト設定
+const baseURL = process.env.REACT_APP_API_URL;
 
 const api = axios.create({
   baseURL, // ここでbaseURLを設定
