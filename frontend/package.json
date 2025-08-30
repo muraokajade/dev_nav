@@ -4,8 +4,8 @@
   "private": true,
   "proxy": "http://localhost:8000",
   "dependencies": {
-    "@react-three/drei": "^10.5.1",
-    "@react-three/fiber": "^9.2.0",
+    "@react-three/drei": "^10.7.4",
+    "@react-three/fiber": "^9.3.0",
     "@react-three/postprocessing": "^3.0.4",
     "@tailwindcss/typography": "^0.5.16",
     "@testing-library/dom": "^10.4.0",
@@ -20,6 +20,7 @@
     "axios": "^1.10.0",
     "dayjs": "^1.11.13",
     "firebase": "^11.10.0",
+    "firebase-admin": "^13.5.0",
     "framer-motion": "^12.23.6",
     "framer-motion-3d": "^12.4.13",
     "react": "^19.1.0",
