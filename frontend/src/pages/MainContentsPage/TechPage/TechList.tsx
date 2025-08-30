@@ -5,6 +5,7 @@ import axios from "axios";
 import { useAuth } from "../../../context/useAuthContext";
 import { usePagination } from "../../../hooks/usePagination";
 import { Pagination } from "../../../utils/Pagination";
+import { get } from "../../../api";
 export const TechList = () => {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -30,12 +31,9 @@ export const TechList = () => {
     if (!idToken) return;
     const fetchReadedArticles = async () => {
       try {
-        const res = await axios.get(
-          `/api/articles/read?page=${pageIndex}&size=10`,
-          {
-            headers: { Authorization: `Bearer ${idToken}` },
-          }
-        );
+        const res = await get(`/api/articles/read?page=${pageIndex}&size=10`, {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
         console.log(res.data);
         setReadArticleIds(res.data.content ?? []);
       } catch (e) {
