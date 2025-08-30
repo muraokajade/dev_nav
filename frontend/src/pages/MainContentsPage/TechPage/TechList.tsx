@@ -48,7 +48,7 @@ export const TechList = () => {
   useEffect(() => {
     const fetchArticles = async () => {
       try {
-        const res = await axios.get(`/api/articles?page=${pageIndex}&size=10`);
+        const res = await get(`/api/articles?page=${pageIndex}&size=10`);
         console.log(res.config.url);
         const publishedArticles: ArticleModel[] = res.data.content;
         setArticles(publishedArticles);
