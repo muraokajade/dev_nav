@@ -7,6 +7,7 @@ import { usePagination } from "../../../hooks/usePagination";
 import { Pagination } from "../../../utils/Pagination";
 export const TechList = () => {
   const baseURL = process.env.REACT_APP_API_URL;
+  console.log(baseURL);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [articles, setArticles] = useState<ArticleModel[]>([]);
