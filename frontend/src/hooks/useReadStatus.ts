@@ -78,47 +78,24 @@ export const useReadStatus = (target: ReadTarget): UseReadStatusResult => {
  * 1) /api/{target}/{id}/read に POST
  * 2) ダメなら /api/{target}/read (bodyに {<key>Id: id})
  */
+// 任意：既読登録用（詳細ページ遷移時などで利用）
 export const useMarkRead = (target: ReadTarget) => {
   const { idToken } = useAuth();
-
   const markRead = useCallback(
     async (id: number) => {
       if (!idToken) return;
-
-      // 対象ごとのボディキー
-      const bodyKey =
-        target === ReadTarget.Articles
-          ? "articleId"
-          : target === ReadTarget.Syntaxes
-          ? "syntaxId"
-          : "procedureId";
-
-      // まず：/{id}/read で試す
-      try {
-        await apiHelper.post(
-          `/api/${target}/${id}/read`,
-          {},
-          { headers: { Authorization: `Bearer ${idToken}` } }
-        );
-        return;
-      } catch (e: any) {
-        // 404/405/400 などはフォールバックへ
-        const status = e?.response?.status;
-        if (status && ![400, 401, 403, 404, 405].includes(status)) {
-          // 予期しないエラーは再throw
-          throw e;
-        }
-      }
-
-      // フォールバック：/read にボディで投げる
+      // - await apiHelper.post(
+      // -   `/api/${target}/${id}/read`,
+      // -   {},
+      // -   { headers: { Authorization: `Bearer ${idToken}` } }
+      // - );
       await apiHelper.post(
         `/api/${target}/read`,
-        { [bodyKey]: id },
+        { contentId: id }, // ★ API優先：bodyで contentId を渡す
         { headers: { Authorization: `Bearer ${idToken}` } }
       );
     },
     [idToken, target]
   );
-
   return { markRead };
 };

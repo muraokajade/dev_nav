@@ -101,12 +101,14 @@ export const SyntaxDetailPage = () => {
         setLiked(false);
         setLikeCount((prev) => prev - 1);
       } else {
-        // - await apiHelper.post(`/api/syntaxes/likes?syntaxId=${syntaxId}`, null, {
-        await apiHelper.post(
-          `/api/syntaxes/likes`,
-          { syntaxId }, // ★ NOTE: バックエンドの期待と合わせてJSONボディ送信
-          { headers: { Authorization: `Bearer ${idToken}` } }
-        );
+        // - await apiHelper.post(
+        // -   `/api/syntaxes/likes`,
+        // -   { syntaxId }, // ★ NOTE: バックエンドの期待と合わせてJSONボディ送信
+        // -   { headers: { Authorization: `Bearer ${idToken}` } }
+        // - );
+        await apiHelper.post(`/api/syntaxes/likes?syntaxId=${syntaxId}`, null, {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
         setLiked(true);
         setLikeCount((prev) => prev + 1);
       }
