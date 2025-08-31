@@ -22,7 +22,7 @@ public class WebConfig implements WebMvcConfigurer {
         return new WebMvcConfigurer() {
             @Override public void addCorsMappings(CorsRegistry r) {
                 r.addMapping("/**")
-                        .allowedOrigins("https://www.devnav.tech", "https://devnav.tech", "https://*.devnav.tech")
+                        .allowedOrigins("https://www.devnav.tech", "https://devnav.tech")
                         .allowedMethods("GET","POST","PUT","PATCH","DELETE");
             }
         };

@@ -3,36 +3,32 @@ package com.example.tech.config;
 import com.google.auth.oauth2.GoogleCredentials;
 import com.google.firebase.FirebaseApp;
 import com.google.firebase.FirebaseOptions;
-import jakarta.annotation.PostConstruct;
+import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.io.ClassPathResource;
 
-import java.io.ByteArrayInputStream;
 import java.io.IOException;
+import java.io.InputStream;
 
 @Configuration
 public class FirebaseConfig {
 
-    @PostConstruct
-    public void initialize() {
-        try {
-            String firebaseServiceAccountJson = System.getenv("FIREBASE_SERVICE_ACCOUNT_JSON");
+    @Bean
+    public FirebaseApp firebaseApp() throws IOException {
+        // すでに初期化済みならそれを返す
+        if (!FirebaseApp.getApps().isEmpty()) {
+            return FirebaseApp.getInstance();
+        }
 
-            if (firebaseServiceAccountJson != null) {
-                FirebaseOptions options = FirebaseOptions.builder()
-                        .setCredentials(GoogleCredentials.fromStream(
-                                new ByteArrayInputStream(firebaseServiceAccountJson.getBytes())))
-                        .build();
+        // src/main/resources/firebase/firebase-service-account.json を読む
+        try (InputStream in =
+                     new ClassPathResource("firebase/firebase-service-account.json").getInputStream()) {
 
-                if (FirebaseApp.getApps().isEmpty()) {
-                    FirebaseApp.initializeApp(options);
-                }
-
-                System.out.println("✅ Firebase initialized");
-            } else {
-                throw new IOException("Firebase service account is not set in the environment variables.");
-            }
-        } catch (IOException e) {
-            e.printStackTrace();
+            FirebaseOptions options = FirebaseOptions.builder()
+                    .setCredentials(GoogleCredentials.fromStream(in))
+                    .build();
+            System.out.println("firebase初期化");
+            return FirebaseApp.initializeApp(options);
         }
     }
 }

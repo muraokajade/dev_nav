@@ -7,6 +7,8 @@ import { usePagination } from "../../../hooks/usePagination";
 import { Pagination } from "../../../utils/Pagination";
 export const TechList = () => {
   const baseURL = process.env.REACT_APP_API_URL;
+  console.log("API_URL=", process.env.REACT_APP_API_URL);
+
   console.log(baseURL);
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -56,6 +58,7 @@ export const TechList = () => {
           `${baseURL}/api/articles?page=${pageIndex}&size=10`
         );
         console.log(res.config.url);
+        console.log(res.data);
         const publishedArticles: ArticleModel[] = res.data.content;
         setArticles(publishedArticles);
         setTotalPages(res.data.totalPages);

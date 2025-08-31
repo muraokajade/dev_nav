@@ -11,11 +11,14 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
 import java.time.LocalTime;
 import java.util.List;
+import java.util.Locale;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -70,15 +73,28 @@ public class ArticleService {
         );
     }
 
+    // Service
+    @Transactional(readOnly = true)
+    public Page<Long> getReadArticleIds(String userEmail, Pageable pageable) {
+        // 未ログイン/空文字 → 空ページで200
+        if (userEmail == null || userEmail.isBlank()) {
+            return Page.empty(pageable); // 2.5未満なら new PageImpl<>(List.of(), pageable, 0)
+        }
 
-    public Page<Long> getReadArticleIds(String userEmail,Pageable pageable) {
-        UserEntity user = userRepository.findUserByEmail(userEmail)
-                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません。"));
+        String normalized = userEmail.trim().toLowerCase(Locale.ROOT);
 
-        Long userId = user.getId();
+        // ユーザー検索（なければ空ページ）
+        Optional<UserEntity> opt = userRepository.findUserByEmail(normalized);
+        if (opt.isEmpty()) {
+            return Page.empty(pageable);
+        }
 
-        return articleReadRepository.findAllArticleIdByUserId(userId,pageable);
+        Long userId = opt.get().getId();
+
+        // 既読記事IDのページング取得
+        return articleReadRepository.findAllArticleIdByUserId(userId, pageable);
     }
+
 
     public List<ArticleDTO> findLikedArticlesByUser(String userEmail) {
         LocalDateTime start = LocalDate.now().atStartOfDay();
