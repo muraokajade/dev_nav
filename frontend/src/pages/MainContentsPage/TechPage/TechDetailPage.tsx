@@ -5,7 +5,8 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import dayjs from "dayjs";
 import { useAuth } from "../../../context/useAuthContext";
-import axios from "axios";
+// - import axios from "axios";
+import { apiHelper } from "../../../libs/apiHelper";
 import { LikeButton } from "../../../utils/LikeButton";
 import { TechDetailActions } from "./TechDetailActions";
 
@@ -21,7 +22,7 @@ function CodeBlock({ language, code, startingLineNumber = 1 }: CodeBlockProps) {
 
   const onCopy = async () => {
     try {
-      await navigator.clipboard.writeText(text); // 行番号は含めない
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     } catch (e) {
@@ -29,7 +30,6 @@ function CodeBlock({ language, code, startingLineNumber = 1 }: CodeBlockProps) {
     }
   };
 
-  // インラインコードはここでは扱わない（<code>側で表示）
   if (!language) {
     return <code className="rounded bg-zinc-800/70 px-1.5 py-0.5">{text}</code>;
   }
@@ -70,11 +70,18 @@ function CodeBlock({ language, code, startingLineNumber = 1 }: CodeBlockProps) {
   );
 }
 
+// 追加：失敗時の簡易UI
+const Fallback = ({ msg }: { msg: string }) => (
+  <div className="text-red-300 bg-red-900/30 p-3 rounded">{msg}</div>
+);
+
 export const TechDetailPage = () => {
   const { idAndSlug } = useParams();
-  const id = idAndSlug?.split("-")[0];
+  // - const id = idAndSlug?.split("-")[0];
+  const id = idAndSlug?.match(/^\d+/)?.[0] ?? null;
+
   const { idToken } = useAuth();
-  const baseURL = process.env.REACT_APP_API_URL;
+  // - const baseURL = process.env.REACT_APP_API_URL;
 
   // リッチ化用：記事メタ情報
   const [title, setTitle] = useState("");
@@ -88,20 +95,24 @@ export const TechDetailPage = () => {
   const [likeCount, setLikeCount] = useState(0);
   const [isRead, setIsRead] = useState(false);
   const [myUserId, setMyUserId] = useState<number | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
   // いいね機能
   const handleLike = async () => {
     if (!idToken || !articleId) return;
     try {
       if (liked) {
-        await axios.delete(`${baseURL}/api/likes/${articleId}`, {
+        // - await axios.delete(`${baseURL}/api/likes/${articleId}`, { headers: { Authorization: `Bearer ${idToken}` } });
+        await apiHelper.delete(`/api/likes/${articleId}`, {
           headers: { Authorization: `Bearer ${idToken}` },
         });
         setLiked(false);
         setLikeCount((v) => v - 1);
       } else {
-        await axios.post(
-          `${baseURL}/api/likes`,
+        // - await axios.post(`${baseURL}/api/likes`, { articleId }, { headers: { Authorization: `Bearer ${idToken}` } });
+        await apiHelper.post(
+          `/api/likes`,
           { articleId },
           { headers: { Authorization: `Bearer ${idToken}` } }
         );
@@ -118,15 +129,17 @@ export const TechDetailPage = () => {
     if (!idToken || !articleId) return;
     try {
       if (!isRead) {
-        await axios.post(
-          `${baseURL}/api/articles/read`,
+        // - await axios.post(`${baseURL}/api/articles/read`, { articleId }, { headers: { Authorization: `Bearer ${idToken}` } });
+        await apiHelper.post(
+          `/api/articles/read`,
           { articleId },
           { headers: { Authorization: `Bearer ${idToken}` } }
         );
         setIsRead(true);
         alert("完了");
       } else {
-        await axios.delete(`${baseURL}/api/articles/read/${articleId}`, {
+        // - await axios.delete(`${baseURL}/api/articles/read/${articleId}`, { headers: { Authorization: `Bearer ${idToken}` } });
+        await apiHelper.delete(`/api/articles/read/${articleId}`, {
           headers: { Authorization: `Bearer ${idToken}` },
         });
         setIsRead(false);
@@ -143,11 +156,10 @@ export const TechDetailPage = () => {
     if (!idToken || !articleId) return;
     (async () => {
       try {
-        const res = await axios.get(
-          `${baseURL}/api/articles/read/status?articleId=${articleId}`,
-          {
-            headers: { Authorization: `Bearer ${idToken}` },
-          }
+        // - const res = await axios.get(`${baseURL}/api/articles/read/status?articleId=${articleId}`, { headers: { Authorization: `Bearer ${idToken}` } });
+        const res = await apiHelper.get(
+          `/api/articles/read/status?articleId=${articleId}`,
+          { headers: { Authorization: `Bearer ${idToken}` } }
         );
         const read =
           typeof res.data === "object" && res.data !== null
@@ -158,13 +170,14 @@ export const TechDetailPage = () => {
         setIsRead(false);
       }
     })();
-  }, [idToken, articleId]);
+  }, [idToken, articleId]); // - baseURL依存は不要
 
   // いいね状態取得
   useEffect(() => {
     if (!idToken || !articleId) return;
-    axios
-      .get(`${baseURL}/api/likes/status?articleId=${articleId}`, {
+    // - axios.get(`${baseURL}/api/likes/status?articleId=${articleId}`, { headers: { Authorization: `Bearer ${idToken}` } })
+    apiHelper
+      .get(`/api/likes/status?articleId=${articleId}`, {
         headers: { Authorization: `Bearer ${idToken}` },
       })
       .then((res) => {
@@ -172,26 +185,30 @@ export const TechDetailPage = () => {
         setLikeCount(res.data.count ?? 0);
       })
       .catch(() => void 0);
-  }, [idToken, articleId]);
+  }, [idToken, articleId]); // - baseURL依存は不要
 
   // myUserId取得
   useEffect(() => {
     if (!idToken) return;
-    axios
-      .get(`${baseURL}/api/me`, {
-        headers: { Authorization: `Bearer ${idToken}` },
-      })
+    // - axios.get(`${baseURL}/api/me`, { headers: { Authorization: `Bearer ${idToken}` } })
+    apiHelper
+      .get(`/api/me`, { headers: { Authorization: `Bearer ${idToken}` } })
       .then((res) => setMyUserId(res.data.id))
       .catch(() => void 0);
-  }, [idToken]);
+  }, [idToken]); // - baseURL依存は不要
 
   // 記事メタ＆本文取得
   useEffect(() => {
-    if (!id) return;
+    if (!id) {
+      setErrorMsg("URLのIDが取得できません");
+      setLoading(false);
+      return;
+    }
     let ignore = false;
     (async () => {
       try {
-        const { data } = await axios.get(`${baseURL}/api/articles/${id}`);
+        // - const { data } = await axios.get(`${baseURL}/api/articles/${id}`);
+        const { data } = await apiHelper.get(`/api/articles/${id}`);
         if (ignore) return;
         setTitle(data.title);
         setAuthor(data.authorName ?? "（不明）");
@@ -200,17 +217,25 @@ export const TechDetailPage = () => {
         setImageUrl(data.imageUrl ?? "");
         setContent(data.content);
         setArticleId(data.id);
+        setErrorMsg(null);
       } catch (e) {
         console.error("fetch article failed", e);
+        setErrorMsg("記事の取得に失敗しました");
+      } finally {
+        setLoading(false);
       }
     })();
     return () => {
       ignore = true;
     };
-  }, [id]);
+  }, [id]); // - baseURL依存は不要
 
   return (
     <div className="min-h-screen bg-gray-900">
+      {/* 進行表示 */}
+      {loading && <div className="text-gray-300 p-4">読み込み中...</div>}
+      {!loading && errorMsg && <Fallback msg={errorMsg} />}
+
       {/* いいねボタン */}
       <LikeButton liked={liked} count={likeCount} onClick={handleLike} />
 
@@ -238,11 +263,9 @@ export const TechDetailPage = () => {
           )}
         </div>
 
-        {/* 本文（preをハックして、コピー付きCodeBlockに差し替え） */}
         <ReactMarkdown
           components={{
             pre({ children }) {
-              // children は <code class="language-xxx">...</code>
               const child = Array.isArray(children) ? children[0] : children;
               // @ts-ignore
               const className = child?.props?.className as string | undefined;
@@ -262,9 +285,7 @@ export const TechDetailPage = () => {
               return <CodeBlock language={match[1]} code={codeString} />;
             },
             code({ className, children, ...props }) {
-              // インラインコードはここ（pre外）に来る
               if (/language-/.test(className || "")) {
-                // まれにpreを通らずに来るパターンもケア
                 const match = /language-(\w+)/.exec(className || "");
                 const codeString = Array.isArray(children)
                   ? children.join("")
