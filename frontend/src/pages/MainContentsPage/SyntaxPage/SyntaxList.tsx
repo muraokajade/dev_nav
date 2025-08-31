@@ -5,6 +5,7 @@ import axios from "axios";
 import { useAuth } from "../../../context/useAuthContext";
 import { usePagination } from "../../../hooks/usePagination";
 import { Pagination } from "../../../utils/Pagination";
+import { apiHelper } from "../../../libs/apiHelper";
 export const SyntaxList = () => {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
@@ -37,7 +38,9 @@ export const SyntaxList = () => {
   useEffect(() => {
     const fetchsyntaxes = async () => {
       try {
-        const res = await axios.get(`/api/syntaxes?page=${pageIndex}&size=10`);
+        const res = await apiHelper.get(
+          `/api/syntaxes?page=${pageIndex}&size=10`
+        );
         const publishedSyntaxes: ArticleModel[] = res.data.content;
         console.log(res.data);
         setSyntaxes(publishedSyntaxes);

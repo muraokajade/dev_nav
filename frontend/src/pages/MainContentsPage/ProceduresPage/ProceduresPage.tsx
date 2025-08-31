@@ -2,7 +2,7 @@
 
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
-import axios from "axios";
+import { apiHelper } from "../../../libs/apiHelper";
 import { usePagination } from "../../../hooks/usePagination";
 import { Procedure } from "../../../models/Procedure";
 import { Pagination } from "../../../utils/Pagination";
@@ -25,7 +25,9 @@ const sectionTitles: Record<string, string> = {
 
 // 全角→半角
 const toHalfWidthDigits = (s: string) =>
-  (s || "").replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xfee0));
+  (s || "").replace(/[０-９]/g, (ch) =>
+    String.fromCharCode(ch.charCodeAt(0) - 0xfee0)
+  );
 
 // 区切り統一・桁解釈・ゼロ詰め
 const normalizeStep = (raw: string) => {
@@ -34,20 +36,20 @@ const normalizeStep = (raw: string) => {
     .replace(/\s+/g, "")
     .trim();
 
-  if (/^\d{3}$/.test(t0)) return `${t0[0]}-${t0.slice(1)}`;        // 509 -> 5-09
-  if (/^\d{4}$/.test(t0)) return `${t0.slice(0,2)}-${t0.slice(2)}`; // 1001 -> 10-01
+  if (/^\d{3}$/.test(t0)) return `${t0[0]}-${t0.slice(1)}`; // 509 -> 5-09
+  if (/^\d{4}$/.test(t0)) return `${t0.slice(0, 2)}-${t0.slice(2)}`; // 1001 -> 10-01
 
   const m = t0.match(/^(\d+)-(\d+)$/);
-  return m ? `${parseInt(m[1],10)}-${m[2].padStart(2,"0")}` : t0;   // 5-9 -> 5-09
+  return m ? `${parseInt(m[1], 10)}-${m[2].padStart(2, "0")}` : t0; // 5-9 -> 5-09
 };
 
 const parseStep = (raw: string): [number, number] => {
   const s = normalizeStep(raw);
   const m = s.match(/^(\d+)-(\d{1,2})$/);
-  return m ? [parseInt(m[1],10), parseInt(m[2],10)] 
-           : [Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER];
+  return m
+    ? [parseInt(m[1], 10), parseInt(m[2], 10)]
+    : [Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER];
 };
-
 
 type Row = Procedure & { major: number; minor: number; stepNumber: string };
 
@@ -72,13 +74,13 @@ export const ProceduresPage = () => {
     const fetchAll = async () => {
       try {
         // まず1ページ取り、総ページ数を把握
-        const first = await axios.get(`/api/procedures?page=0&size=50`);
+        const first = await apiHelper.get(`/api/procedures?page=0&size=50`);
         const total = Number(first.data.totalPages) || 1;
 
         // 残りページもまとめて取得
         const rest = await Promise.all(
           Array.from({ length: total - 1 }, (_, i) =>
-            axios.get(`/api/procedures?page=${i + 1}&size=50`)
+            apiHelper.get(`/api/procedures?page=${i + 1}&size=50`)
           )
         );
 

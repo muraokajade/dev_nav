@@ -5,7 +5,7 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import dayjs from "dayjs";
 import { useAuth } from "../../../context/useAuthContext";
-import axios from "axios";
+import { apiHelper } from "../../../libs/apiHelper";
 import { ProcedureDetailActions } from "./ProcedureDetailActions";
 
 export const ProcedureDetailPage = () => {
@@ -122,7 +122,7 @@ export const ProcedureDetailPage = () => {
     if (!idToken || !procedureId) return;
     try {
       if (!isRead) {
-        await axios.post(
+        await apiHelper.post(
           "/api/procedures/read",
           { procedureId }, // ← 統一キー
           { headers: { Authorization: `Bearer ${idToken}` } }
@@ -130,7 +130,7 @@ export const ProcedureDetailPage = () => {
         setIsRead(true);
         alert("完了");
       } else {
-        await axios.delete(`/api/procedures/read/${procedureId}`, {
+        await apiHelper.delete(`/api/procedures/read/${procedureId}`, {
           headers: { Authorization: `Bearer ${idToken}` },
         });
         setIsRead(false);
@@ -145,7 +145,7 @@ export const ProcedureDetailPage = () => {
   // 自分のユーザーID
   useEffect(() => {
     if (!idToken) return;
-    axios
+    apiHelper
       .get("/api/me", { headers: { Authorization: `Bearer ${idToken}` } })
       .then((res) => setMyUserId(res.data.id))
       .catch(() => void 0);
@@ -154,7 +154,7 @@ export const ProcedureDetailPage = () => {
   // 手順本体
   useEffect(() => {
     if (!id) return;
-    axios.get(`/api/procedures/${id}`).then((res) => {
+    apiHelper.get(`/api/procedures/${id}`).then((res) => {
       setTitle(res.data.title);
       setAuthor(res.data.authorName ?? "（不明）");
       setCreatedAt(res.data.createdAt ?? "");
@@ -168,7 +168,7 @@ export const ProcedureDetailPage = () => {
   // 読了ステータス（未ログインなら取得しない）
   useEffect(() => {
     if (!idToken || !procedureId) return;
-    axios
+    apiHelper
       .get("/api/procedures/read/status", {
         params: { contentId: procedureId }, // ← 統一キー
         headers: { Authorization: `Bearer ${idToken}` },

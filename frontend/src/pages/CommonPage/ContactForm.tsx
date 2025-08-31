@@ -1,5 +1,5 @@
 import { useState } from "react";
-import axios from "axios";
+import { apiHelper } from "../../libs/apiHelper";
 
 export const ContactForm = () => {
   const [title, setTitle] = useState("");
@@ -9,12 +9,12 @@ export const ContactForm = () => {
 
   const handleSubmit = async () => {
     try {
-      await axios.post("/api/contact", { title, question });
+      await apiHelper.post("/api/contact", { title, question });
       setTitle("");
       setQuestion("");
       setSent(true);
     } catch (e) {
-      alert("失敗しました。")
+      alert("失敗しました。");
     }
   };
 

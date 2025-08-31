@@ -1,4 +1,4 @@
-import axios from "axios";
+import { apiHelper } from "../../../libs/apiHelper";
 import { useAuth } from "../../../context/useAuthContext";
 import { useState } from "react";
 
@@ -28,7 +28,7 @@ export const AddSyntaxForm = () => {
     }
 
     try {
-      await axios.post(
+      await apiHelper.post(
         "/api/admin/add-syntax",
         { slug, title, category, summary, content },
         {

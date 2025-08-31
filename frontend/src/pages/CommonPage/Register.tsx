@@ -2,7 +2,7 @@ import { createUserWithEmailAndPassword, updateProfile } from "firebase/auth";
 import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { auth } from "../../libs/firebase";
-import axios from "axios";
+import { apiHelper } from "../../libs/apiHelper";
 
 export const Register = () => {
   const navigate = useNavigate();
@@ -20,7 +20,7 @@ export const Register = () => {
       // 2. Firebase AuthのdisplayNameも設定
       await updateProfile(cred.user, { displayName: name });
       // 3. サーバー側（usersテーブル）にも新規登録（必要なら）
-      await axios.post("/api/register", {
+      await apiHelper.post("/api/register", {
         email,
         displayName: name,
       });
@@ -38,7 +38,9 @@ export const Register = () => {
         </h1>
         <form onSubmit={handleRegister} className="space-y-4">
           <div>
-            <label className="block text-gray-300 mb-1">ネーム（ニックネーム）</label>
+            <label className="block text-gray-300 mb-1">
+              ネーム（ニックネーム）
+            </label>
             <input
               type="text"
               value={name}

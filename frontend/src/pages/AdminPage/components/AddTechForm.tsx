@@ -1,4 +1,4 @@
-import axios from "axios";
+import { apiHelper } from "../../../libs/apiHelper";
 import { useAuth } from "../../../context/useAuthContext";
 import { useRef, useState } from "react";
 import ReactMarkdown from "react-markdown"; // 追加
@@ -47,7 +47,7 @@ export const AddTechForm = () => {
     }
 
     try {
-      await axios.post("/api/admin/add-article", formData, {
+      await apiHelper.post("/api/admin/add-article", formData, {
         headers: {
           Authorization: `Bearer ${idToken}`,
           // "Content-Type": "multipart/form-data",

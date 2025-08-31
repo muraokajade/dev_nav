@@ -1,5 +1,5 @@
 import { useEffect, useState, useCallback } from "react";
-import axios from "axios";
+import { apiHelper } from "../libs/apiHelper";
 import { useAuth } from "../context/useAuthContext";
 
 export enum ReadTarget {
@@ -34,7 +34,7 @@ export const useReadStatus = (target: ReadTarget): UseReadStatusResult => {
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get(`/api/${target}/read/all`, {
+      const res = await apiHelper.get(`/api/${target}/read/all`, {
         headers: { Authorization: `Bearer ${idToken}` },
       });
       setReadIds(Array.isArray(res.data) ? res.data : []);
@@ -61,7 +61,7 @@ export const useMarkRead = (target: ReadTarget) => {
   const markRead = useCallback(
     async (id: number) => {
       if (!idToken) return;
-      await axios.post(
+      await apiHelper.post(
         `/api/${target}/${id}/read`,
         {},
         { headers: { Authorization: `Bearer ${idToken}` } }

@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import axios from "axios";
+import { apiHelper } from "../../../libs/apiHelper";
 import { ArticleModel } from "../../../models/ArticleModel";
 import { useAuth } from "../../../context/useAuthContext";
 import ReactMarkdown from "react-markdown";
@@ -34,7 +34,7 @@ export const AdminTechList = () => {
 
   const fetchArticles = useCallback(async () => {
     try {
-      const res = await axios.get(
+      const res = await apiHelper.get(
         `/api/admin/articles?page=${pageIndex}&size=10`,
         {
           headers: {
@@ -60,7 +60,7 @@ export const AdminTechList = () => {
   const togglePublish = async (id: number) => {
     if (loading) return;
     try {
-      await axios.put(`/api/admin/articles/toggle/${id}`, null, {
+      await apiHelper.put(`/api/admin/articles/toggle/${id}`, null, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
@@ -75,7 +75,7 @@ export const AdminTechList = () => {
   const handleEdit = async (id: number) => {
     if (loading) return;
     try {
-      const res = await axios.get(`/api/admin/articles/${id}`, {
+      const res = await apiHelper.get(`/api/admin/articles/${id}`, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
@@ -112,7 +112,7 @@ export const AdminTechList = () => {
         formData.append("image", imageFile);
       }
 
-      await axios.put(`/api/admin/articles/${id}`, formData, {
+      await apiHelper.put(`/api/admin/articles/${id}`, formData, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
@@ -128,7 +128,7 @@ export const AdminTechList = () => {
     if (loading) return;
     if (!window.confirm("本当に削除しますか？")) return;
     try {
-      await axios.delete(`/api/admin/articles/${id}`, {
+      await apiHelper.delete(`/api/admin/articles/${id}`, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },

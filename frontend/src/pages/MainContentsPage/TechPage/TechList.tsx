@@ -5,6 +5,7 @@ import axios from "axios";
 import { useAuth } from "../../../context/useAuthContext";
 import { usePagination } from "../../../hooks/usePagination";
 import { Pagination } from "../../../utils/Pagination";
+import { apiHelper } from "../../../libs/apiHelper";
 export const TechList = () => {
   const baseURL = process.env.REACT_APP_API_URL;
   console.log("API_URL=", process.env.REACT_APP_API_URL);
@@ -34,8 +35,8 @@ export const TechList = () => {
     if (!idToken) return;
     const fetchReadedArticles = async () => {
       try {
-        const res = await axios.get(
-          `${baseURL}/api/articles/read?page=${pageIndex}&size=10`,
+        const res = await apiHelper.get(
+          `/api/articles/read?page=${pageIndex}&size=10`,
           {
             headers: { Authorization: `Bearer ${idToken}` },
           }
@@ -54,8 +55,8 @@ export const TechList = () => {
   useEffect(() => {
     const fetchArticles = async () => {
       try {
-        const res = await axios.get(
-          `${baseURL}/api/articles?page=${pageIndex}&size=10`
+        const res = await apiHelper.get(
+          `/api/articles?page=${pageIndex}&size=10`
         );
         console.log(res.config.url);
         console.log(res.data);

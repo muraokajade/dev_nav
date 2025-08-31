@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import { apiHelper } from "../../../libs/apiHelper";
 import { ArticleModel } from "../../../models/ArticleModel";
 import { useAuth } from "../../../context/useAuthContext";
 import dayjs from "dayjs";
@@ -38,7 +38,7 @@ export const AdminProcedureList = () => {
 
   const fetchProcedure = useCallback(async () => {
     try {
-      const res = await axios.get(
+      const res = await apiHelper.get(
         `/api/admin/procedure?page=${pageIndex}&size=10`,
         {
           headers: {
@@ -63,7 +63,7 @@ export const AdminProcedureList = () => {
   const togglePublish = async (id: number) => {
     if (loading) return;
     try {
-      await axios.put(`/api/admin/procedure/toggle/${id}`, null, {
+      await apiHelper.put(`/api/admin/procedure/toggle/${id}`, null, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
@@ -77,7 +77,7 @@ export const AdminProcedureList = () => {
   const handleEdit = async (id: number) => {
     if (loading) return;
     try {
-      const res = await axios.get(`/api/admin/procedure/${id}`, {
+      const res = await apiHelper.get(`/api/admin/procedure/${id}`, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
@@ -112,7 +112,7 @@ export const AdminProcedureList = () => {
         formData.append("image", imageFile);
       }
 
-      await axios.put(`/api/admin/procedure/${id}`, formData, {
+      await apiHelper.put(`/api/admin/procedure/${id}`, formData, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
@@ -128,7 +128,7 @@ export const AdminProcedureList = () => {
     if (loading) return;
     if (!window.confirm("本当に削除しますか？")) return;
     try {
-      await axios.delete(`/api/admin/procedure/${id}`, {
+      await apiHelper.delete(`/api/admin/procedure/${id}`, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
@@ -140,8 +140,6 @@ export const AdminProcedureList = () => {
   };
 
   const paginate = (pageNumber: number) => setDisplayPage(pageNumber);
-
-
 
   return (
     <div className="min-h-screen bg-gray-900">

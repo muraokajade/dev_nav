@@ -2,7 +2,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { MessageResponse } from "../../../models/MessageResponse";
 import { AdminQuestionPage } from "./AdminQuestionPage";
-import axios from "axios";
+import { apiHelper } from "../../../libs/apiHelper";
 import { useAuth } from "../../../context/useAuthContext";
 import { usePagination } from "../../../hooks/usePagination";
 import { Pagination } from "../../../utils/Pagination";
@@ -75,7 +75,7 @@ const enrichOne = async (
   // 無ければ詳細APIで補完
   if (!title || slug === undefined) {
     try {
-      const res = await axios.get(`/api/${target}/${id}`, {
+      const res = await apiHelper.get(`/api/${target}/${id}`, {
         headers: idToken ? { Authorization: `Bearer ${idToken}` } : undefined,
       });
       title =
@@ -95,13 +95,13 @@ const enrichOne = async (
 export const AdminQAPage = () => {
   const [messages, setMessages] = useState<EnrichedMessage[]>([]);
   const { idToken } = useAuth();
-  const { pageIndex, setTotalPages, setDisplayPage, displayPage,totalPages } =
+  const { pageIndex, setTotalPages, setDisplayPage, displayPage, totalPages } =
     usePagination();
 
   /** 1ページ分取得して補完 */
   const fetchMessages = useCallback(async () => {
     try {
-      const res = await axios.get(
+      const res = await apiHelper.get(
         `/api/messages/admin/questions?page=${pageIndex}&size=10`,
         {
           headers: { Authorization: idToken ? `Bearer ${idToken}` : undefined },
@@ -129,7 +129,7 @@ export const AdminQAPage = () => {
   // 回答送信（1件ごと）
   const handleAnswer = async (id: number, answer: string) => {
     try {
-      await axios.post(
+      await apiHelper.post(
         `/api/messages/admin/questions/${id}/answer`,
         { messageId: id, answer },
         {
@@ -143,7 +143,7 @@ export const AdminQAPage = () => {
     }
   };
 
-  const paginate = (pageNumber:number) => setDisplayPage(pageNumber);
+  const paginate = (pageNumber: number) => setDisplayPage(pageNumber);
 
   return (
     <div className="min-h-screen bg-gray-900 py-10">

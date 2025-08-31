@@ -1,5 +1,5 @@
 import { useState, useEffect, useCallback } from "react";
-import axios from "axios";
+import { apiHelper } from "../libs/apiHelper";
 import { useAuth } from "../context/useAuthContext";
 
 type Score = {
@@ -13,7 +13,7 @@ type TargetType = "ARTICLE" | "SYNTAX" | "PROCEDURE";
 export const useReviewScores = (
   targetType: TargetType,
   refId: number,
-  myUserId?: number,
+  myUserId?: number
 ) => {
   const [scores, setScores] = useState<Score[]>([]);
   const [myScore, setMyScore] = useState<number | null>(null);
@@ -24,8 +24,8 @@ export const useReviewScores = (
   // 全体分
   const fetchAllScores = useCallback(async () => {
     try {
-      const res = await axios.get(
-        `/api/review-scores/${targetType.toLowerCase()}/${refId}`,
+      const res = await apiHelper.get(
+        `/api/review-scores/${targetType.toLowerCase()}/${refId}`
       );
       setScores(res.data);
     } catch {
@@ -45,7 +45,7 @@ export const useReviewScores = (
     if (!idToken) return;
     const fetchScore = async () => {
       try {
-        const res = await axios.get(
+        const res = await apiHelper.get(
           `/api/review-scores/my/${targetType.toLowerCase()}/${refId}`,
           { headers: { Authorization: `Bearer ${idToken}` } }
         );
@@ -68,13 +68,13 @@ export const useReviewScores = (
       const payload = { score }; // targetType, refId は URL に含まれるから不要でもOK
 
       if (myScore === null) {
-        await axios.post(
+        await apiHelper.post(
           `/api/review-scores/${targetType.toLowerCase()}/${refId}`,
           payload,
           { headers: { Authorization: `Bearer ${idToken}` } }
         );
       } else {
-        await axios.put(
+        await apiHelper.put(
           `/api/review-scores/${targetType.toLowerCase()}/${refId}`,
           payload,
           { headers: { Authorization: `Bearer ${idToken}` } }

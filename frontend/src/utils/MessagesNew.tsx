@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useMemo, useState } from "react";
 import { useAuth } from "../context/useAuthContext";
-import axios from "axios";
+import { apiHelper } from "../libs/apiHelper";
 
 type TargetType = "ARTICLE" | "SYNTAX" | "PROCEDURE";
 
@@ -57,7 +57,7 @@ export const MessagesNew: React.FC<{
     setLoading(true);
     setError(null);
     try {
-      const res = await axios.get<MessagePageResponse>(
+      const res = await apiHelper.get<MessagePageResponse>(
         `${baseUrl}?page=${page}&size=${size}`
       );
       setData(res.data);
@@ -84,7 +84,7 @@ export const MessagesNew: React.FC<{
     setPosting(true);
     setError(null);
     try {
-      await axios.post(
+      await apiHelper.post(
         baseUrl,
         { title, question },
         { headers: { Authorization: `Bearer ${idToken}` } }

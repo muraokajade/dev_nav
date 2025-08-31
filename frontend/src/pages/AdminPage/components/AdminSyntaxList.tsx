@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useState } from "react";
-import axios from "axios";
+import { apiHelper } from "../../../libs/apiHelper";
 import { SyntaxModel } from "../../../models/SyntaxModel";
 import { useAuth } from "../../../context/useAuthContext";
 import ReactMarkdown from "react-markdown";
@@ -21,7 +21,8 @@ export const AdminSyntaxList = () => {
   const [content, setContent] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
-  const { totalPages, pageIndex, displayPage, setTotalPages,setDisplayPage } = usePagination();
+  const { totalPages, pageIndex, displayPage, setTotalPages, setDisplayPage } =
+    usePagination();
   const categories = [
     "Spring",
     "React",
@@ -33,7 +34,7 @@ export const AdminSyntaxList = () => {
 
   const fetchAllSyntax = useCallback(async () => {
     try {
-      const res = await axios.get(
+      const res = await apiHelper.get(
         `/api/admin/syntaxes?page=${pageIndex}&size=10`,
         {
           headers: {
@@ -57,13 +58,13 @@ export const AdminSyntaxList = () => {
   const togglePublish = async (slug: string) => {
     if (loading) return;
     try {
-      await axios.put(`/api/admin/syntaxes/${slug}/toggle`, null, {
+      await apiHelper.put(`/api/admin/syntaxes/${slug}/toggle`, null, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
       });
       // 再取得
-      // const res = await axios.get(
+      // const res = await apiHelper.get(
       //   `/api/admin/syntaxes?page=${pageIndex}&size=10`,
       //   {
       //     headers: {
@@ -83,7 +84,7 @@ export const AdminSyntaxList = () => {
   //   const fetchAllSyntaxes = async () => {
   //     if (loading) return;
   //     try {
-  //       const res = await axios.get("/api/admin/syntaxes", {
+  //       const res = await apiHelper.get("/api/admin/syntaxes", {
   //         headers: {
   //           Authorization: `Bearer ${idToken}`,
   //         },
@@ -100,7 +101,7 @@ export const AdminSyntaxList = () => {
   const handleEdit = async (id: number) => {
     if (loading) return;
     try {
-      const res = await axios.get(`/api/admin/syntaxes/${id}`, {
+      const res = await apiHelper.get(`/api/admin/syntaxes/${id}`, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
@@ -125,7 +126,7 @@ export const AdminSyntaxList = () => {
   const handleUpdate = async (id: number) => {
     if (loading) return;
     try {
-      await axios.put(
+      await apiHelper.put(
         `/api/admin/syntaxes/${id}`,
         { slug, title, category, summary, content },
 
@@ -135,7 +136,7 @@ export const AdminSyntaxList = () => {
           },
         }
       );
-      // const refreshed = await axios.get("/api/admin/syntaxes", {
+      // const refreshed = await apiHelper.get("/api/admin/syntaxes", {
       //   headers: {
       //     Authorization: `Bearer ${idToken}`,
       //   },
@@ -153,13 +154,13 @@ export const AdminSyntaxList = () => {
     if (loading) return;
     if (!window.confirm("本当に削除しますか？")) return;
     try {
-      await axios.delete(`/api/admin/syntaxes/${id}`, {
+      await apiHelper.delete(`/api/admin/syntaxes/${id}`, {
         headers: {
           Authorization: `Bearer ${idToken}`,
         },
       });
       console.log("削除成功");
-      // const res = await axios.get("/api/admin/syntaxes", {
+      // const res = await apiHelper.get("/api/admin/syntaxes", {
       //   headers: {
       //     Authorization: `Bearer ${idToken}`,
       //   },
@@ -171,7 +172,6 @@ export const AdminSyntaxList = () => {
       console.error("削除失敗", e);
     }
   };
-
 
   const paginate = (pageNumber: number) => setDisplayPage(pageNumber);
   return (
@@ -257,7 +257,6 @@ export const AdminSyntaxList = () => {
             >
               {/* 左側：基本情報 */}
               <div className="sm:w-[240px] w-full shrink-0 sm:pr-4 text-sm space-y-1 mb-4 sm:mb-0">
-                
                 <Link
                   to={`/syntaxes/${syntax.id}-${syntax.slug}`}
                   className="text-3xl hover:underline text-blue-200 break-words whitespace-normal"

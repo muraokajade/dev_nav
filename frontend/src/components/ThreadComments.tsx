@@ -1,5 +1,5 @@
 import React, { useCallback, useEffect, useMemo, useState } from "react";
-import axios from "axios";
+import { apiHelper } from "../libs/apiHelper";
 import { ThreadMessage, ThreadWithMessages } from "../models/ThreadMessage";
 import { useAuth } from "../context/useAuthContext";
 import { Link } from "react-router-dom";
@@ -52,7 +52,7 @@ export const ThreadComments: React.FC<Props> = ({
   const fetchMessages = useCallback(async () => {
     try {
       if (!refId) return;
-      const res = await axios.get<ThreadWithMessages>(basePath);
+      const res = await apiHelper.get<ThreadWithMessages>(basePath);
       setMessages(res.data.messages);
     } catch (e) {
       console.error(e);
@@ -69,7 +69,7 @@ export const ThreadComments: React.FC<Props> = ({
     if (!idToken) return alert("ログインしてください");
     if (!input.trim()) return alert("本文を入力してください");
     try {
-      await axios.post(
+      await apiHelper.post(
         basePath,
         { body: input },
         { headers: { Authorization: `Bearer ${idToken}` } }
@@ -86,7 +86,7 @@ export const ThreadComments: React.FC<Props> = ({
     const ok = window.confirm("本当に削除してよいですか？");
     if (!ok) return;
     try {
-      await axios.delete(`/api/messages/${id}`, {
+      await apiHelper.delete(`/api/messages/${id}`, {
         headers: { Authorization: `Bearer ${idToken}` },
       });
       await fetchMessages();
@@ -100,7 +100,7 @@ export const ThreadComments: React.FC<Props> = ({
     if (!idToken) return alert("ログインしてください");
     if (!editText.trim()) return alert("本文を入力してください");
     try {
-      await axios.put(
+      await apiHelper.put(
         `/api/messages/${id}`,
         { body: editText },
         { headers: { Authorization: `Bearer ${idToken}` } }
@@ -115,7 +115,6 @@ export const ThreadComments: React.FC<Props> = ({
 
   return (
     <section className="bg-zinc-900 rounded-xl p-6 my-8 shadow-lg max-w-3xl text-zinc-100">
-
       {/* 投稿フォーム or ログイン導線 */}
       {canShowComposer ? (
         // 投稿フォーム
