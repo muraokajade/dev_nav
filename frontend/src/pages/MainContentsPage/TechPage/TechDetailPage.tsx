@@ -31,9 +31,7 @@ function CodeBlock({ language, code, startingLineNumber = 1 }: CodeBlockProps) {
 
   // インラインコードはここでは扱わない（<code>側で表示）
   if (!language) {
-    return (
-      <code className="rounded bg-zinc-800/70 px-1.5 py-0.5">{text}</code>
-    );
+    return <code className="rounded bg-zinc-800/70 px-1.5 py-0.5">{text}</code>;
   }
 
   return (
@@ -41,7 +39,11 @@ function CodeBlock({ language, code, startingLineNumber = 1 }: CodeBlockProps) {
       <button
         onClick={onCopy}
         className={`absolute right-2 top-2 z-10 rounded px-2 py-1 text-xs font-semibold shadow transition
-          ${copied ? "bg-green-600 text-white" : "bg-zinc-700/85 hover:bg-zinc-600 text-white"}`}
+          ${
+            copied
+              ? "bg-green-600 text-white"
+              : "bg-zinc-700/85 hover:bg-zinc-600 text-white"
+          }`}
         aria-label="Copy code"
       >
         {copied ? "Copied" : "Copy"}
@@ -72,6 +74,7 @@ export const TechDetailPage = () => {
   const { idAndSlug } = useParams();
   const id = idAndSlug?.split("-")[0];
   const { idToken } = useAuth();
+  const baseURL = process.env.REACT_APP_API_URL;
 
   // リッチ化用：記事メタ情報
   const [title, setTitle] = useState("");
@@ -91,14 +94,14 @@ export const TechDetailPage = () => {
     if (!idToken || !articleId) return;
     try {
       if (liked) {
-        await axios.delete(`/api/likes/${articleId}`, {
+        await axios.delete(`${baseURL}/api/likes/${articleId}`, {
           headers: { Authorization: `Bearer ${idToken}` },
         });
         setLiked(false);
         setLikeCount((v) => v - 1);
       } else {
         await axios.post(
-          "/api/likes",
+          `${baseURL}/api/likes`,
           { articleId },
           { headers: { Authorization: `Bearer ${idToken}` } }
         );
@@ -116,14 +119,14 @@ export const TechDetailPage = () => {
     try {
       if (!isRead) {
         await axios.post(
-          "/api/articles/read",
+          `${baseURL}/api/articles/read`,
           { articleId },
           { headers: { Authorization: `Bearer ${idToken}` } }
         );
         setIsRead(true);
         alert("完了");
       } else {
-        await axios.delete(`/api/articles/read/${articleId}`, {
+        await axios.delete(`${baseURL}/api/articles/read/${articleId}`, {
           headers: { Authorization: `Bearer ${idToken}` },
         });
         setIsRead(false);
@@ -140,11 +143,16 @@ export const TechDetailPage = () => {
     if (!idToken || !articleId) return;
     (async () => {
       try {
-        const res = await axios.get(`/api/articles/read/status?articleId=${articleId}`, {
-          headers: { Authorization: `Bearer ${idToken}` },
-        });
+        const res = await axios.get(
+          `${baseURL}/api/articles/read/status?articleId=${articleId}`,
+          {
+            headers: { Authorization: `Bearer ${idToken}` },
+          }
+        );
         const read =
-          typeof res.data === "object" && res.data !== null ? !!res.data.read : !!res.data;
+          typeof res.data === "object" && res.data !== null
+            ? !!res.data.read
+            : !!res.data;
         setIsRead(read);
       } catch {
         setIsRead(false);
@@ -156,7 +164,7 @@ export const TechDetailPage = () => {
   useEffect(() => {
     if (!idToken || !articleId) return;
     axios
-      .get(`/api/likes/status?articleId=${articleId}`, {
+      .get(`${baseURL}/api/likes/status?articleId=${articleId}`, {
         headers: { Authorization: `Bearer ${idToken}` },
       })
       .then((res) => {
@@ -170,7 +178,9 @@ export const TechDetailPage = () => {
   useEffect(() => {
     if (!idToken) return;
     axios
-      .get("/api/me", { headers: { Authorization: `Bearer ${idToken}` } })
+      .get(`${baseURL}/api/me`, {
+        headers: { Authorization: `Bearer ${idToken}` },
+      })
       .then((res) => setMyUserId(res.data.id))
       .catch(() => void 0);
   }, [idToken]);
@@ -181,7 +191,7 @@ export const TechDetailPage = () => {
     let ignore = false;
     (async () => {
       try {
-        const { data } = await axios.get(`/api/articles/${id}`);
+        const { data } = await axios.get(`${baseURL}/api/articles/${id}`);
         if (ignore) return;
         setTitle(data.title);
         setAuthor(data.authorName ?? "（不明）");
@@ -207,15 +217,25 @@ export const TechDetailPage = () => {
       {/* カード */}
       <div className="prose prose-invert whitespace-normal text-white max-w-4xl mx-auto py-10 bg-zinc-900 rounded-2xl shadow-2xl mb-8">
         {imageUrl && (
-          <img src={imageUrl} alt={title} className="w-full h-64 object-cover rounded-xl mb-8" />
+          <img
+            src={imageUrl}
+            alt={title}
+            className="w-full h-64 object-cover rounded-xl mb-8"
+          />
         )}
 
         <h1 className="text-4xl font-bold mb-4">{title}</h1>
 
         <div className="flex items-center gap-4 mb-6 text-gray-400 text-sm">
           <span>著者: {author}</span>
-          {createdAt && <span>投稿日: {dayjs(createdAt).format("YYYY/MM/DD")}</span>}
-          {category && <span className="bg-blue-500 px-2 py-0.5 rounded text-white">{category}</span>}
+          {createdAt && (
+            <span>投稿日: {dayjs(createdAt).format("YYYY/MM/DD")}</span>
+          )}
+          {category && (
+            <span className="bg-blue-500 px-2 py-0.5 rounded text-white">
+              {category}
+            </span>
+          )}
         </div>
 
         {/* 本文（preをハックして、コピー付きCodeBlockに差し替え） */}
@@ -228,10 +248,16 @@ export const TechDetailPage = () => {
               const className = child?.props?.className as string | undefined;
               // @ts-ignore
               const raw = child?.props?.children ?? "";
-              const codeString = Array.isArray(raw) ? raw.join("") : String(raw);
+              const codeString = Array.isArray(raw)
+                ? raw.join("")
+                : String(raw);
               const match = /language-(\w+)/.exec(className || "");
               if (!match) {
-                return <pre className="rounded-xl p-4 bg-zinc-800/60 overflow-auto">{children}</pre>;
+                return (
+                  <pre className="rounded-xl p-4 bg-zinc-800/60 overflow-auto">
+                    {children}
+                  </pre>
+                );
               }
               return <CodeBlock language={match[1]} code={codeString} />;
             },
@@ -240,11 +266,16 @@ export const TechDetailPage = () => {
               if (/language-/.test(className || "")) {
                 // まれにpreを通らずに来るパターンもケア
                 const match = /language-(\w+)/.exec(className || "");
-                const codeString = Array.isArray(children) ? children.join("") : String(children);
+                const codeString = Array.isArray(children)
+                  ? children.join("")
+                  : String(children);
                 return <CodeBlock language={match?.[1]} code={codeString} />;
               }
               return (
-                <code className="rounded bg-zinc-800/70 px-1.5 py-0.5" {...props}>
+                <code
+                  className="rounded bg-zinc-800/70 px-1.5 py-0.5"
+                  {...props}
+                >
                   {children}
                 </code>
               );
@@ -258,12 +289,19 @@ export const TechDetailPage = () => {
       {/* レビュー・コメント・Q&Aタブ */}
       <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-start md:items-center gap-4 mt-8">
         <div className="flex-1">
-          {articleId && <TechDetailActions articleId={articleId} myUserId={myUserId ?? null} />}
+          {articleId && (
+            <TechDetailActions
+              articleId={articleId}
+              myUserId={myUserId ?? null}
+            />
+          )}
         </div>
         <div className="flex-shrink-0 flex items-center">
           <button
             className={`px-4 py-2 rounded text-white font-bold shadow transition ${
-              isRead ? "bg-green-500 cursor-not-allowed" : "bg-blue-600 hover:bg-blue-700"
+              isRead
+                ? "bg-green-500 cursor-not-allowed"
+                : "bg-blue-600 hover:bg-blue-700"
             }`}
             onClick={handleRead}
             style={{ cursor: "pointer" }}
