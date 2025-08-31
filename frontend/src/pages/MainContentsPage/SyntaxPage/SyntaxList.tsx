@@ -1,18 +1,23 @@
 import { useEffect, useState } from "react";
 import { Link } from "react-router-dom";
 import { ArticleModel } from "../../../models/ArticleModel";
-import axios from "axios";
+// - import axios from "axios";
 import { useAuth } from "../../../context/useAuthContext";
 import { usePagination } from "../../../hooks/usePagination";
 import { Pagination } from "../../../utils/Pagination";
 import { apiHelper } from "../../../libs/apiHelper";
+
 export const SyntaxList = () => {
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [syntaxes, setSyntaxes] = useState<ArticleModel[]>([]);
   const [readArticleIds, setReadArticleIds] = useState<number[]>([]);
+  const [loading, setLoading] = useState(true); // ★ NOTE: 一覧の読込フラグ
+  const [error, setError] = useState<string | null>(null); // ★ NOTE: 簡易エラー
+
   const { displayPage, setDisplayPage, pageIndex, totalPages, setTotalPages } =
     usePagination();
+
   const categories = [
     "Spring",
     "React",
@@ -24,6 +29,7 @@ export const SyntaxList = () => {
   ];
 
   const { idToken } = useAuth();
+
   // //既読未読記事の取得
   // useEffect(() => {
   //   axios
@@ -33,24 +39,50 @@ export const SyntaxList = () => {
   //     .then((res) => setReadArticleIds(res.data ?? []))
   //     .catch(() => setReadArticleIds([]));
   // }, [idToken]);
+  // ★ NOTE: 上記axios版は廃止。apiHelperで等価に取得（ログイン時のみ）。
+  useEffect(() => {
+    if (!idToken) {
+      setReadArticleIds([]);
+      return;
+    }
+    (async () => {
+      try {
+        const res = await apiHelper.get(`/api/syntaxes/read/all`, {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        setReadArticleIds(Array.isArray(res.data) ? res.data : []);
+      } catch (e) {
+        console.error("既読取得失敗", e);
+        setReadArticleIds([]);
+      }
+    })();
+  }, [idToken]);
 
   // //公開中文法記事の取得
   useEffect(() => {
     const fetchsyntaxes = async () => {
+      setLoading(true); // ★ NOTE: ページング時もローディング表示
+      setError(null);
       try {
-        const res = await apiHelper.get(
-          `/api/syntaxes?page=${pageIndex}&size=10`
-        );
-        const publishedSyntaxes: ArticleModel[] = res.data.content;
-        console.log(res.data);
+        const res = await apiHelper.get(`/api/syntaxes`, {
+          params: { page: pageIndex, size: 10 }, // ★ NOTE: URL直書き→paramsへ
+        });
+        const publishedSyntaxes: ArticleModel[] = res.data.content ?? [];
         setSyntaxes(publishedSyntaxes);
-        setTotalPages(res.data.totalPages);
+        setTotalPages(res.data.totalPages ?? 0);
       } catch (e) {
         console.error("文法記事取得失敗", e);
+        setError(
+          "文法記事の取得に失敗しました。時間をおいて再度お試しください。"
+        );
+        setSyntaxes([]);
+        setTotalPages(0);
+      } finally {
+        setLoading(false);
       }
     };
     fetchsyntaxes();
-  }, [pageIndex]);
+  }, [pageIndex, setTotalPages]);
 
   const filteredSyntaxes = syntaxes.filter((item) => {
     const matchesCategory = selectedCategory
@@ -86,7 +118,7 @@ export const SyntaxList = () => {
                 onChange={(e) => setSearch(e.target.value)}
               />
               <select
-                className="h-11 rounded-lg bg-white/5 ring-1 ring-white/10 px-3 outline-none focus:ring-2 focus:ring-sky-400"
+                className="h-11 rounded-lg bg白/5 ring-1 ring-white/10 px-3 outline-none focus:ring-2 focus:ring-sky-400"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >
@@ -99,74 +131,88 @@ export const SyntaxList = () => {
               </select>
             </div>
           </div>
-          <div>
-            {syntaxesByCategory.map(({ category, syntaxes }) => (
-              <div key={category} className="mb-8">
-                <h2 className="text-2xl font-bold mt-10 mb-4">{category}</h2>
-                <ul className="space-y-3">
-                  {syntaxes.length === 0 && (
-                    <li className="text-white/60">
-                      このカテゴリの記事はありません
-                    </li>
-                  )}
-                  {syntaxes.map((item) => {
-                    const isRead = readArticleIds.includes(item.id);
-                    return (
-                      <li key={item.id}>
-                        <Link
-                          to={`/syntaxes/${item.id}-${item.slug}`}
-                          className="block rounded-xl bg-white/5 ring-1 ring-white/10 hover:bg-white/7 transition p-4"
-                        >
-                          <div className="flex gap-4">
-                            {item.imageUrl && (
-                              <img
-                                src={item.imageUrl}
-                                alt=""
-                                className="w-16 h-16 rounded object-cover flex-none"
-                              />
-                            )}
-                            <div className="min-w-0 w-full">
-                              <div className="flex items-start justify-between gap-3">
-                                <span className="text-lg font-semibold leading-snug line-clamp-2">
-                                  {item.title}
-                                </span>
-                                <span
-                                  className={`shrink-0 h-6 px-2 rounded text-xs grid place-items-center
+
+          {/* 通信状態 */}
+          {error && (
+            <div className="text-red-300 bg-red-900/30 rounded px-3 py-2 mb-4">
+              {error}
+            </div>
+          )}
+          {loading && !error && (
+            <div className="text-gray-300 py-6">通信中...</div>
+          )}
+
+          {!loading && !error && (
+            <div>
+              {syntaxesByCategory.map(({ category, syntaxes }) => (
+                <div key={category} className="mb-8">
+                  <h2 className="text-2xl font-bold mt-10 mb-4">{category}</h2>
+                  <ul className="space-y-3">
+                    {syntaxes.length === 0 && (
+                      <li className="text-white/60">
+                        このカテゴリの記事はありません
+                      </li>
+                    )}
+                    {syntaxes.map((item) => {
+                      const isRead = readArticleIds.includes(item.id);
+                      return (
+                        <li key={item.id}>
+                          <Link
+                            to={`/syntaxes/${item.id}-${item.slug}`}
+                            className="block rounded-xl bg-white/5 ring-1 ring-white/10 hover:bg白/7 transition p-4"
+                          >
+                            <div className="flex gap-4">
+                              {item.imageUrl && (
+                                <img
+                                  src={item.imageUrl}
+                                  alt=""
+                                  className="w-16 h-16 rounded object-cover flex-none"
+                                />
+                              )}
+                              <div className="min-w-0 w-full">
+                                <div className="flex items-start justify-between gap-3">
+                                  <span className="text-lg font-semibold leading-snug line-clamp-2">
+                                    {item.title}
+                                  </span>
+                                  <span
+                                    className={`shrink-0 h-6 px-2 rounded text-xs grid place-items-center
                   ${
                     isRead
                       ? "bg-emerald-500/20 text-emerald-300"
-                      : "bg-white/10 text-white/70"
+                      : "bg-white/10 text白/70"
                   }`}
-                                >
-                                  {isRead ? "既読" : "未読"}
-                                </span>
+                                  >
+                                    {isRead ? "既読" : "未読"}
+                                  </span>
+                                </div>
+                                <p className="mt-2 text-sm text-white/70 line-clamp-3 break-words">
+                                  {item.summary
+                                    .replace(/#### |### /g, "")
+                                    .replace(/[#>*`-]+/g, "")
+                                    .replace("想定読者", "【想定読者】")
+                                    .replace(
+                                      "注意ポイントまとめ",
+                                      "【注意ポイントまとめ】"
+                                    )
+                                    .replace(
+                                      "対応例（Java）",
+                                      "【対応例（Java）】"
+                                    )}
+                                </p>
                               </div>
-                              <p className="mt-2 text-sm text-white/70 line-clamp-3 break-words">
-                                {item.summary
-                                  .replace(/#### |### /g, "")
-                                  .replace(/[#>*`-]+/g, "")
-                                  .replace("想定読者", "【想定読者】")
-                                  .replace(
-                                    "注意ポイントまとめ",
-                                    "【注意ポイントまとめ】"
-                                  )
-                                  .replace(
-                                    "対応例（Java）",
-                                    "【対応例（Java）】"
-                                  )}
-                              </p>
                             </div>
-                          </div>
-                        </Link>
-                      </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
-          </div>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-        {totalPages > 0 && (
+
+        {totalPages > 0 && !loading && (
           <Pagination
             displayPage={displayPage}
             totalPages={totalPages}

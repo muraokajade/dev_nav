@@ -9,7 +9,8 @@ import { useAuth } from "../../../context/useAuthContext";
 import { LikeButton } from "../../../utils/LikeButton";
 import { SyntaxDetailActions } from "./SyntaxDetailActions";
 import { apiHelper } from "../../../libs/apiHelper";
-import { api } from "../../../libs/api";
+// - import { api } from "../../../libs/api"; // 未使用
+
 type CodeBlockProps = {
   language?: string;
   code: string;
@@ -72,7 +73,7 @@ function CodeBlock({ language, code, startingLineNumber = 1 }: CodeBlockProps) {
 
 export const SyntaxDetailPage = () => {
   const { idAndSlug } = useParams();
-  const id = idAndSlug?.split("-")[0];
+  const id = idAndSlug?.match(/^\d+/)?.[0] ?? idAndSlug?.split("-")[0] ?? null; // ★ NOTE: 数値先頭抽出で安全
   const { idToken } = useAuth();
 
   // リッチ化用：記事メタ情報
@@ -93,20 +94,25 @@ export const SyntaxDetailPage = () => {
     if (!idToken || !syntaxId) return;
     try {
       if (liked) {
-        await apiHelper.delete(`/api/syntaxes/likes?syntaxId=${syntaxId}`, {
+        // - await apiHelper.delete(`/api/syntaxes/likes?syntaxId=${syntaxId}`, {
+        await apiHelper.delete(`/api/syntaxes/likes/${syntaxId}`, {
           headers: { Authorization: `Bearer ${idToken}` },
         });
         setLiked(false);
         setLikeCount((prev) => prev - 1);
       } else {
-        await apiHelper.post(`/api/syntaxes/likes?syntaxId=${syntaxId}`, null, {
-          headers: { Authorization: `Bearer ${idToken}` },
-        });
+        // - await apiHelper.post(`/api/syntaxes/likes?syntaxId=${syntaxId}`, null, {
+        await apiHelper.post(
+          `/api/syntaxes/likes`,
+          { syntaxId }, // ★ NOTE: バックエンドの期待と合わせてJSONボディ送信
+          { headers: { Authorization: `Bearer ${idToken}` } }
+        );
         setLiked(true);
         setLikeCount((prev) => prev + 1);
       }
     } catch (e) {
       console.error("like toggle failed", e);
+      // ★ NOTE: 401/403 の場合はログイン導線やトーストに差し替え候補
     }
   };
 
@@ -117,7 +123,7 @@ export const SyntaxDetailPage = () => {
       if (!isRead) {
         await apiHelper.post(
           "/api/syntaxes/read",
-          { syntaxId },
+          { syntaxId }, // ★ NOTE: パラメータ名はAPIと統一（以前のcontentIdは不使用）
           { headers: { Authorization: `Bearer ${idToken}` } }
         );
         setIsRead(true);
@@ -142,7 +148,7 @@ export const SyntaxDetailPage = () => {
     (async () => {
       try {
         const res = await apiHelper.get("/api/syntaxes/read/status", {
-          params: { contentId: syntaxId },
+          params: { syntaxId }, // - params: { contentId } から修正
           headers: { Authorization: `Bearer ${idToken}` },
         });
         if (!cancelled) setIsRead(!!res.data?.read);
@@ -218,7 +224,7 @@ export const SyntaxDetailPage = () => {
             <span>投稿日: {dayjs(createdAt).format("YYYY/MM/DD")}</span>
           )}
           {category && (
-            <span className="bg-blue-500 px-2 py-0.5 rounded text-white">
+            <span className="bg-blue-500 px-2 py-0.5 rounded text白">
               {category}
             </span>
           )}
@@ -283,7 +289,7 @@ export const SyntaxDetailPage = () => {
           </div>
 
           <button
-            className={`px-4 py-2 rounded text-white font-bold shadow transition ${
+            className={`px-4 py-2 rounded text白 font-bold shadow transition ${
               isRead
                 ? "bg-green-500 cursor-not-allowed"
                 : "bg-blue-600 hover:bg-blue-700"
@@ -299,7 +305,7 @@ export const SyntaxDetailPage = () => {
       {/* 戻るボタン */}
       <div className="max-w-4xl mx-auto py-8">
         <Link to="/syntaxes">
-          <p className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition duration-200">
+          <p className="inline-block bg-blue-600 hover:bg-blue-700 text白 font-semibold py-2 px-4 rounded shadow transition duration-200">
             技術記事一覧に戻る
           </p>
         </Link>

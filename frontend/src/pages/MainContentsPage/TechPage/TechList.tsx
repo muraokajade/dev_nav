@@ -1,22 +1,32 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { Link } from "react-router-dom";
 import { ArticleModel } from "../../../models/ArticleModel";
-import axios from "axios";
+// - import axios from "axios";
 import { useAuth } from "../../../context/useAuthContext";
 import { usePagination } from "../../../hooks/usePagination";
 import { Pagination } from "../../../utils/Pagination";
 import { apiHelper } from "../../../libs/apiHelper";
-export const TechList = () => {
-  const baseURL = process.env.REACT_APP_API_URL;
-  console.log("API_URL=", process.env.REACT_APP_API_URL);
+import { SpinnerLoading } from "../../../utils/SpinnerLoading";
 
-  console.log(baseURL);
+export const TechList = () => {
+  // - const baseURL = process.env.REACT_APP_API_URL;
+  // - console.log("API_URL=", process.env.REACT_APP_API_URL);
+  // - console.log(baseURL);
+
   const [search, setSearch] = useState("");
   const [selectedCategory, setSelectedCategory] = useState("");
   const [articles, setArticles] = useState<ArticleModel[]>([]);
   const [readArticleIds, setReadArticleIds] = useState<number[]>([]);
+  const [loadingArticles, setLoadingArticles] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  // レース対策
+  const abortArticlesRef = useRef<AbortController | null>(null);
+  const abortReadRef = useRef<AbortController | null>(null);
+
   const { displayPage, setDisplayPage, pageIndex, totalPages, setTotalPages } =
     usePagination();
+
   const categories = [
     "Spring",
     "React",
@@ -28,47 +38,66 @@ export const TechList = () => {
   ];
 
   const { idToken } = useAuth();
-  // console.log("idToken", idToken);
 
-  //既読未読記事の取得
+  // 既読IDの取得（失敗しても一覧表示は継続）
   useEffect(() => {
-    if (!idToken) return;
-    const fetchReadedArticles = async () => {
+    if (!idToken) {
+      setReadArticleIds([]);
+      return;
+    }
+    abortReadRef.current?.abort();
+    const ac = new AbortController();
+    abortReadRef.current = ac;
+
+    (async () => {
       try {
-        const res = await apiHelper.get(
-          `/api/articles/read?page=${pageIndex}&size=10`,
-          {
-            headers: { Authorization: `Bearer ${idToken}` },
-          }
-        );
-        console.log(res.data);
-        setReadArticleIds(res.data.content ?? []);
-      } catch (e) {
-        console.error(e);
+        const res = await apiHelper.get(`/api/articles/read`, {
+          params: { page: pageIndex, size: 10 },
+          headers: { Authorization: `Bearer ${idToken}` },
+          signal: ac.signal as any,
+        });
+        setReadArticleIds(res.data?.content ?? []);
+      } catch (e: any) {
+        if (e?.name === "CanceledError") return;
+        console.error("既読取得失敗", e);
         setReadArticleIds([]);
       }
-    };
-    fetchReadedArticles();
+    })();
+
+    return () => ac.abort();
   }, [idToken, pageIndex]);
 
-  //公開中記事の取得
+  // 公開記事の取得
   useEffect(() => {
-    const fetchArticles = async () => {
+    abortArticlesRef.current?.abort();
+    const ac = new AbortController();
+    abortArticlesRef.current = ac;
+
+    setLoadingArticles(true);
+    setError(null);
+
+    (async () => {
       try {
-        const res = await apiHelper.get(
-          `/api/articles?page=${pageIndex}&size=10`
-        );
-        console.log(res.config.url);
-        console.log(res.data);
-        const publishedArticles: ArticleModel[] = res.data.content;
-        setArticles(publishedArticles);
-        setTotalPages(res.data.totalPages);
-      } catch (e) {
+        const res = await apiHelper.get(`/api/articles`, {
+          params: { page: pageIndex, size: 10 },
+          signal: ac.signal as any,
+        });
+        const published: ArticleModel[] = res.data?.content ?? [];
+        setArticles(published);
+        setTotalPages(res.data?.totalPages ?? 0);
+      } catch (e: any) {
+        if (e?.name === "CanceledError") return;
         console.error("記事取得失敗", e);
+        setError("記事の取得に失敗しました。時間をおいて再度お試しください。");
+        setArticles([]);
+        setTotalPages(0);
+      } finally {
+        setLoadingArticles(false);
       }
-    };
-    fetchArticles();
-  }, [pageIndex]);
+    })();
+
+    return () => ac.abort();
+  }, [pageIndex, setTotalPages]);
 
   const filteredArticles = articles.filter((item) => {
     const matchesCategory = selectedCategory
@@ -97,7 +126,6 @@ export const TechList = () => {
           <div className="z-30 mb-6 relative rounded-lg ring-1 ring-white/10">
             {/* 背景だけに blur を適用（選択肢の座標ズレ防止） */}
             <div className="absolute inset-0 rounded-lg bg-gray-900/80 md:backdrop-blur pointer-events-none" />
-
             {/* 中身（blur無し） */}
             <div className="relative p-3">
               <div className="flex flex-col sm:flex-row gap-3">
@@ -124,74 +152,87 @@ export const TechList = () => {
               </div>
             </div>
           </div>
-          <div>
-            {articlesByCategory.map(({ category, articles }) => (
-              <div key={category} className="mb-8">
-                <h2 className="text-2xl font-bold mt-10 mb-4">{category}</h2>
-                <ul className="space-y-3">
-                  {articles.length === 0 && (
-                    <li className="text-white/60">
-                      このカテゴリの記事はありません
-                    </li>
-                  )}
-                  {articles.map((item) => {
-                    const isRead = readArticleIds.includes(item.id);
-                    return (
-                      <li key={item.id}>
-                        <Link
-                          to={`/articles/${item.id}-${item.slug}`}
-                          className="block rounded-xl bg-white/5 ring-1 ring-white/10 hover:bg-white/7 transition p-4"
-                        >
-                          <div className="flex gap-4">
-                            {item.imageUrl && (
-                              <img
-                                src={item.imageUrl}
-                                alt=""
-                                className="w-16 h-16 rounded object-cover flex-none"
-                              />
-                            )}
-                            <div className="min-w-0 w-full">
-                              <div className="flex items-start justify-between gap-3">
-                                <span className="text-lg font-semibold leading-snug line-clamp-2">
-                                  {item.title}
-                                </span>
-                                <span
-                                  className={`shrink-0 h-6 px-2 rounded text-xs grid place-items-center
-                  ${
-                    isRead
-                      ? "bg-emerald-500/20 text-emerald-300"
-                      : "bg-white/10 text-white/70"
-                  }`}
-                                >
-                                  {isRead ? "既読" : "未読"}
-                                </span>
-                              </div>
-                              <p className="mt-2 text-sm text-white/70 line-clamp-3 break-words">
-                                {item.summary
-                                  .replace(/#### |### /g, "")
-                                  .replace(/[#>*`-]+/g, "")
-                                  .replace("想定読者", "【想定読者】")
-                                  .replace(
-                                    "注意ポイントまとめ",
-                                    "【注意ポイントまとめ】"
-                                  )
-                                  .replace(
-                                    "対応例（Java）",
-                                    "【対応例（Java）】"
-                                  )}
-                              </p>
-                            </div>
-                          </div>
-                        </Link>
+
+          {/* エラー表示 or ローディング or 本体 */}
+          {error ? (
+            <div className="text-red-300 bg-red-900/30 rounded px-3 py-2">
+              {error}
+            </div>
+          ) : loadingArticles ? (
+            <div className="flex justify-center py-12">
+              <SpinnerLoading size={36} visibleLabel="読み込み中…" />
+            </div>
+          ) : (
+            <div>
+              {articlesByCategory.map(({ category, articles }) => (
+                <div key={category} className="mb-8">
+                  <h2 className="text-2xl font-bold mt-10 mb-4">{category}</h2>
+                  <ul className="space-y-3">
+                    {articles.length === 0 && (
+                      <li className="text-white/60">
+                        このカテゴリの記事はありません
                       </li>
-                    );
-                  })}
-                </ul>
-              </div>
-            ))}
-          </div>
+                    )}
+                    {articles.map((item) => {
+                      const isRead = readArticleIds.includes(item.id);
+                      return (
+                        <li key={item.id}>
+                          <Link
+                            to={`/articles/${item.id}-${item.slug}`}
+                            className="block rounded-xl bg-white/5 ring-1 ring-white/10 hover:bg-white/7 transition p-4"
+                          >
+                            <div className="flex gap-4">
+                              {item.imageUrl && (
+                                <img
+                                  src={item.imageUrl}
+                                  alt=""
+                                  className="w-16 h-16 rounded object-cover flex-none"
+                                />
+                              )}
+                              <div className="min-w-0 w-full">
+                                <div className="flex items-start justify-between gap-3">
+                                  <span className="text-lg font-semibold leading-snug line-clamp-2">
+                                    {item.title}
+                                  </span>
+                                  <span
+                                    className={`shrink-0 h-6 px-2 rounded text-xs grid place-items-center
+                                      ${
+                                        isRead
+                                          ? "bg-emerald-500/20 text-emerald-300"
+                                          : "bg-white/10 text-white/70"
+                                      }`}
+                                  >
+                                    {isRead ? "既読" : "未読"}
+                                  </span>
+                                </div>
+                                <p className="mt-2 text-sm text-white/70 line-clamp-3 break-words">
+                                  {item.summary
+                                    .replace(/#### |### /g, "")
+                                    .replace(/[#>*`-]+/g, "")
+                                    .replace("想定読者", "【想定読者】")
+                                    .replace(
+                                      "注意ポイントまとめ",
+                                      "【注意ポイントまとめ】"
+                                    )
+                                    .replace(
+                                      "対応例（Java）",
+                                      "【対応例（Java）】"
+                                    )}
+                                </p>
+                              </div>
+                            </div>
+                          </Link>
+                        </li>
+                      );
+                    })}
+                  </ul>
+                </div>
+              ))}
+            </div>
+          )}
         </div>
-        {totalPages > 0 && (
+
+        {totalPages > 0 && !loadingArticles && (
           <Pagination
             displayPage={displayPage}
             totalPages={totalPages}

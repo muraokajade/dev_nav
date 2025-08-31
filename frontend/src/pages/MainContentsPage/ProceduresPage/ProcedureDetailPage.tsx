@@ -1,3 +1,4 @@
+// src/pages/procedures/ProcedureDetailPage.tsx
 import React, { useEffect, useState } from "react";
 import ReactMarkdown, { type Components } from "react-markdown";
 import { Link, useLocation, useParams } from "react-router-dom";
@@ -10,14 +11,20 @@ import { ProcedureDetailActions } from "./ProcedureDetailActions";
 
 export const ProcedureDetailPage = () => {
   const { idAndSlug } = useParams();
-  const id = idAndSlug?.split("-")[0];
+  // - IDを頑健に取得（数値先頭優先→ハイフンsplitフォールバック）
+  const id = idAndSlug?.match(/^\d+/)?.[0] ?? idAndSlug?.split("-")[0] ?? null;
+
   const [chapter, number] = (idAndSlug ?? "").split("-");
-  const nextNumber = String(Number(number) + 1).padStart(2, "0");
+  // - numberがNaNになる事故対策（フォールバックで "01"）
+  const nextNumber =
+    number && !Number.isNaN(Number(number))
+      ? String(Number(number) + 1).padStart(2, "0")
+      : "01"; // -
   const nextSlug = `${chapter}-${nextNumber}`;
   const { idToken } = useAuth();
   const location = useLocation();
   const params = new URLSearchParams(location.search);
-  const backPage = params.get("page") || 1;
+  const backPage = params.get("page") || "1"; // - 数値でなくてもリンク文字列としてOK
 
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
@@ -31,6 +38,10 @@ export const ProcedureDetailPage = () => {
 
   const [isRead, setIsRead] = useState(false);
   const [myUserId, setMyUserId] = useState<number | null>(null);
+
+  // - 追加：進行表示＆エラー
+  const [loading, setLoading] = useState(true); // -
+  const [errorMsg, setErrorMsg] = useState<string | null>(null); // -
 
   // --- コピー付き & 行番号つきハイライター ---
   const CopyableHighlighter = ({
@@ -153,16 +164,30 @@ export const ProcedureDetailPage = () => {
 
   // 手順本体
   useEffect(() => {
-    if (!id) return;
-    apiHelper.get(`/api/procedures/${id}`).then((res) => {
-      setTitle(res.data.title);
-      setAuthor(res.data.authorName ?? "（不明）");
-      setCreatedAt(res.data.createdAt ?? "");
-      setCategory(res.data.category ?? "");
-      setImageUrl(res.data.imageUrl ?? "");
-      setContent(res.data.content);
-      setProcedureId(res.data.id);
-    });
+    // - URL異常は即終了
+    if (!id) {
+      setErrorMsg("URLのIDが不正です。");
+      setLoading(false);
+      return;
+    }
+    setLoading(true); // -
+    setErrorMsg(null); // -
+    apiHelper
+      .get(`/api/procedures/${id}`)
+      .then((res) => {
+        setTitle(res.data.title);
+        setAuthor(res.data.authorName ?? "（不明）");
+        setCreatedAt(res.data.createdAt ?? "");
+        setCategory(res.data.category ?? "");
+        setImageUrl(res.data.imageUrl ?? "");
+        setContent(res.data.content);
+        setProcedureId(res.data.id);
+      })
+      .catch((e) => {
+        console.error("fetch procedure failed", e);
+        setErrorMsg("手順の取得に失敗しました。"); // -
+      })
+      .finally(() => setLoading(false)); // -
   }, [id]);
 
   // 読了ステータス（未ログインなら取得しない）
@@ -170,7 +195,7 @@ export const ProcedureDetailPage = () => {
     if (!idToken || !procedureId) return;
     apiHelper
       .get("/api/procedures/read/status", {
-        params: { contentId: procedureId }, // ← 統一キー
+        params: { procedureId }, // ← 統一キー
         headers: { Authorization: `Bearer ${idToken}` },
       })
       .then((res) => {
@@ -185,6 +210,16 @@ export const ProcedureDetailPage = () => {
 
   return (
     <div className="min-h-screen bg-gray-900">
+      {/* - 進行表示＆エラー */}
+      {loading && (
+        <div className="text-white/80 p-4">読み込み中...</div> // - 後でSpinnerへ
+      )}
+      {!loading && errorMsg && (
+        <div className="text-red-300 bg-red-900/30 p-3 rounded max-w-4xl mx-auto mt-4">
+          {errorMsg}
+        </div>
+      )}
+
       <div className="prose prose-invert max-w-4xl mx-auto py-10 bg-zinc-900 rounded-2xl shadow-2xl mb-8">
         {imageUrl && (
           <img
@@ -226,6 +261,7 @@ export const ProcedureDetailPage = () => {
             }`}
             onClick={handleRead}
             style={{ cursor: "pointer" }}
+            disabled={loading || !!errorMsg} // - ロード中/エラー時は誤操作防止
           >
             {isRead ? "読了済み" : "この記事を読了する"}
           </button>

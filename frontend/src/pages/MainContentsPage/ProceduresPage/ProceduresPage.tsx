@@ -7,6 +7,7 @@ import { usePagination } from "../../../hooks/usePagination";
 import { Procedure } from "../../../models/Procedure";
 import { Pagination } from "../../../utils/Pagination";
 import { useReadStatus, ReadTarget } from "../../../hooks/useReadStatus"; // ★ 共通化フック
+// - import axios from "axios"; // 使わないので削除
 
 // セクション見出し定義（major番号: タイトル）
 const sectionTitles: Record<string, string> = {
@@ -55,6 +56,9 @@ type Row = Procedure & { major: number; minor: number; stepNumber: string };
 
 export const ProceduresPage = () => {
   const [procedures, setProcedures] = useState<Row[]>([]);
+  // - 進行状況とエラーを足す（UX向上）
+  const [loading, setLoading] = useState<boolean>(true); // ★ NOTE: 追加
+  const [error, setError] = useState<string | null>(null); // ★ NOTE: 追加
 
   // URL ?page 初期値
   const location = useLocation();
@@ -72,17 +76,23 @@ export const ProceduresPage = () => {
   // --- 全ページ一括取得 → 正規化 → 数値ソート → クライアントページング ---
   useEffect(() => {
     const fetchAll = async () => {
+      // - フェッチ前後の状態管理
+      setLoading(true); // ★ NOTE: 追加
+      setError(null); // ★ NOTE: 追加
       try {
         // まず1ページ取り、総ページ数を把握
         const first = await apiHelper.get(`/api/procedures?page=0&size=50`);
         const total = Number(first.data.totalPages) || 1;
 
         // 残りページもまとめて取得
-        const rest = await Promise.all(
-          Array.from({ length: total - 1 }, (_, i) =>
-            apiHelper.get(`/api/procedures?page=${i + 1}&size=50`)
-          )
-        );
+        const rest =
+          total > 1
+            ? await Promise.all(
+                Array.from({ length: total - 1 }, (_, i) =>
+                  apiHelper.get(`/api/procedures?page=${i + 1}&size=50`)
+                )
+              )
+            : [];
 
         const content: Procedure[] = [
           ...first.data.content,
@@ -103,10 +113,13 @@ export const ProceduresPage = () => {
 
         setProcedures(normalized);
         setTotalPages(Math.ceil(normalized.length / pageSize));
-      } catch (e) {
+      } catch (e: any) {
         console.error("手順一覧の取得に失敗しました", e);
         setProcedures([]);
         setTotalPages(0);
+        setError(e?.message ?? "手順一覧の取得に失敗しました"); // ★ NOTE: 追加
+      } finally {
+        setLoading(false); // ★ NOTE: 追加
       }
     };
 
@@ -126,56 +139,68 @@ export const ProceduresPage = () => {
     <div className="text-white p-8 max-w-5xl mx-auto">
       <h1 className="text-3xl font-bold mb-8">開発手順 一覧</h1>
 
-      <div className="space-y-3">
-        {visible.map((item, idx) => {
-          const showHeader = idx === 0 || item.major !== visible[idx - 1].major;
-          const majorStr = String(item.major);
-          const readFlag = isRead(item.id);
-          return (
-            <div key={item.id}>
-              {showHeader && (
-                <h2 className="text-xl tracking-wide text-white/80 mt-10 mb-3 flex items-center gap-2">
-                  <span className="inline-block h-px w-6 bg-white/15" />
-                  {sectionTitles[majorStr] || `セクション${majorStr}`}
-                </h2>
-              )}
+      {/* - ローディング＆エラー（最小UI） */}
+      {loading && (
+        <div className="mb-6 text-white/80">通信中...</div> // ★ NOTE: Spinnerに差し替え可
+      )}
+      {!loading && error && (
+        <div className="mb-6 text-red-300 bg-red-900/30 p-3 rounded">
+          {error}
+        </div>
+      )}
 
-              <Link
-                to={`/procedures/${item.id}-${item.slug}?page=${displayPage}`}
-                className="group block rounded-lg p-4 bg-white/5 ring-1 ring-white/10 hover:bg-white/7 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 transition"
-              >
-                <div className="flex items-start gap-3">
-                  <span className="shrink-0 h-7 px-2 rounded bg-sky-500/20 text-sky-300 text-sm grid place-items-center font-semibold">
-                    {item.stepNumber}
-                  </span>
-                  <div className="min-w-0">
-                    <h3 className="text-base font-semibold leading-snug line-clamp-2">
-                      {item.title}
-                    </h3>
-                    <p className="mt-1 text-sm text-white/60 line-clamp-1">
-                      {sectionTitles[String(item.major)] ??
-                        `セクション${item.major}`}
-                    </p>
+      <div className="space-y-3">
+        {!loading &&
+          visible.map((item, idx) => {
+            const showHeader =
+              idx === 0 || item.major !== visible[idx - 1].major;
+            const majorStr = String(item.major);
+            const readFlag = isRead(item.id);
+            return (
+              <div key={item.id}>
+                {showHeader && (
+                  <h2 className="text-xl tracking-wide text-white/80 mt-10 mb-3 flex items-center gap-2">
+                    <span className="inline-block h-px w-6 bg-white/15" />
+                    {sectionTitles[majorStr] || `セクション${majorStr}`}
+                  </h2>
+                )}
+
+                <Link
+                  to={`/procedures/${item.id}-${item.slug}?page=${displayPage}`}
+                  className="group block rounded-lg p-4 bg-white/5 ring-1 ring-white/10 hover:bg-white/7 focus:outline-none focus-visible:ring-2 focus-visible:ring-sky-400 transition"
+                >
+                  <div className="flex items-start gap-3">
+                    <span className="shrink-0 h-7 px-2 rounded bg-sky-500/20 text-sky-300 text-sm grid place-items-center font-semibold">
+                      {item.stepNumber}
+                    </span>
+                    <div className="min-w-0">
+                      <h3 className="text-base font-semibold leading-snug line-clamp-2">
+                        {item.title}
+                      </h3>
+                      <p className="mt-1 text-sm text-white/60 line-clamp-1">
+                        {sectionTitles[String(item.major)] ??
+                          `セクション${item.major}`}
+                      </p>
+                    </div>
+                    {/* 既読/未読バッジ */}
+                    <span
+                      className={`ml-auto shrink-0 h-6 px-2 rounded text-xs grid place-items-center transition-opacity opacity-60 group-hover:opacity-100 ${
+                        readFlag
+                          ? "bg-emerald-500/20 text-emerald-300"
+                          : "bg-white/10 text-white/70"
+                      }`}
+                      aria-label={readFlag ? "既読" : "未読"}
+                    >
+                      {readFlag ? "既読" : "未読"}
+                    </span>
                   </div>
-                  {/* 既読/未読バッジ */}
-                  <span
-                    className={`ml-auto shrink-0 h-6 px-2 rounded text-xs grid place-items-center transition-opacity opacity-60 group-hover:opacity-100 ${
-                      readFlag
-                        ? "bg-emerald-500/20 text-emerald-300"
-                        : "bg-white/10 text-white/70"
-                    }`}
-                    aria-label={readFlag ? "既読" : "未読"}
-                  >
-                    {readFlag ? "既読" : "未読"}
-                  </span>
-                </div>
-              </Link>
-            </div>
-          );
-        })}
+                </Link>
+              </div>
+            );
+          })}
       </div>
 
-      {totalPages > 0 && (
+      {!loading && totalPages > 0 && (
         <Pagination
           displayPage={displayPage}
           totalPages={totalPages}

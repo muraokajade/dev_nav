@@ -10,7 +10,7 @@ type MessageResponseDTO = {
   question: string;
   response?: string | null;
   closed: boolean;
-  createdAt: string; // ISO文字列想定
+  createdAt: string;
 };
 
 type MessagePageResponse = {
@@ -23,35 +23,30 @@ type MessagePageResponse = {
 
 export const MessagesNew: React.FC<{
   targetType: TargetType;
-  refId: number; // articleId / syntaxId / procedureId
-  myUserId?: number; // 使わないなら省略可
+  refId: number;
+  myUserId?: number; // 使わないので props に残してもOK
 }> = ({ targetType, refId }) => {
   const [title, setTitle] = useState("");
   const [question, setQuestion] = useState("");
 
-  // 一覧・ページング
   const [data, setData] = useState<MessagePageResponse | null>(null);
   const [page, setPage] = useState(0);
   const [size] = useState(20);
 
-  // UX
   const [loading, setLoading] = useState(false);
   const [posting, setPosting] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
   const { idToken } = useAuth();
-  console.log("[Messages LIVE] props", { targetType, refId });
 
+  // - API ベースURL（バックエンドのマッピングに合わせる）
+  //   例: POST/GET /api/messages/article/123?page=0&size=20
   const baseUrl = useMemo(() => {
-    const url = `/api/messages/${targetType.toLowerCase()}/${refId}`;
-    console.log("[Messages LIVE] baseUrl", url);
-    return url;
+    return `/api/messages/${targetType.toLowerCase()}/${refId}`;
   }, [targetType, refId]);
 
-  // target切替時は1ページ目に戻す
-  useEffect(() => {
-    setPage(0);
-  }, [targetType, refId]);
+  // - 対象が変わったら 1 ページ目へ
+  useEffect(() => setPage(0), [targetType, refId]);
 
   const fetchMessages = useCallback(async () => {
     setLoading(true);
@@ -61,7 +56,7 @@ export const MessagesNew: React.FC<{
         `${baseUrl}?page=${page}&size=${size}`
       );
       setData(res.data);
-    } catch {
+    } catch (e) {
       setError("メッセージ取得に失敗しました。");
       setData(null);
     } finally {
@@ -70,74 +65,109 @@ export const MessagesNew: React.FC<{
   }, [baseUrl, page, size]);
 
   useEffect(() => {
-    (async () => {
-      await fetchMessages();
-    })();
+    fetchMessages();
   }, [fetchMessages]);
 
   const handleSubmit = async () => {
-    if (!idToken) return;
-    if (!title.trim() || !question.trim()) {
+    if (!idToken) {
+      setError("ログインが必要です。");
+      return;
+    }
+    // - 簡易バリデーション
+    const t = title.trim();
+    const q = question.trim();
+    if (!t || !q) {
       setError("タイトルと質問は必須です。");
       return;
     }
+    if (t.length > 120) {
+      setError("タイトルは120文字以内で入力してください。");
+      return;
+    }
+    if (q.length > 5000) {
+      setError("質問は5000文字以内で入力してください。");
+      return;
+    }
+
     setPosting(true);
     setError(null);
     try {
       await apiHelper.post(
         baseUrl,
-        { title, question },
+        { title: t, question: q },
         { headers: { Authorization: `Bearer ${idToken}` } }
       );
       setTitle("");
       setQuestion("");
-      // 送信後は先頭ページから見たい場合は以下を有効化
-      // setPage(0);
+      // - 新着が先頭に来るAPIなら 1 ページ目に戻すとすぐ見える
+      setPage(0); // -
       await fetchMessages();
-    } catch {
+    } catch (e) {
       setError("投稿に失敗しました。");
     } finally {
       setPosting(false);
     }
   };
 
+  // - Ctrl+Enter で送信
+  const onQuestionKeyDown: React.KeyboardEventHandler<HTMLTextAreaElement> = (
+    e
+  ) => {
+    if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+      e.preventDefault();
+      if (!posting) handleSubmit();
+    }
+  };
+
   const msgs = data?.content ?? [];
-  const canPrev = (data && data.page > 0) ?? false;
-  const canNext = (data && data.page < data.totalPages - 1) ?? false;
+  const canPrev = !!data && data.page > 0;
+  const canNext = !!data && data.page < data.totalPages - 1;
 
   return (
     <div className="bg-zinc-900 p-6 rounded-2xl shadow-lg max-w-xl mx-auto mt-8 text-zinc-100">
-      {/* 投稿フォーム */}
-      <h2 className="text-xl font-bold mb-4">質問する</h2>
-      <div className="space-y-3 mb-6">
-        <input
-          value={title}
-          onChange={(e) => setTitle(e.target.value)}
-          placeholder="タイトル"
-          className="w-full px-4 py-2 rounded border text-black"
-          disabled={posting}
-        />
-        <textarea
-          value={question}
-          onChange={(e) => setQuestion(e.target.value)}
-          placeholder="質問内容"
-          rows={3}
-          className="w-full px-4 py-2 rounded border border-zinc-700 text-black"
-          disabled={posting}
-        />
-        <button
-          onClick={handleSubmit}
-          disabled={posting || !idToken}
-          className={`px-6 py-2 rounded font-semibold text-white transition ${
-            posting || !idToken
-              ? "bg-zinc-700 cursor-not-allowed"
-              : "bg-blue-600 hover:bg-blue-700"
-          }`}
-        >
-          {posting ? "送信中..." : "質問を送信"}
-        </button>
-        {error && <div className="text-red-400 text-sm">{error}</div>}
-      </div>
+      {/* - 未ログイン時はフォームを隠す（親でも制御しているが二重保険） */}
+      {idToken ? (
+        <>
+          <h2 className="text-xl font-bold mb-4">質問する</h2>
+          <div className="space-y-3 mb-6">
+            <input
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="タイトル"
+              className="w-full px-4 py-2 rounded border text-black"
+              disabled={posting}
+              // - 任意: ブラウザの補助
+              maxLength={120}
+            />
+            <textarea
+              value={question}
+              onChange={(e) => setQuestion(e.target.value)}
+              onKeyDown={onQuestionKeyDown} // - 追加
+              placeholder="質問内容（Ctrl+Enterで送信）"
+              rows={4}
+              className="w-full px-4 py-2 rounded border border-zinc-700 text-black"
+              disabled={posting}
+              maxLength={5000} // -
+            />
+            <button
+              onClick={handleSubmit}
+              disabled={posting}
+              className={`px-6 py-2 rounded font-semibold text-white transition ${
+                posting
+                  ? "bg-zinc-700 cursor-not-allowed"
+                  : "bg-blue-600 hover:bg-blue-700"
+              }`}
+            >
+              {posting ? "送信中..." : "質問を送信"}
+            </button>
+            {error && <div className="text-red-400 text-sm">{error}</div>}
+          </div>
+        </>
+      ) : (
+        <div className="mb-6 p-4 rounded bg-white/5 text-sm">
+          Q&Aを投稿するにはログインしてください。
+        </div>
+      )}
 
       {/* Q&A一覧 */}
       <div className="flex items-end justify-between mb-2">
@@ -169,6 +199,7 @@ export const MessagesNew: React.FC<{
             <div className="pl-6 mb-2 text-zinc-200 whitespace-pre-wrap">
               {msg.question}
             </div>
+
             {msg.response ? (
               <div className="flex items-center gap-2 pl-6 mt-1">
                 <span className="px-2 py-1 bg-green-500 text-white rounded text-xs font-bold">
@@ -181,6 +212,7 @@ export const MessagesNew: React.FC<{
             ) : (
               <div className="pl-6 text-xs text-yellow-300">未回答</div>
             )}
+
             <div className="text-xs text-right mt-2 text-gray-400">
               {msg.closed ? "対応済み" : "未対応"}・
               {new Date(msg.createdAt).toLocaleString()}

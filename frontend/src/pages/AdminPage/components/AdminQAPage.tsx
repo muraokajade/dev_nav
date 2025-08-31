@@ -1,5 +1,5 @@
-// AdminQAPage.tsx — DTO優先＆フォールバック補完つき 完全版
-import { useCallback, useEffect, useState } from "react";
+// AdminQAPage.tsx — DTO優先＆フォールバック補完つき 改訂版
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { MessageResponse } from "../../../models/MessageResponse";
 import { AdminQuestionPage } from "./AdminQuestionPage";
 import { apiHelper } from "../../../libs/apiHelper";
@@ -15,7 +15,6 @@ type EnrichedMessage = MessageResponse & {
 
 /** TargetType(enum) → ルート名に変換 */
 const targetEnumToRoute = (t: string | undefined) => {
-  // サーバDTO例: "ARTICLE" | "SYNTAX" | "PROCEDURE"
   if (!t) return undefined;
   switch (t) {
     case "ARTICLE":
@@ -25,26 +24,19 @@ const targetEnumToRoute = (t: string | undefined) => {
     case "PROCEDURE":
       return "procedures";
     default:
-      // 既に "articles" 等が入ってくる場合にも対応
       return t.toLowerCase();
   }
 };
 
 /** MessageResponse から target と id を推測（DTO優先・旧プロパティにフォールバック） */
 const resolveTargetAndId = (msg: any): { target?: string; id?: number } => {
-  // 1) DTO拡張版（推奨）
   const t1 = targetEnumToRoute(msg.targetType);
   if (t1 && msg.contentId) return { target: t1, id: msg.contentId };
-
-  // 2) 旧形式（target + contentId）
   if (msg.target && msg.contentId)
     return { target: msg.target, id: msg.contentId };
-
-  // 3) さらにフォールバック（articles/syntaxes/procedures 専用キー）
   if (msg.articleId) return { target: "articles", id: msg.articleId };
   if (msg.syntaxId) return { target: "syntaxes", id: msg.syntaxId };
   if (msg.procedureId) return { target: "procedures", id: msg.procedureId };
-
   return {};
 };
 
@@ -54,9 +46,8 @@ const enrichOne = async (
   idToken?: string
 ): Promise<EnrichedMessage> => {
   const { target, id } = resolveTargetAndId(base);
-  if (!target || !id) return base; // 紐付け無しなら素のまま
+  if (!target || !id) return base;
 
-  // DTOから優先して拾う（あればAPI追加不要）
   const titleFromDto =
     (base as any).contentTitle ??
     (base as any).articleTitle ??
@@ -72,7 +63,6 @@ const enrichOne = async (
   let title: string | undefined = titleFromDto;
   let slug: string | undefined = slugFromDto;
 
-  // 無ければ詳細APIで補完
   if (!title || slug === undefined) {
     try {
       const res = await apiHelper.get(`/api/${target}/${id}`, {
@@ -86,7 +76,10 @@ const enrichOne = async (
     }
   }
 
-  const linkPath = `/${target}/${id}` + (slug ? `-${slug}` : "");
+  // - slugはURLに混ぜるのでencode（保険）
+  const safeSlug = slug ? encodeURIComponent(slug) : "";
+
+  const linkPath = `/${target}/${id}` + (safeSlug ? `-${safeSlug}` : "");
   const linkTitle = title || "関連コンテンツ";
 
   return { ...base, linkTitle, linkPath };
@@ -94,33 +87,52 @@ const enrichOne = async (
 
 export const AdminQAPage = () => {
   const [messages, setMessages] = useState<EnrichedMessage[]>([]);
+  const [loading, setLoading] = useState(false); // - 追加: 取得中表示
+  const [error, setError] = useState<string | null>(null); // - 追加: エラー表示
+
   const { idToken } = useAuth();
   const { pageIndex, setTotalPages, setDisplayPage, displayPage, totalPages } =
     usePagination();
 
+  // - 共通ヘッダをメモ化
+  const authHeader = useMemo(
+    () => (idToken ? { Authorization: `Bearer ${idToken}` } : undefined),
+    [idToken]
+  );
+
   /** 1ページ分取得して補完 */
   const fetchMessages = useCallback(async () => {
+    setLoading(true); // - 追加
+    setError(null); // - 追加
     try {
       const res = await apiHelper.get(
         `/api/messages/admin/questions?page=${pageIndex}&size=10`,
-        {
-          headers: { Authorization: idToken ? `Bearer ${idToken}` : undefined },
-        }
+        { headers: authHeader } // - 共通ヘッダ
       );
       const raw: MessageResponse[] = res.data.content ?? [];
 
-      // 並列で enrich（DTOに揃っていればHTTPは発生しない）
-      const enriched = await Promise.all(
+      // - 部分失敗に強い: Promise.allSettled
+      const settled = await Promise.allSettled(
         raw.map((m) => enrichOne(m, idToken ?? undefined))
       );
+      const enriched = settled
+        .filter(
+          (s): s is PromiseFulfilledResult<EnrichedMessage> =>
+            s.status === "fulfilled"
+        )
+        .map((s) => s.value);
 
       setMessages(enriched);
-      setTotalPages(res.data.totalPages);
-    } catch (e) {
+      setTotalPages(res.data.totalPages ?? 0); // - null防衛
+    } catch (e: any) {
       console.error("メッセージ取得失敗", e);
       setMessages([]);
+      setTotalPages(0);
+      setError(e?.response?.data?.message || "Q&A一覧の取得に失敗しました。");
+    } finally {
+      setLoading(false); // - 追加
     }
-  }, [idToken, pageIndex]);
+  }, [pageIndex, authHeader, idToken, setTotalPages]); // - 依存修正
 
   useEffect(() => {
     fetchMessages();
@@ -132,14 +144,11 @@ export const AdminQAPage = () => {
       await apiHelper.post(
         `/api/messages/admin/questions/${id}/answer`,
         { messageId: id, answer },
-        {
-          headers: { Authorization: idToken ? `Bearer ${idToken}` : undefined },
-        }
+        { headers: authHeader } // - 統一
       );
-      alert("回答完了");
-      fetchMessages(); // 再取得して表示更新
-    } catch (e) {
-      alert("回答送信失敗");
+      await fetchMessages(); // - 再取得して表示更新
+    } catch (e: any) {
+      alert(e?.response?.data?.message || "回答送信に失敗しました。");
     }
   };
 
@@ -150,6 +159,17 @@ export const AdminQAPage = () => {
       <h1 className="text-2xl font-bold text-white text-center mb-8">
         Q&A管理
       </h1>
+
+      {/* - 追加: エラー/ローディング表示 */}
+      <div className="max-w-2xl mx-auto mb-4">
+        {error && (
+          <div className="rounded bg-red-900/30 text-red-200 px-3 py-2">
+            {error}
+          </div>
+        )}
+        {loading && <div className="text-zinc-300">読み込み中...</div>}
+      </div>
+
       <div className="max-w-2xl mx-auto flex flex-col gap-6">
         {messages.map((msg) => (
           <AdminQuestionPage
@@ -158,6 +178,7 @@ export const AdminQAPage = () => {
             onAnswer={(answer) => handleAnswer(msg.id, answer)}
           />
         ))}
+
         <Pagination
           displayPage={displayPage}
           totalPages={totalPages}

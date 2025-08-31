@@ -79,6 +79,7 @@ export const TechDetailPage = () => {
   const { idAndSlug } = useParams();
   // - const id = idAndSlug?.split("-")[0];
   const id = idAndSlug?.match(/^\d+/)?.[0] ?? null;
+  // ★ NOTE: slug に先頭数字以外が混ざっても安全な抽出。URL 仕様変更時はここだけ直せばOK。
 
   const { idToken } = useAuth();
   // - const baseURL = process.env.REACT_APP_API_URL;
@@ -121,6 +122,7 @@ export const TechDetailPage = () => {
       }
     } catch (e) {
       console.error("like toggle failed", e);
+      // ★ NOTE: 401/403 は未ログインや権限不足。UIでログイン導線を出すならここでトースト文言差し替え推奨。
     }
   };
 
@@ -148,6 +150,7 @@ export const TechDetailPage = () => {
     } catch (e) {
       console.error(e);
       alert(isRead ? "解除失敗" : "読了登録失敗");
+      // ★ NOTE: 後で alert → トーストに置き換え想定なら、共通 Toast ユーティリティを噛ませると差し替え楽。
     }
   };
 
@@ -171,6 +174,7 @@ export const TechDetailPage = () => {
       }
     })();
   }, [idToken, articleId]); // - baseURL依存は不要
+  // ★ NOTE: 将来的にページ遷移連打でのレースが気になるなら AbortController を追加（今は軽量優先でOK）。
 
   // いいね状態取得
   useEffect(() => {
@@ -186,6 +190,7 @@ export const TechDetailPage = () => {
       })
       .catch(() => void 0);
   }, [idToken, articleId]); // - baseURL依存は不要
+  // ★ NOTE: 未ログイン時は呼ばない設計。ログイン前でも件数だけ見せたいなら GET を公開API化して分岐。
 
   // myUserId取得
   useEffect(() => {
@@ -196,6 +201,7 @@ export const TechDetailPage = () => {
       .then((res) => setMyUserId(res.data.id))
       .catch(() => void 0);
   }, [idToken]); // - baseURL依存は不要
+  // ★ NOTE: 401の時は握り潰してOKな仕様。将来は useAuth 側で me 取得をまとめても良い。
 
   // 記事メタ＆本文取得
   useEffect(() => {
@@ -229,6 +235,7 @@ export const TechDetailPage = () => {
       ignore = true;
     };
   }, [id]); // - baseURL依存は不要
+  // ★ NOTE: ここも AbortController 追加でより堅牢化可。今は ignore フラグで十分。
 
   return (
     <div className="min-h-screen bg-gray-900">
@@ -238,6 +245,7 @@ export const TechDetailPage = () => {
 
       {/* いいねボタン */}
       <LikeButton liked={liked} count={likeCount} onClick={handleLike} />
+      {/* ★ NOTE: disabled をサポートしているなら loading 中や未ログイン時に押せないUIにするのが親切。 */}
 
       {/* カード */}
       <div className="prose prose-invert whitespace-normal text-white max-w-4xl mx-auto py-10 bg-zinc-900 rounded-2xl shadow-2xl mb-8">
@@ -247,6 +255,7 @@ export const TechDetailPage = () => {
             alt={title}
             className="w-full h-64 object-cover rounded-xl mb-8"
           />
+          // ★ NOTE: LCP改善は後で優先度属性や width/height 指定を検討（Next.js なら <Image>）。
         )}
 
         <h1 className="text-4xl font-bold mb-4">{title}</h1>
@@ -316,6 +325,7 @@ export const TechDetailPage = () => {
               myUserId={myUserId ?? null}
             />
           )}
+          {/* ★ NOTE: TechDetailActions 内でも myUserId=null のとき投稿UIを抑制する実装にしていてOK。 */}
         </div>
         <div className="flex-shrink-0 flex items-center">
           <button
@@ -326,6 +336,8 @@ export const TechDetailPage = () => {
             }`}
             onClick={handleRead}
             style={{ cursor: "pointer" }}
+            // ★ NOTE: 未ログインや loading 中は disabled にするのもアリ（UX向上）。
+            // disabled={!idToken || loading}
           >
             {isRead ? "読了済み" : "この記事を読了する"}
           </button>
