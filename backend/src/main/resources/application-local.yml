@@ -1,0 +1,8 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/devnav
+    username: muraokakanemichi   # ←schema owner
+    password:
+  jpa:
+    hibernate:
+      ddl-auto: update           # ローカル限定
