@@ -5,7 +5,6 @@ import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import dayjs from "dayjs";
 import { useAuth } from "../../../context/useAuthContext";
-// - import axios from "axios";
 import { apiHelper } from "../../../libs/apiHelper";
 import { LikeButton } from "../../../utils/LikeButton";
 import { TechDetailActions } from "./TechDetailActions";
@@ -70,79 +69,110 @@ function CodeBlock({ language, code, startingLineNumber = 1 }: CodeBlockProps) {
   );
 }
 
-// 追加：失敗時の簡易UI
 const Fallback = ({ msg }: { msg: string }) => (
   <div className="text-red-300 bg-red-900/30 p-3 rounded">{msg}</div>
 );
 
 export const TechDetailPage = () => {
   const { idAndSlug } = useParams();
-  // - const id = idAndSlug?.split("-")[0];
   const id = idAndSlug?.match(/^\d+/)?.[0] ?? null;
-  // ★ NOTE: slug に先頭数字以外が混ざっても安全な抽出。URL 仕様変更時はここだけ直せばOK。
 
   const { idToken } = useAuth();
-  // - const baseURL = process.env.REACT_APP_API_URL;
+  const authHeader = idToken
+    ? { Authorization: `Bearer ${idToken}` }
+    : undefined;
 
-  // リッチ化用：記事メタ情報
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [createdAt, setCreatedAt] = useState("");
   const [category, setCategory] = useState("");
   const [imageUrl, setImageUrl] = useState("");
   const [content, setContent] = useState("");
+
   const [articleId, setArticleId] = useState<number | null>(null);
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isRead, setIsRead] = useState(false);
   const [myUserId, setMyUserId] = useState<number | null>(null);
+
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [pending, setPending] = useState(false);
 
-  // いいね機能
-  const handleLike = async () => {
-    if (!idToken || !articleId) return;
+  const syncLikeState = async (aid: number) => {
     try {
-      if (liked) {
-        // - await axios.delete(`${baseURL}/api/likes/${articleId}`, { headers: { Authorization: `Bearer ${idToken}` } });
-        await apiHelper.delete(`/api/likes/${articleId}`, {
-          headers: { Authorization: `Bearer ${idToken}` },
-        });
-        setLiked(false);
-        setLikeCount((v) => v - 1);
-      } else {
-        // - await axios.post(`${baseURL}/api/likes`, { articleId }, { headers: { Authorization: `Bearer ${idToken}` } });
-        await apiHelper.post(
-          `/api/likes`,
-          { articleId },
-          { headers: { Authorization: `Bearer ${idToken}` } }
-        );
-        setLiked(true);
-        setLikeCount((v) => v + 1);
-      }
-    } catch (e) {
-      console.error("like toggle failed", e);
-      // ★ NOTE: 401/403 は未ログインや権限不足。UIでログイン導線を出すならここでトースト文言差し替え推奨。
+      const res = await apiHelper.get(`/api/likes/status`, {
+        headers: authHeader,
+        params: { articleId: aid },
+      });
+      setLiked(!!res.data?.liked);
+      setLikeCount(typeof res.data?.count === "number" ? res.data.count : 0);
+    } catch {
+      setLiked(false);
+      setLikeCount((c) => Math.max(0, c));
     }
   };
 
-  // 読了機能
+  const handleLike = async () => {
+    if (pending || !idToken || !articleId) return;
+    setPending(true);
+    try {
+      if (liked) {
+        // DELETE: まずは path → ダメなら params
+        try {
+          await apiHelper.delete(`/api/likes/${articleId}`, {
+            headers: authHeader,
+          });
+        } catch (e: any) {
+          if (e?.response?.status === 404 || e?.response?.status === 405) {
+            await apiHelper.delete(`/api/likes`, {
+              headers: authHeader,
+              params: { articleId },
+            });
+          } else {
+            throw e;
+          }
+        }
+      } else {
+        // POST: JSON ボディ
+        try {
+          await apiHelper.post(
+            `/api/likes`,
+            { articleId },
+            { headers: authHeader }
+          );
+        } catch (e: any) {
+          if (e?.response?.status === 404 || e?.response?.status === 415) {
+            await apiHelper.post(`/api/likes?articleId=${articleId}`, null, {
+              headers: authHeader,
+            });
+          } else {
+            throw e;
+          }
+        }
+      }
+      await syncLikeState(articleId);
+    } catch (e) {
+      console.error("like toggle failed", e);
+    } finally {
+      setPending(false);
+    }
+  };
+
   const handleRead = async () => {
     if (!idToken || !articleId) return;
     try {
       if (!isRead) {
-        // - await axios.post(`${baseURL}/api/articles/read`, { articleId }, { headers: { Authorization: `Bearer ${idToken}` } });
         await apiHelper.post(
           `/api/articles/read`,
           { articleId },
-          { headers: { Authorization: `Bearer ${idToken}` } }
+          { headers: authHeader }
         );
         setIsRead(true);
         alert("完了");
       } else {
-        // - await axios.delete(`${baseURL}/api/articles/read/${articleId}`, { headers: { Authorization: `Bearer ${idToken}` } });
         await apiHelper.delete(`/api/articles/read/${articleId}`, {
-          headers: { Authorization: `Bearer ${idToken}` },
+          headers: authHeader,
         });
         setIsRead(false);
         alert("読了解除");
@@ -150,60 +180,9 @@ export const TechDetailPage = () => {
     } catch (e) {
       console.error(e);
       alert(isRead ? "解除失敗" : "読了登録失敗");
-      // ★ NOTE: 後で alert → トーストに置き換え想定なら、共通 Toast ユーティリティを噛ませると差し替え楽。
     }
   };
 
-  // 読了状態取得
-  useEffect(() => {
-    if (!idToken || !articleId) return;
-    (async () => {
-      try {
-        // - const res = await axios.get(`${baseURL}/api/articles/read/status?articleId=${articleId}`, { headers: { Authorization: `Bearer ${idToken}` } });
-        const res = await apiHelper.get(
-          `/api/articles/read/status?articleId=${articleId}`,
-          { headers: { Authorization: `Bearer ${idToken}` } }
-        );
-        const read =
-          typeof res.data === "object" && res.data !== null
-            ? !!res.data.read
-            : !!res.data;
-        setIsRead(read);
-      } catch {
-        setIsRead(false);
-      }
-    })();
-  }, [idToken, articleId]); // - baseURL依存は不要
-  // ★ NOTE: 将来的にページ遷移連打でのレースが気になるなら AbortController を追加（今は軽量優先でOK）。
-
-  // いいね状態取得
-  useEffect(() => {
-    if (!idToken || !articleId) return;
-    // - axios.get(`${baseURL}/api/likes/status?articleId=${articleId}`, { headers: { Authorization: `Bearer ${idToken}` } })
-    apiHelper
-      .get(`/api/likes/status?articleId=${articleId}`, {
-        headers: { Authorization: `Bearer ${idToken}` },
-      })
-      .then((res) => {
-        setLiked(!!res.data.liked);
-        setLikeCount(res.data.count ?? 0);
-      })
-      .catch(() => void 0);
-  }, [idToken, articleId]); // - baseURL依存は不要
-  // ★ NOTE: 未ログイン時は呼ばない設計。ログイン前でも件数だけ見せたいなら GET を公開API化して分岐。
-
-  // myUserId取得
-  useEffect(() => {
-    if (!idToken) return;
-    // - axios.get(`${baseURL}/api/me`, { headers: { Authorization: `Bearer ${idToken}` } })
-    apiHelper
-      .get(`/api/me`, { headers: { Authorization: `Bearer ${idToken}` } })
-      .then((res) => setMyUserId(res.data.id))
-      .catch(() => void 0);
-  }, [idToken]); // - baseURL依存は不要
-  // ★ NOTE: 401の時は握り潰してOKな仕様。将来は useAuth 側で me 取得をまとめても良い。
-
-  // 記事メタ＆本文取得
   useEffect(() => {
     if (!id) {
       setErrorMsg("URLのIDが取得できません");
@@ -213,7 +192,6 @@ export const TechDetailPage = () => {
     let ignore = false;
     (async () => {
       try {
-        // - const { data } = await axios.get(`${baseURL}/api/articles/${id}`);
         const { data } = await apiHelper.get(`/api/articles/${id}`);
         if (ignore) return;
         setTitle(data.title);
@@ -234,20 +212,52 @@ export const TechDetailPage = () => {
     return () => {
       ignore = true;
     };
-  }, [id]); // - baseURL依存は不要
-  // ★ NOTE: ここも AbortController 追加でより堅牢化可。今は ignore フラグで十分。
+  }, [id]);
+
+  useEffect(() => {
+    if (!idToken) return;
+    apiHelper
+      .get(`/api/me`, { headers: authHeader })
+      .then((res) => setMyUserId(res.data.id))
+      .catch(() => void 0);
+  }, [idToken]);
+
+  useEffect(() => {
+    if (!idToken || !articleId) return;
+    (async () => {
+      try {
+        const res = await apiHelper.get(`/api/articles/read/status`, {
+          headers: authHeader,
+          params: { articleId },
+        });
+        const read =
+          typeof res.data === "object" && res.data !== null
+            ? !!res.data.read
+            : !!res.data;
+        setIsRead(read);
+      } catch {
+        setIsRead(false);
+      }
+    })();
+  }, [idToken, articleId]);
+
+  useEffect(() => {
+    if (!idToken || !articleId) return;
+    syncLikeState(articleId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idToken, articleId]);
 
   return (
     <div className="min-h-screen bg-gray-900">
-      {/* 進行表示 */}
       {loading && <div className="text-gray-300 p-4">読み込み中...</div>}
       {!loading && errorMsg && <Fallback msg={errorMsg} />}
 
-      {/* いいねボタン */}
-      <LikeButton liked={liked} count={likeCount} onClick={handleLike} />
-      {/* ★ NOTE: disabled をサポートしているなら loading 中や未ログイン時に押せないUIにするのが親切。 */}
+      <LikeButton
+        liked={liked}
+        count={likeCount}
+        onClick={handleLike} /* disabled={pending} */
+      />
 
-      {/* カード */}
       <div className="prose prose-invert whitespace-normal text-white max-w-4xl mx-auto py-10 bg-zinc-900 rounded-2xl shadow-2xl mb-8">
         {imageUrl && (
           <img
@@ -255,7 +265,6 @@ export const TechDetailPage = () => {
             alt={title}
             className="w-full h-64 object-cover rounded-xl mb-8"
           />
-          // ★ NOTE: LCP改善は後で優先度属性や width/height 指定を検討（Next.js なら <Image>）。
         )}
 
         <h1 className="text-4xl font-bold mb-4">{title}</h1>
@@ -316,7 +325,6 @@ export const TechDetailPage = () => {
         </ReactMarkdown>
       </div>
 
-      {/* レビュー・コメント・Q&Aタブ */}
       <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-start md:items-center gap-4 mt-8">
         <div className="flex-1">
           {articleId && (
@@ -325,7 +333,6 @@ export const TechDetailPage = () => {
               myUserId={myUserId ?? null}
             />
           )}
-          {/* ★ NOTE: TechDetailActions 内でも myUserId=null のとき投稿UIを抑制する実装にしていてOK。 */}
         </div>
         <div className="flex-shrink-0 flex items-center">
           <button
@@ -336,15 +343,12 @@ export const TechDetailPage = () => {
             }`}
             onClick={handleRead}
             style={{ cursor: "pointer" }}
-            // ★ NOTE: 未ログインや loading 中は disabled にするのもアリ（UX向上）。
-            // disabled={!idToken || loading}
           >
             {isRead ? "読了済み" : "この記事を読了する"}
           </button>
         </div>
       </div>
 
-      {/* 戻るボタン */}
       <div className="max-w-4xl mx-auto py-8">
         <Link to="/articles">
           <p className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition duration-200">

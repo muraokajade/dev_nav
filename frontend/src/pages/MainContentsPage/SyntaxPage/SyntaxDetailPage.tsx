@@ -9,7 +9,6 @@ import { useAuth } from "../../../context/useAuthContext";
 import { LikeButton } from "../../../utils/LikeButton";
 import { SyntaxDetailActions } from "./SyntaxDetailActions";
 import { apiHelper } from "../../../libs/apiHelper";
-// - import { api } from "../../../libs/api"; // 未使用
 
 type CodeBlockProps = {
   language?: string;
@@ -23,7 +22,7 @@ function CodeBlock({ language, code, startingLineNumber = 1 }: CodeBlockProps) {
 
   const onCopy = async () => {
     try {
-      await navigator.clipboard.writeText(text); // 行番号は含めない
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     } catch (e) {
@@ -73,10 +72,9 @@ function CodeBlock({ language, code, startingLineNumber = 1 }: CodeBlockProps) {
 
 export const SyntaxDetailPage = () => {
   const { idAndSlug } = useParams();
-  const id = idAndSlug?.match(/^\d+/)?.[0] ?? idAndSlug?.split("-")[0] ?? null; // ★ NOTE: 数値先頭抽出で安全
+  const id = idAndSlug?.match(/^\d+/)?.[0] ?? idAndSlug?.split("-")[0] ?? null;
   const { idToken } = useAuth();
 
-  // リッチ化用：記事メタ情報
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [createdAt, setCreatedAt] = useState("");
@@ -84,55 +82,106 @@ export const SyntaxDetailPage = () => {
   const [imageUrl, setImageUrl] = useState("");
   const [content, setContent] = useState("");
   const [syntaxId, setSyntaxId] = useState<number | null>(null);
+
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isRead, setIsRead] = useState(false);
   const [myUserId, setMyUserId] = useState<number | null>(null);
 
-  // いいね
-  const handleLike = async () => {
-    if (!idToken || !syntaxId) return;
+  const [pending, setPending] = useState(false);
+
+  // ---- helpers --------------------------------------------------
+  const authHeader = idToken
+    ? { Authorization: `Bearer ${idToken}` }
+    : undefined;
+
+  const syncLikeState = async (sid: number) => {
     try {
-      if (liked) {
-        // - await apiHelper.delete(`/api/syntaxes/likes?syntaxId=${syntaxId}`, {
-        await apiHelper.delete(`/api/syntaxes/likes/${syntaxId}`, {
-          headers: { Authorization: `Bearer ${idToken}` },
-        });
-        setLiked(false);
-        setLikeCount((prev) => prev - 1);
-      } else {
-        // - await apiHelper.post(
-        // -   `/api/syntaxes/likes`,
-        // -   { syntaxId }, // ★ NOTE: バックエンドの期待と合わせてJSONボディ送信
-        // -   { headers: { Authorization: `Bearer ${idToken}` } }
-        // - );
-        await apiHelper.post(`/api/syntaxes/likes?syntaxId=${syntaxId}`, null, {
-          headers: { Authorization: `Bearer ${idToken}` },
-        });
-        setLiked(true);
-        setLikeCount((prev) => prev + 1);
-      }
-    } catch (e) {
-      console.error("like toggle failed", e);
-      // ★ NOTE: 401/403 の場合はログイン導線やトーストに差し替え候補
+      const res = await apiHelper.get(`/api/syntaxes/likes/status`, {
+        headers: authHeader,
+        params: { syntaxId: sid },
+      });
+      setLiked(!!res.data?.liked);
+      setLikeCount(typeof res.data?.count === "number" ? res.data.count : 0);
+    } catch {
+      // 未ログインやAPI不達などはとりあえずゼロに倒す
+      setLiked(false);
+      setLikeCount((c) => Math.max(0, c));
     }
   };
 
-  // 読了トグル
+  // ---- like toggle ---------------------------------------------
+  const handleLike = async () => {
+    if (pending || !idToken || !syntaxId) return;
+    setPending(true);
+    try {
+      if (liked) {
+        // DELETE: まずは query param で送る（本番仕様）
+        try {
+          await apiHelper.delete(`/api/syntaxes/likes`, {
+            headers: authHeader,
+            params: { syntaxId },
+          });
+        } catch (e: any) {
+          // 互換: path param の旧仕様にも対応
+          if (e?.response?.status === 404 || e?.response?.status === 405) {
+            await apiHelper.delete(`/api/syntaxes/likes/${syntaxId}`, {
+              headers: authHeader,
+            });
+          } else {
+            throw e;
+          }
+        }
+      } else {
+        // POST: JSON ボディ
+        try {
+          await apiHelper.post(
+            `/api/syntaxes/likes`,
+            { syntaxId },
+            { headers: authHeader }
+          );
+        } catch (e: any) {
+          // 互換: クエリ版にも対応
+          if (e?.response?.status === 404 || e?.response?.status === 415) {
+            await apiHelper.post(`/api/syntaxes/likes`, null, {
+              headers: authHeader,
+              params: { syntaxId },
+            });
+          } else if (e?.response?.status === 405) {
+            await apiHelper.post(
+              `/api/syntaxes/likes?syntaxId=${syntaxId}`,
+              null,
+              { headers: authHeader }
+            );
+          } else {
+            throw e;
+          }
+        }
+      }
+      // 成功後はサーバ値で確定（楽観更新しない）
+      await syncLikeState(syntaxId);
+    } catch (e) {
+      console.error("like toggle failed", e);
+    } finally {
+      setPending(false);
+    }
+  };
+
+  // ---- read toggle ---------------------------------------------
   const handleRead = async () => {
     if (!idToken || !syntaxId) return;
     try {
       if (!isRead) {
         await apiHelper.post(
           "/api/syntaxes/read",
-          { syntaxId }, // ★ NOTE: パラメータ名はAPIと統一（以前のcontentIdは不使用）
-          { headers: { Authorization: `Bearer ${idToken}` } }
+          { syntaxId },
+          { headers: authHeader }
         );
         setIsRead(true);
         alert("完了");
       } else {
         await apiHelper.delete(`/api/syntaxes/read/${syntaxId}`, {
-          headers: { Authorization: `Bearer ${idToken}` },
+          headers: authHeader,
         });
         setIsRead(false);
         alert("読了解除");
@@ -143,50 +192,7 @@ export const SyntaxDetailPage = () => {
     }
   };
 
-  // 読了状態取得
-  useEffect(() => {
-    if (!idToken || !syntaxId) return;
-    let cancelled = false;
-    (async () => {
-      try {
-        const res = await apiHelper.get("/api/syntaxes/read/status", {
-          params: { syntaxId }, // - params: { contentId } から修正
-          headers: { Authorization: `Bearer ${idToken}` },
-        });
-        if (!cancelled) setIsRead(!!res.data?.read);
-      } catch {
-        if (!cancelled) setIsRead(false);
-      }
-    })();
-    return () => {
-      cancelled = true;
-    };
-  }, [idToken, syntaxId]);
-
-  // いいね状態取得
-  useEffect(() => {
-    if (!idToken || !syntaxId) return;
-    apiHelper
-      .get(`/api/syntaxes/likes/status?syntaxId=${syntaxId}`, {
-        headers: { Authorization: `Bearer ${idToken}` },
-      })
-      .then((res) => {
-        setLiked(!!res.data.liked);
-        setLikeCount(res.data.count ?? 0);
-      })
-      .catch(() => void 0);
-  }, [syntaxId, idToken]);
-
-  // api/me
-  useEffect(() => {
-    if (!idToken) return;
-    apiHelper
-      .get("/api/me", { headers: { Authorization: `Bearer ${idToken}` } })
-      .then((res) => setMyUserId(res.data.id))
-      .catch(() => void 0);
-  }, [idToken]);
-
-  // 記事メタ＆本文取得
+  // ---- initial fetches -----------------------------------------
   useEffect(() => {
     if (!id) return;
     apiHelper
@@ -203,12 +209,47 @@ export const SyntaxDetailPage = () => {
       .catch((e) => console.error("fetch syntaxes failed", e));
   }, [id]);
 
+  useEffect(() => {
+    if (!idToken) return;
+    apiHelper
+      .get("/api/me", { headers: authHeader })
+      .then((res) => setMyUserId(res.data.id))
+      .catch(() => void 0);
+  }, [idToken]); // me
+
+  useEffect(() => {
+    if (!idToken || !syntaxId) return;
+    let cancelled = false;
+    (async () => {
+      try {
+        const res = await apiHelper.get("/api/syntaxes/read/status", {
+          params: { syntaxId },
+          headers: authHeader,
+        });
+        if (!cancelled) setIsRead(!!res.data?.read);
+      } catch {
+        if (!cancelled) setIsRead(false);
+      }
+    })();
+    return () => {
+      cancelled = true;
+    };
+  }, [idToken, syntaxId]); // read state
+
+  useEffect(() => {
+    if (!idToken || !syntaxId) return;
+    syncLikeState(syntaxId);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [idToken, syntaxId]); // like state
+
   return (
     <div className="min-h-screen bg-gray-900">
-      {/* いいねボタン */}
-      <LikeButton liked={liked} count={likeCount} onClick={handleLike} />
+      <LikeButton
+        liked={liked}
+        count={likeCount}
+        onClick={handleLike} /* disabled={pending} */
+      />
 
-      {/* リッチ化カード */}
       <div className="prose prose-invert max-w-4xl mx-auto py-10 bg-zinc-900 rounded-2xl shadow-2xl mb-8">
         {imageUrl && (
           <img
@@ -232,11 +273,9 @@ export const SyntaxDetailPage = () => {
           )}
         </div>
 
-        {/* 本文（pre経由でCodeBlockに差し替え） */}
         <ReactMarkdown
           components={{
             pre({ children }) {
-              // children は <code class="language-xxx">...</code> のはず
               const child = Array.isArray(children) ? children[0] : children;
               // @ts-ignore
               const className = child?.props?.className as string | undefined;
@@ -256,7 +295,6 @@ export const SyntaxDetailPage = () => {
               return <CodeBlock language={match[1]} code={codeString} />;
             },
             code({ className, children, ...props }) {
-              // インラインコードや、まれにpreを通らないコードブロックにも対応
               const match = /language-(\w+)/.exec(className || "");
               const codeString = Array.isArray(children)
                 ? children.join("")
@@ -278,7 +316,6 @@ export const SyntaxDetailPage = () => {
         </ReactMarkdown>
       </div>
 
-      {/* レビュー・コメント・Q&A */}
       <div className="max-w-4xl mx-auto mt-8">
         <div className="flex flex-wrap gap-4 items-center md:justify-between">
           <div className="flex items-center gap-3">
@@ -304,7 +341,6 @@ export const SyntaxDetailPage = () => {
         </div>
       </div>
 
-      {/* 戻るボタン */}
       <div className="max-w-4xl mx-auto py-8">
         <Link to="/syntaxes">
           <p className="inline-block bg-blue-600 hover:bg-blue-700 text白 font-semibold py-2 px-4 rounded shadow transition duration-200">
