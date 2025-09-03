@@ -1,3 +1,4 @@
+// src/components/ThreadComments.tsx
 import React, {
   useCallback,
   useEffect,
@@ -8,7 +9,6 @@ import React, {
 import { apiHelper } from "../libs/apiHelper";
 import { ThreadMessage, ThreadWithMessages } from "../models/ThreadMessage";
 import { useAuth } from "../context/useAuthContext";
-import { Link } from "react-router-dom";
 import { LoginCTA } from "../utils/LoginCTA";
 
 export type Props = {
@@ -16,10 +16,10 @@ export type Props = {
   refId: number;
   category: "comment" | "qa";
   readOnly?: boolean; // 閲覧専用（投稿不可）
-  hideComposer?: boolean; // フォーム自体を非表示
+  hideComposer?: boolean; // 投稿フォーム自体を非表示
 };
 
-// JWT から email を取り出す
+// JWTからemail抽出（簡易）
 function emailFromIdToken(token?: string | null): string | null {
   if (!token) return null;
   try {
@@ -44,13 +44,14 @@ export const ThreadComments: React.FC<Props> = ({
   const [input, setInput] = useState("");
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
-  const [loading, setLoading] = useState(true); // ← 追加
-  const [error, setError] = useState<string | null>(null); // ← 追加
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   const { idToken } = useAuth();
   const canShowComposer = !readOnly && !hideComposer && !!idToken;
   const myEmail = useMemo(() => emailFromIdToken(idToken), [idToken]);
 
+  // APIパス（例: /api/syntax/123/comment/messages）
   const basePath = useMemo(
     () => `/api/${type}/${refId}/${category}/messages`,
     [type, refId, category]
@@ -69,10 +70,11 @@ export const ThreadComments: React.FC<Props> = ({
     setError(null);
     try {
       const res = await apiHelper.get<ThreadWithMessages>(basePath, {
-        signal: ac.signal as any,
+        signal: ac.signal as AbortSignal,
       });
       setMessages(res.data.messages ?? []);
     } catch (e: any) {
+      // axiosのキャンセル名は CanceledError
       if (e?.name === "CanceledError") return;
       console.error(e);
       setError("コメントの取得に失敗しました");
@@ -87,24 +89,7 @@ export const ThreadComments: React.FC<Props> = ({
     return () => abortRef.current?.abort();
   }, [fetchMessages]);
 
-  // - const handleSubmit = async (e: React.FormEvent) => {
-  // -   e.preventDefault();
-  // -   if (!idToken) return alert("ログインしてください");
-  // -   if (!input.trim()) return alert("本文を入力してください");
-  // -   try {
-  // -     await apiHelper.post(
-  // -       basePath,
-  // -       { body: input },
-  // -       { headers: { Authorization: `Bearer ${idToken}` } }
-  // -     );
-  // -     setInput("");
-  // -     await fetchMessages();
-  // -   } catch (e) {
-  // -     console.error(e);
-  // -     alert("投稿に失敗しました");
-  // -   }
-  // - };
-  // ↑ onClick との型不一致を解消。form submit に寄せる。
+  // 投稿
   const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
     e.preventDefault();
     if (!idToken) {
@@ -129,9 +114,9 @@ export const ThreadComments: React.FC<Props> = ({
     }
   };
 
+  // 削除
   const handleDelete = async (id: number) => {
-    const ok = window.confirm("本当に削除してよいですか？");
-    if (!ok) return;
+    if (!window.confirm("本当に削除してよいですか？")) return;
     try {
       await apiHelper.delete(`/api/messages/${id}`, {
         headers: { Authorization: `Bearer ${idToken}` },
@@ -143,6 +128,7 @@ export const ThreadComments: React.FC<Props> = ({
     }
   };
 
+  // 更新
   const handleUpdate = async (id: number) => {
     if (!idToken) return alert("ログインしてください");
     if (!editText.trim()) return alert("本文を入力してください");
@@ -160,11 +146,10 @@ export const ThreadComments: React.FC<Props> = ({
     }
   };
 
-  // 自分の投稿かの判定
-  // - m.userId?.toLowerCase() === myEmail.toLowerCase()
-  // ↓ emailフィールド（authorEmail想定）で比較。なければサーバに isMine を実装するのが最善。
+  // 自分の投稿か？
+  // APIの実フィールドに合わせて authorEmail を参照
   const isMine = (m: ThreadMessage) => {
-    const email = (m as any).authorEmail as string | undefined; // API の実フィールド名に合わせて
+    const email = (m as any).authorEmail as string | undefined;
     return !!(
       myEmail &&
       email &&
@@ -173,30 +158,34 @@ export const ThreadComments: React.FC<Props> = ({
   };
 
   return (
-    <section className="bg-zinc-900 rounded-xl p-6 my-8 shadow-lg max-w-3xl text-zinc-100">
+    // ★ 幅制限を解除（親が狭くても突破したい場合は、この親を FullWidth などで包む）
+    <section className="not-prose w-full !max-w-none bg-zinc-900 rounded-xl p-6 my-8 shadow-lg text-zinc-100">
       {/* 投稿フォーム or ログイン導線 */}
       {canShowComposer ? (
-        // 投稿フォーム（formに変更）
         <form
-          className="py-4 mb-6 border-b-4 border-white"
+          className="w-full py-4 mb-6 border-b-4 border-white"
           onSubmit={handleSubmit}
         >
           <textarea
-            className="w-full p-2 rounded bg-zinc-100 border text-black border-zinc-700 resize-none min-h-[70px] focus:ring-2 focus:ring-blue-600 transition"
-            rows={5}
+            className="
+              w-full p-3 rounded bg-zinc-100 border text-black border-zinc-700
+              focus:ring-2 focus:ring-blue-600 transition
+              resize-y
+              !min-h-[160px] md:!min-h-[200px]
+            "
+            rows={8}
             placeholder="コメントを書く..."
             value={input}
             onChange={(e) => setInput(e.target.value)}
           />
           <button
-            type="submit" // ← 送信
+            type="submit"
             className="mt-2 px-4 py-1 bg-blue-600 hover:bg-blue-700 rounded text-white font-semibold"
           >
             投稿
           </button>
         </form>
       ) : !idToken ? (
-        // 未ログインだけログイン導線を表示
         <div className="py-4 mb-6 border-b-4 border-white">
           <LoginCTA
             text={`ログインすると${
@@ -220,21 +209,24 @@ export const ThreadComments: React.FC<Props> = ({
             {editingId === m.id ? (
               <>
                 <textarea
-                  className="w-full p-1 rounded bg-zinc-900 border border-zinc-600 text-white"
+                  className="
+                    w-full p-3 rounded bg-zinc-900 border border-zinc-600 text-white
+                    resize-y !min-h-[160px]
+                  "
                   value={editText}
                   onChange={(e) => setEditText(e.target.value)}
-                  rows={5}
+                  rows={8}
                 />
                 <div className="mt-2 flex gap-2">
                   <button
-                    className="px-3 py-1 bg-green-600 rounded text-white"
+                    className="px-3 py-1 bg-green-600 hover:bg-green-700 rounded text-white"
                     onClick={() => handleUpdate(m.id)}
                     type="button"
                   >
                     保存
                   </button>
                   <button
-                    className="px-3 py-1 bg-zinc-700 rounded text-white"
+                    className="px-3 py-1 bg-zinc-700 hover:bg-zinc-600 rounded text-white"
                     onClick={() => setEditingId(null)}
                     type="button"
                   >
@@ -251,11 +243,11 @@ export const ThreadComments: React.FC<Props> = ({
                     : `作成: ${m.createdAt}`}
                 </div>
 
-                {/* 自分の投稿だけ操作表示 */}
+                {/* 自分の投稿だけ操作を表示 */}
                 {isMine(m) && (
                   <div className="mt-1 flex gap-2">
                     <button
-                      className="text-blue-400 underline"
+                      className="text-blue-400 hover:text-blue-300 underline"
                       onClick={() => {
                         setEditingId(m.id);
                         setEditText(m.body);
@@ -265,7 +257,7 @@ export const ThreadComments: React.FC<Props> = ({
                       編集
                     </button>
                     <button
-                      className="text-red-400 underline"
+                      className="text-red-400 hover:text-red-300 underline"
                       onClick={() => handleDelete(m.id)}
                       type="button"
                     >

@@ -1,3 +1,4 @@
+// src/pages/syntax/detail/SyntaxDetailPage.tsx
 import React, { useEffect, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Link, useParams } from "react-router-dom";
@@ -9,7 +10,6 @@ import { useAuth } from "../../../context/useAuthContext";
 import { LikeButton } from "../../../utils/LikeButton";
 import { SyntaxDetailActions } from "./SyntaxDetailActions";
 import { apiHelper } from "../../../libs/apiHelper";
-// - import { api } from "../../../libs/api"; // 未使用
 
 type CodeBlockProps = {
   language?: string;
@@ -23,7 +23,7 @@ function CodeBlock({ language, code, startingLineNumber = 1 }: CodeBlockProps) {
 
   const onCopy = async () => {
     try {
-      await navigator.clipboard.writeText(text); // 行番号は含めない
+      await navigator.clipboard.writeText(text);
       setCopied(true);
       setTimeout(() => setCopied(false), 1200);
     } catch (e) {
@@ -39,12 +39,11 @@ function CodeBlock({ language, code, startingLineNumber = 1 }: CodeBlockProps) {
     <div className="relative group not-prose">
       <button
         onClick={onCopy}
-        className={`absolute right-2 top-2 z-10 rounded px-2 py-1 text-xs font-semibold shadow transition
-          ${
-            copied
-              ? "bg-green-600 text-white"
-              : "bg-zinc-700/85 hover:bg-zinc-600 text-white"
-          }`}
+        className={`absolute right-2 top-2 z-10 rounded px-2 py-1 text-xs font-semibold shadow transition ${
+          copied
+            ? "bg-green-600 text-white"
+            : "bg-zinc-700/85 hover:bg-zinc-600 text-white"
+        }`}
         aria-label="Copy code"
       >
         {copied ? "Copied" : "Copy"}
@@ -71,12 +70,15 @@ function CodeBlock({ language, code, startingLineNumber = 1 }: CodeBlockProps) {
   );
 }
 
+const Fallback = ({ msg }: { msg: string }) => (
+  <div className="text-red-300 bg-red-900/30 p-3 rounded">{msg}</div>
+);
+
 export const SyntaxDetailPage = () => {
   const { idAndSlug } = useParams();
-  const id = idAndSlug?.match(/^\d+/)?.[0] ?? idAndSlug?.split("-")[0] ?? null; // ★ NOTE: 数値先頭抽出で安全
+  const id = idAndSlug?.match(/^\d+/)?.[0] ?? idAndSlug?.split("-")[0] ?? null;
   const { idToken } = useAuth();
 
-  // リッチ化用：記事メタ情報
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [createdAt, setCreatedAt] = useState("");
@@ -88,44 +90,37 @@ export const SyntaxDetailPage = () => {
   const [likeCount, setLikeCount] = useState(0);
   const [isRead, setIsRead] = useState(false);
   const [myUserId, setMyUserId] = useState<number | null>(null);
+  const [errorMsg, setErrorMsg] = useState<string | null>(null);
+  const [loading, setLoading] = useState(true);
 
-  // いいね
   const handleLike = async () => {
     if (!idToken || !syntaxId) return;
     try {
       if (liked) {
-        // - await apiHelper.delete(`/api/syntaxes/likes?syntaxId=${syntaxId}`, {
         await apiHelper.delete(`/api/syntaxes/likes/${syntaxId}`, {
           headers: { Authorization: `Bearer ${idToken}` },
         });
         setLiked(false);
-        setLikeCount((prev) => prev - 1);
+        setLikeCount((v) => v - 1);
       } else {
-        // - await apiHelper.post(
-        // -   `/api/syntaxes/likes`,
-        // -   { syntaxId }, // ★ NOTE: バックエンドの期待と合わせてJSONボディ送信
-        // -   { headers: { Authorization: `Bearer ${idToken}` } }
-        // - );
         await apiHelper.post(`/api/syntaxes/likes?syntaxId=${syntaxId}`, null, {
           headers: { Authorization: `Bearer ${idToken}` },
         });
         setLiked(true);
-        setLikeCount((prev) => prev + 1);
+        setLikeCount((v) => v + 1);
       }
     } catch (e) {
       console.error("like toggle failed", e);
-      // ★ NOTE: 401/403 の場合はログイン導線やトーストに差し替え候補
     }
   };
 
-  // 読了トグル
   const handleRead = async () => {
     if (!idToken || !syntaxId) return;
     try {
       if (!isRead) {
         await apiHelper.post(
           "/api/syntaxes/read",
-          { syntaxId }, // ★ NOTE: パラメータ名はAPIと統一（以前のcontentIdは不使用）
+          { syntaxId },
           { headers: { Authorization: `Bearer ${idToken}` } }
         );
         setIsRead(true);
@@ -143,27 +138,25 @@ export const SyntaxDetailPage = () => {
     }
   };
 
-  // 読了状態取得
   useEffect(() => {
     if (!idToken || !syntaxId) return;
-    let cancelled = false;
+    let ignore = false;
     (async () => {
       try {
         const res = await apiHelper.get("/api/syntaxes/read/status", {
-          params: { syntaxId }, // - params: { contentId } から修正
+          params: { syntaxId },
           headers: { Authorization: `Bearer ${idToken}` },
         });
-        if (!cancelled) setIsRead(!!res.data?.read);
+        if (!ignore) setIsRead(!!res.data?.read);
       } catch {
-        if (!cancelled) setIsRead(false);
+        if (!ignore) setIsRead(false);
       }
     })();
     return () => {
-      cancelled = true;
+      ignore = true;
     };
   }, [idToken, syntaxId]);
 
-  // いいね状態取得
   useEffect(() => {
     if (!idToken || !syntaxId) return;
     apiHelper
@@ -177,7 +170,6 @@ export const SyntaxDetailPage = () => {
       .catch(() => void 0);
   }, [syntaxId, idToken]);
 
-  // api/me
   useEffect(() => {
     if (!idToken) return;
     apiHelper
@@ -186,30 +178,46 @@ export const SyntaxDetailPage = () => {
       .catch(() => void 0);
   }, [idToken]);
 
-  // 記事メタ＆本文取得
   useEffect(() => {
-    if (!id) return;
-    apiHelper
-      .get(`/api/syntaxes/${id}`)
-      .then((res) => {
-        setTitle(res.data.title);
-        setAuthor(res.data.authorName ?? "（不明）");
-        setCreatedAt(res.data.createdAt ?? "");
-        setCategory(res.data.category ?? "");
-        setImageUrl(res.data.imageUrl ?? "");
-        setContent(res.data.content);
-        setSyntaxId(res.data.id);
-      })
-      .catch((e) => console.error("fetch syntaxes failed", e));
+    if (!id) {
+      setErrorMsg("URLのIDが取得できません");
+      setLoading(false);
+      return;
+    }
+    let ignore = false;
+    (async () => {
+      try {
+        const { data } = await apiHelper.get(`/api/syntaxes/${id}`);
+        if (ignore) return;
+        setTitle(data.title);
+        setAuthor(data.authorName ?? "（不明）");
+        setCreatedAt(data.createdAt ?? "");
+        setCategory(data.category ?? "");
+        setImageUrl(data.imageUrl ?? "");
+        setContent(data.content);
+        setSyntaxId(data.id);
+        setErrorMsg(null);
+      } catch (e) {
+        console.error("fetch syntaxes failed", e);
+        setErrorMsg("記事の取得に失敗しました");
+      } finally {
+        setLoading(false);
+      }
+    })();
+    return () => {
+      ignore = true;
+    };
   }, [id]);
 
   return (
     <div className="min-h-screen bg-gray-900">
-      {/* いいねボタン */}
+      {loading && <div className="text-gray-300 p-4">読み込み中...</div>}
+      {!loading && errorMsg && <Fallback msg={errorMsg} />}
+
       <LikeButton liked={liked} count={likeCount} onClick={handleLike} />
 
-      {/* リッチ化カード */}
-      <div className="prose prose-invert max-w-4xl mx-auto py-10 bg-zinc-900 rounded-2xl shadow-2xl mb-8">
+      {/* 本文カード（Techと同じ 4xl 幅） */}
+      <div className="prose prose-invert whitespace-normal text-white max-w-4xl mx-auto py-10 bg-zinc-900 rounded-2xl shadow-2xl mb-8">
         {imageUrl && (
           <img
             src={imageUrl}
@@ -226,17 +234,15 @@ export const SyntaxDetailPage = () => {
             <span>投稿日: {dayjs(createdAt).format("YYYY/MM/DD")}</span>
           )}
           {category && (
-            <span className="bg-blue-500 px-2 py-0.5 rounded text白">
+            <span className="bg-blue-500 px-2 py-0.5 rounded text-white">
               {category}
             </span>
           )}
         </div>
 
-        {/* 本文（pre経由でCodeBlockに差し替え） */}
         <ReactMarkdown
           components={{
             pre({ children }) {
-              // children は <code class="language-xxx">...</code> のはず
               const child = Array.isArray(children) ? children[0] : children;
               // @ts-ignore
               const className = child?.props?.className as string | undefined;
@@ -256,7 +262,6 @@ export const SyntaxDetailPage = () => {
               return <CodeBlock language={match[1]} code={codeString} />;
             },
             code({ className, children, ...props }) {
-              // インラインコードや、まれにpreを通らないコードブロックにも対応
               const match = /language-(\w+)/.exec(className || "");
               const codeString = Array.isArray(children)
                 ? children.join("")
@@ -278,25 +283,23 @@ export const SyntaxDetailPage = () => {
         </ReactMarkdown>
       </div>
 
-      {/* レビュー・コメント・Q&A */}
-      <div className="max-w-4xl mx-auto mt-8">
-        <div className="flex flex-wrap gap-4 items-center md:justify-between">
-          <div className="flex items-center gap-3">
-            {syntaxId && (
-              <SyntaxDetailActions
-                syntaxId={syntaxId}
-                myUserId={myUserId ?? null}
-              />
-            )}
-          </div>
-
+      {/* レビュー・コメント・Q&A（Tech と同じ親ラッパー：4xl 幅に統一） */}
+      <div className="max-w-4xl mx-auto flex flex-col md:flex-row items-start md:items-center gap-4 mt-8 px-4">
+        <div className="flex-1 w-full">
+          {syntaxId && (
+            <SyntaxDetailActions
+              syntaxId={syntaxId}
+              myUserId={myUserId ?? null}
+            />
+          )}
+        </div>
+        <div className="flex-shrink-0 flex items-center">
           <button
-            className={`px-4 py-2 rounded text白 font-bold shadow transition ${
+            className={`px-4 py-2 text-white rounded font-bold shadow transition ${
               isRead
                 ? "bg-green-500 cursor-not-allowed"
                 : "bg-blue-600 hover:bg-blue-700"
             }`}
-            style={{ cursor: "pointer" }}
             onClick={handleRead}
           >
             {isRead ? "読了済み" : "この記事を読了する"}
@@ -305,9 +308,9 @@ export const SyntaxDetailPage = () => {
       </div>
 
       {/* 戻るボタン */}
-      <div className="max-w-4xl mx-auto py-8">
+      <div className="max-w-4xl mx-auto py-8 px-4">
         <Link to="/syntaxes">
-          <p className="inline-block bg-blue-600 hover:bg-blue-700 text白 font-semibold py-2 px-4 rounded shadow transition duration-200">
+          <p className="inline-block text-white bg-blue-600 hover:bg-blue-700 font-semibold py-2 px-4 rounded shadow transition duration-200">
             技術記事一覧に戻る
           </p>
         </Link>
