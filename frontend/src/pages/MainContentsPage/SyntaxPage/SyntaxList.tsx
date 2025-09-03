@@ -118,7 +118,8 @@ export const SyntaxList = () => {
                 onChange={(e) => setSearch(e.target.value)}
               />
               <select
-                className="h-11 rounded-lg bg白/5 ring-1 ring-white/10 px-3 outline-none focus:ring-2 focus:ring-sky-400"
+                className="h-11 w-full sm:w-56 rounded-lg bg-white/5 ring-1 ring-white/10
+                   px-3 outline-none focus:ring-2 focus:ring-sky-400"
                 value={selectedCategory}
                 onChange={(e) => setSelectedCategory(e.target.value)}
               >

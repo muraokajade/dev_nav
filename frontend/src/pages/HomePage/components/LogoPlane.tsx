@@ -1,6 +1,6 @@
 import { useRef, useEffect } from "react";
 import { useFrame, useLoader } from "@react-three/fiber";
-import * as THREE from "three";
+import { TextureLoader, DoubleSide, Mesh, Texture, sRGBEncoding } from "three";
 
 type LogoProps = {
   url: string;
@@ -22,12 +22,23 @@ export const LogoPlane: React.FC<LogoProps> = ({
   initialRotation = [0, 0, 0],
   color,
 }) => {
-  const mesh = useRef<THREE.Mesh>(null!);
-  const texture = useLoader(THREE.TextureLoader, url);
+  const mesh = useRef<Mesh>(null!);
+  const texture = useLoader(TextureLoader, url) as Texture;
 
-  // **重要：テクスチャのY反転をOFF**
+  // LogoPlane の useEffect を強化（追記2行：premultiplyAlpha と既存の sRGB 設定）
   useEffect(() => {
     texture.flipY = false;
+
+    // 互換：r152+ なら colorSpace、r150 なら encoding
+    if ("colorSpace" in texture) {
+      (texture as any).colorSpace = sRGBEncoding;
+    } else {
+      (texture as any).encoding = sRGBEncoding;
+    }
+
+    // 透明PNG/SVGを綺麗に
+    (texture as any).premultiplyAlpha = true;
+
     texture.needsUpdate = true;
   }, [texture]);
 
@@ -58,7 +69,7 @@ export const LogoPlane: React.FC<LogoProps> = ({
         transparent
         opacity={opacity} // opacity=1なら完全不透明
         color="white" // "white"でテクスチャ本来の色
-        side={THREE.DoubleSide}
+        side={DoubleSide}
       />
     </mesh>
   );
