@@ -1,13 +1,11 @@
 // src/pages/ProceduresPage.tsx
-
 import React, { useEffect, useMemo, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { apiHelper } from "../../../libs/apiHelper";
 import { usePagination } from "../../../hooks/usePagination";
 import { Procedure } from "../../../models/Procedure";
 import { Pagination } from "../../../utils/Pagination";
-import { useReadStatus, ReadTarget } from "../../../hooks/useReadStatus"; // ★ 共通化フック
-// - import axios from "axios"; // 使わないので削除
+import { useReadStatus, ReadTarget } from "../../../hooks/useReadStatus";
 
 // セクション見出し定義（major番号: タイトル）
 const sectionTitles: Record<string, string> = {
@@ -24,61 +22,56 @@ const sectionTitles: Record<string, string> = {
   "11": "セクション11:マイページ機能の実装",
 };
 
-// 全角→半角
+// 全角→半角（数字のみ）
 const toHalfWidthDigits = (s: string) =>
   (s || "").replace(/[０-９]/g, (ch) =>
     String.fromCharCode(ch.charCodeAt(0) - 0xfee0)
   );
 
-// 区切り統一・桁解釈・ゼロ詰め
-const normalizeStep = (raw: string) => {
-  const t0 = toHalfWidthDigits(raw)
-    .replace(/[‐–—−－/／⁄・\.．,、]/g, "-")
+/** stepNumber を robust に解釈して [major, minor] を返す。
+ * 入力例: "59"→[5,9], "509"→[5,9], "1104"→[11,4], "5-9"→[5,9], "１１ー０４"→[11,4]
+ * 解釈できない時は [0,0]（未分類）
+ */
+const parseStep = (raw: string): [number, number] => {
+  const s = toHalfWidthDigits(raw ?? "")
+    .replace(/[‐–—−－/／⁄・\.．,、]/g, "-") // 似た記号はハイフンへ
     .replace(/\s+/g, "")
     .trim();
 
-  if (/^\d{3}$/.test(t0)) return `${t0[0]}-${t0.slice(1)}`; // 509 -> 5-09
-  if (/^\d{4}$/.test(t0)) return `${t0.slice(0, 2)}-${t0.slice(2)}`; // 1001 -> 10-01
-
-  const m = t0.match(/^(\d+)-(\d+)$/);
-  return m ? `${parseInt(m[1], 10)}-${m[2].padStart(2, "0")}` : t0; // 5-9 -> 5-09
-};
-
-const parseStep = (raw: string): [number, number] => {
-  const s = normalizeStep(raw);
-  const m = s.match(/^(\d+)-(\d{1,2})$/);
-  return m
-    ? [parseInt(m[1], 10), parseInt(m[2], 10)]
-    : [Number.MAX_SAFE_INTEGER, Number.MAX_SAFE_INTEGER];
+  if (/^\d{4}$/.test(s))
+    return [parseInt(s.slice(0, 2), 10), parseInt(s.slice(2), 10)]; // 1104→11-04
+  if (/^\d{3}$/.test(s)) return [parseInt(s[0], 10), parseInt(s.slice(1), 10)]; // 509 →5-09
+  if (/^\d{2}$/.test(s)) return [parseInt(s[0], 10), parseInt(s[1], 10)]; // 59  →5-9
+  const m = s.match(/^(\d+)-(\d{1,2})$/); // 5-9 / 11-04
+  if (m) return [parseInt(m[1], 10), parseInt(m[2], 10)];
+  return [0, 0]; // 未分類
 };
 
 type Row = Procedure & { major: number; minor: number; stepNumber: string };
 
 export const ProceduresPage = () => {
   const [procedures, setProcedures] = useState<Row[]>([]);
-  // - 進行状況とエラーを足す（UX向上）
-  const [loading, setLoading] = useState<boolean>(true); // ★ NOTE: 追加
-  const [error, setError] = useState<string | null>(null); // ★ NOTE: 追加
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
 
   // URL ?page 初期値
   const location = useLocation();
   const params = new URLSearchParams(location.search);
   const initialPage = parseInt(params.get("page") || "1", 10);
 
-  // クライアント側ページング（1ページ10件のまま）
+  // クライアント側ページング
   const { totalPages, displayPage, setDisplayPage, setTotalPages } =
     usePagination(initialPage);
   const pageSize = 10;
 
-  // 既読状態（共通フックから）
+  // 既読状態
   const { isRead } = useReadStatus(ReadTarget.Procedures);
 
-  // --- 全ページ一括取得 → 正規化 → 数値ソート → クライアントページング ---
+  // 一括取得→正規化→ソート→ページング
   useEffect(() => {
     const fetchAll = async () => {
-      // - フェッチ前後の状態管理
-      setLoading(true); // ★ NOTE: 追加
-      setError(null); // ★ NOTE: 追加
+      setLoading(true);
+      setError(null);
       try {
         // まず1ページ取り、総ページ数を把握
         const first = await apiHelper.get(`/api/procedures?page=0&size=50`);
@@ -99,14 +92,14 @@ export const ProceduresPage = () => {
           ...rest.flatMap((r) => r.data.content),
         ];
 
-        // 正規化＆major/minor数値化
+        // robust正規化 & 表示は常に 5-09 / 11-04 の形へ
         const normalized: Row[] = content.map((p) => {
-          const step = normalizeStep(p.stepNumber);
-          const [major, minor] = parseStep(step);
+          const [major, minor] = parseStep(p.stepNumber);
+          const step = `${major}-${String(minor).padStart(2, "0")}`;
           return { ...p, stepNumber: step, major, minor };
         });
 
-        // 数値で完全ソート
+        // 数値ソート
         normalized.sort((a, b) =>
           a.major !== b.major ? a.major - b.major : a.minor - b.minor
         );
@@ -117,9 +110,9 @@ export const ProceduresPage = () => {
         console.error("手順一覧の取得に失敗しました", e);
         setProcedures([]);
         setTotalPages(0);
-        setError(e?.message ?? "手順一覧の取得に失敗しました"); // ★ NOTE: 追加
+        setError(e?.message ?? "手順一覧の取得に失敗しました");
       } finally {
-        setLoading(false); // ★ NOTE: 追加
+        setLoading(false);
       }
     };
 
@@ -139,10 +132,7 @@ export const ProceduresPage = () => {
     <div className="text-white p-8 max-w-5xl mx-auto">
       <h1 className="text-3xl font-bold mb-8">開発手順 一覧</h1>
 
-      {/* - ローディング＆エラー（最小UI） */}
-      {loading && (
-        <div className="mb-6 text-white/80">通信中...</div> // ★ NOTE: Spinnerに差し替え可
-      )}
+      {loading && <div className="mb-6 text-white/80">通信中...</div>}
       {!loading && error && (
         <div className="mb-6 text-red-300 bg-red-900/30 p-3 rounded">
           {error}
@@ -154,14 +144,20 @@ export const ProceduresPage = () => {
           visible.map((item, idx) => {
             const showHeader =
               idx === 0 || item.major !== visible[idx - 1].major;
-            const majorStr = String(item.major);
+            const majorKey = String(item.major);
             const readFlag = isRead(item.id);
+
+            const headerTitle =
+              item.major === 0
+                ? "セクション: その他"
+                : sectionTitles[majorKey] ?? `セクション${item.major}`;
+
             return (
               <div key={item.id}>
                 {showHeader && (
                   <h2 className="text-xl tracking-wide text-white/80 mt-10 mb-3 flex items-center gap-2">
                     <span className="inline-block h-px w-6 bg-white/15" />
-                    {sectionTitles[majorStr] || `セクション${majorStr}`}
+                    {headerTitle}
                   </h2>
                 )}
 
@@ -178,10 +174,10 @@ export const ProceduresPage = () => {
                         {item.title}
                       </h3>
                       <p className="mt-1 text-sm text-white/60 line-clamp-1">
-                        {sectionTitles[String(item.major)] ??
-                          `セクション${item.major}`}
+                        {headerTitle}
                       </p>
                     </div>
+
                     {/* 既読/未読バッジ */}
                     <span
                       className={`ml-auto shrink-0 h-6 px-2 rounded text-xs grid place-items-center transition-opacity opacity-60 group-hover:opacity-100 ${

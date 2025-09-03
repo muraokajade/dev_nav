@@ -23,9 +23,9 @@ public class LikeSyntaxController {
         return ResponseEntity.ok().build();
     }
 
-    @DeleteMapping
+    @DeleteMapping("/{syntaxId}")
     public ResponseEntity<Void> unlikeSyntax(@RequestHeader("Authorization") String token,
-                                             @RequestParam Long syntaxId) {
+                                             @PathVariable Long syntaxId) {
         String email = firebaseAuthService.verifyAndGetEmail(token);
         likeSyntaxService.unlikeSyntax(email, syntaxId);
         return ResponseEntity.ok().build();
