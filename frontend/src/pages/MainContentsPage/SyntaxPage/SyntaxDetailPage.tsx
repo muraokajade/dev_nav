@@ -173,6 +173,7 @@ export const SyntaxDetailPage = () => {
   };
 
   const lockRef = useRef(false);
+
   const handleLike = async () => {
     if (lockRef.current || pending || !idToken || !syntaxId) return;
     lockRef.current = true;
