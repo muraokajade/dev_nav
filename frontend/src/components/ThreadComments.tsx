@@ -43,15 +43,28 @@ const adaptPage = (raw: any): PageRes => {
   const totalPages =
     p.totalPages ?? (size ? Math.max(1, Math.ceil(totalElements / size)) : 1);
 
-  const normalized: ThreadItem[] = (list as any[]).map((m) => ({
-    id: Number(m.id),
-    userId: m.userId ?? m.authorId ?? "",
-    title: m.title ?? "",
-    body: m.body ?? m.question ?? "",
-    question: m.question ?? undefined,
-    response: m.response ?? null,
-    createdAt: m.createdAt ?? new Date().toISOString(),
-  }));
+  const normalized: ThreadItem[] = (list as any[]).map((m) => {
+    const rawUid = m.userId ?? m.authorId ?? "";
+    // 数値文字列は number に寄せる。email はそのまま小文字化して保持（isMine 側で比較）
+    const uid =
+      typeof rawUid === "string" && /^\d+$/.test(rawUid.trim())
+        ? Number(rawUid.trim())
+        : typeof rawUid === "string"
+        ? rawUid.trim()
+        : Number.isFinite(rawUid)
+        ? Number(rawUid)
+        : "";
+
+    return {
+      id: Number(m.id),
+      userId: uid,
+      title: m.title ?? "",
+      body: m.body ?? m.question ?? "",
+      question: m.question ?? undefined,
+      response: m.response ?? null,
+      createdAt: m.createdAt ?? new Date().toISOString(),
+    };
+  });
 
   return { content: normalized, totalPages, totalElements, page, size };
 };
@@ -164,12 +177,19 @@ export const ThreadComments: React.FC<Props> = ({
     // eslint-disable-next-line react-hooks/exhaustive-deps
   }, [baseUrl]);
 
-  /** 自分の投稿判定：数値ID一致 or email一致 */
+  /** 著者IDの正規化（数値文字列→number / email 小文字化） */
+  const normalizeAuthor = (id: string | number) => {
+    if (id == null) return { num: null as number | null, str: "" };
+    if (typeof id === "number") return { num: id, str: "" };
+    const s = String(id).trim();
+    return { num: /^\d+$/.test(s) ? Number(s) : null, str: s.toLowerCase() };
+  };
+
+  /** 自分の投稿判定：数値ID一致 or email一致（両方あればどちらでも一致でOK） */
   const isMine = (authorId: string | number) => {
-    if (typeof authorId === "number" && myUserId != null)
-      return myUserId === authorId;
-    if (typeof authorId === "string" && myEmail)
-      return myEmail.toLowerCase() === authorId.toLowerCase();
+    const a = normalizeAuthor(authorId);
+    if (myUserId != null && a.num != null) return myUserId === a.num;
+    if (myEmail) return myEmail.trim().toLowerCase() === a.str;
     return false;
   };
 
@@ -319,7 +339,7 @@ export const ThreadComments: React.FC<Props> = ({
             <div className="text-xs text-zinc-600">
               {myEmail
                 ? `投稿者: ${myEmail}`
-                : myUserId
+                : myUserId != null
                 ? `投稿者ID: ${myUserId}`
                 : "ログイン情報なし"}
             </div>
@@ -413,16 +433,7 @@ export const ThreadComments: React.FC<Props> = ({
                   <div className="mt-2 flex gap-2 justify-end">
                     <button
                       className="px-2.5 py-1 rounded bg-green-600 hover:bg-green-500 text-white text-xs font-semibold"
-                      onClick={() => {
-                        setEditingId(t.id);
-                        if (isQA) {
-                          const qa = pickQa(t);
-                          setEditTitle(qa.title);
-                          setEditText(qa.body);
-                        } else {
-                          setEditText(t.body ?? t.question ?? "");
-                        }
-                      }}
+                      onClick={() => startEdit(t)}
                     >
                       編集
                     </button>
