@@ -1,37 +1,82 @@
-import React, {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-} from "react";
+// src/components/ThreadComments.tsx
+import React, { useEffect, useMemo, useState } from "react";
 import { apiHelper } from "../libs/apiHelper";
-import { ThreadMessage, ThreadWithMessages } from "../models/ThreadMessage";
-import { useAuth } from "../context/useAuthContext";
-import { Link } from "react-router-dom";
-import { LoginCTA } from "../utils/LoginCTA";
 
-export type Props = {
-  type: "article" | "syntax" | "procedure";
-  refId: number;
-  category: "comment" | "qa";
-  readOnly?: boolean; // 閲覧専用（投稿不可）
-  hideComposer?: boolean; // フォーム自体を非表示
+/** サーバは userId を email 文字列で返す場合があるため string | number で受ける */
+type ThreadItem = {
+  id: number;
+  userId: string | number;
+  title?: string;
+  body?: string;
+  question?: string;
+  response?: string | null;
+  createdAt: string;
 };
 
-// JWT から email を取り出す
-function emailFromIdToken(token?: string | null): string | null {
-  if (!token) return null;
-  try {
-    const base64Url = token.split(".")[1];
-    if (!base64Url) return null;
-    const base64 = base64Url.replace(/-/g, "+").replace(/_/g, "/");
-    const json = JSON.parse(atob(base64));
-    return typeof json.email === "string" ? json.email : null;
-  } catch {
-    return null;
-  }
-}
+type PageRes = {
+  content: ThreadItem[];
+  totalPages: number;
+  totalElements: number;
+  page: number;
+  size: number;
+};
+
+/** ThreadWithMessagesDto（{ thread, messages }）にも対応 */
+const adaptPage = (raw: any): PageRes => {
+  const p = raw?.data ?? raw ?? {};
+  const list =
+    p.content ??
+    p.messages ?? // ★ ThreadWithMessagesDto 用
+    p.items ??
+    p.records ??
+    p.rows ??
+    p.list ??
+    [];
+  const size = p.size ?? p.pageSize ?? p?.pageable?.pageSize ?? 20;
+  const totalElements =
+    p.totalElements ??
+    p.total ??
+    p.count ??
+    (Array.isArray(list) ? list.length : 0);
+  const page =
+    p.page ?? p.number ?? p.pageIndex ?? p?.pageable?.pageNumber ?? 0;
+  const totalPages =
+    p.totalPages ?? (size ? Math.max(1, Math.ceil(totalElements / size)) : 1);
+
+  const normalized: ThreadItem[] = (list as any[]).map((m) => ({
+    id: Number(m.id),
+    userId: m.userId ?? m.authorId ?? "",
+    title: m.title ?? "",
+    body: m.body ?? m.question ?? "",
+    question: m.question ?? undefined,
+    response: m.response ?? null,
+    createdAt: m.createdAt ?? new Date().toISOString(),
+  }));
+
+  return { content: normalized, totalPages, totalElements, page, size };
+};
+
+type TypeUpper = "SYNTAX" | "ARTICLE" | "PROCEDURE";
+type Category = "qa" | "comment";
+
+/** バックエンドのパスは単数形・小文字が本線 */
+const TYPE_PATH: Record<TypeUpper, "article" | "syntax" | "procedure"> = {
+  ARTICLE: "article",
+  SYNTAX: "syntax",
+  PROCEDURE: "procedure",
+};
+
+type Props = {
+  type: TypeUpper;
+  refId: number;
+  category: Category; // "qa" はタイトル＋本文、"comment" は本文のみ
+  readOnly?: boolean;
+  hideComposer?: boolean;
+  myUserId?: number | null; // 数値ID運用時の所有者判定に利用可
+  myEmail?: string | null; // email運用時の所有者判定（推奨）
+  authHeader?: Record<string, string>;
+  debug?: boolean;
+};
 
 export const ThreadComments: React.FC<Props> = ({
   type,
@@ -39,248 +84,365 @@ export const ThreadComments: React.FC<Props> = ({
   category,
   readOnly = false,
   hideComposer = false,
+  myUserId = null,
+  myEmail = null,
+  authHeader,
+  debug = false,
 }) => {
-  const [messages, setMessages] = useState<ThreadMessage[]>([]);
-  const [input, setInput] = useState("");
+  const [data, setData] = useState<PageRes | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [posting, setPosting] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+
+  // コメント（本文のみ）
+  const [text, setText] = useState("");
+
+  // Q&A（タイトル + 本文）
+  const isQA = category === "qa";
+  const [qaTitle, setQaTitle] = useState("");
+  const [qaBody, setQaBody] = useState("");
+
+  // 編集
   const [editingId, setEditingId] = useState<number | null>(null);
   const [editText, setEditText] = useState("");
-  const [loading, setLoading] = useState(true); // ← 追加
-  const [error, setError] = useState<string | null>(null); // ← 追加
+  const [editTitle, setEditTitle] = useState("");
 
-  const { idToken } = useAuth();
-  const canShowComposer = !readOnly && !hideComposer && !!idToken;
-  const myEmail = useMemo(() => emailFromIdToken(idToken), [idToken]);
+  const typePath = useMemo(() => TYPE_PATH[type], [type]);
 
-  const basePath = useMemo(
-    () => `/api/${type}/${refId}/${category}/messages`,
-    [type, refId, category]
+  /** ルートは単数形・小文字固定（サーバ側で複数形や大文字も吸収するが、ここは正規形に寄せる） */
+  const baseUrl = useMemo(
+    () => `/api/${typePath}/${refId}/${category}/messages`,
+    [typePath, refId, category]
   );
 
-  // レース対策
-  const abortRef = useRef<AbortController | null>(null);
+  /** QA表示整形：title/question が空なら body を「最初の段落=タイトル、以降=本文」に分割 */
+  const pickQa = (item: ThreadItem) => {
+    let title = (item.title ?? "").trim();
+    let q = (item.question ?? item.body ?? "").toString();
+    if (!title) {
+      const byPara = q.split(/\r?\n\r?\n/);
+      if (byPara.length > 1) {
+        title = byPara[0].trim();
+        q = byPara.slice(1).join("\n\n").trim();
+      } else {
+        const lines = q.split(/\r?\n/);
+        title = (lines[0] ?? "").trim();
+        q = lines.slice(1).join("\n").trim();
+      }
+    }
+    return { title, body: q };
+  };
 
-  const fetchMessages = useCallback(async () => {
-    if (!refId) return;
-    abortRef.current?.abort();
-    const ac = new AbortController();
-    abortRef.current = ac;
-
+  const fetchPage = async () => {
     setLoading(true);
     setError(null);
     try {
-      const res = await apiHelper.get<ThreadWithMessages>(basePath, {
-        signal: ac.signal as any,
+      debug && console.log("[ThreadComments][GET]", baseUrl);
+      const res = await apiHelper.get(`${baseUrl}?page=0&size=20`, {
+        headers: authHeader,
       });
-      setMessages(res.data.messages ?? []);
+      const pageData = adaptPage((res as any).data);
+      debug && console.log("[ThreadComments][GET][OK]", pageData);
+      setData(pageData);
     } catch (e: any) {
-      if (e?.name === "CanceledError") return;
-      console.error(e);
-      setError("コメントの取得に失敗しました");
-      setMessages([]);
+      console.error("[ThreadComments][GET][ERR]", e?.response ?? e);
+      setError("スレッドの取得に失敗しました");
+      setData({
+        content: [],
+        totalElements: 0,
+        totalPages: 1,
+        page: 0,
+        size: 20,
+      });
     } finally {
       setLoading(false);
     }
-  }, [basePath, refId]);
+  };
 
   useEffect(() => {
-    fetchMessages();
-    return () => abortRef.current?.abort();
-  }, [fetchMessages]);
+    fetchPage();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [baseUrl]);
 
-  // - const handleSubmit = async (e: React.FormEvent) => {
-  // -   e.preventDefault();
-  // -   if (!idToken) return alert("ログインしてください");
-  // -   if (!input.trim()) return alert("本文を入力してください");
-  // -   try {
-  // -     await apiHelper.post(
-  // -       basePath,
-  // -       { body: input },
-  // -       { headers: { Authorization: `Bearer ${idToken}` } }
-  // -     );
-  // -     setInput("");
-  // -     await fetchMessages();
-  // -   } catch (e) {
-  // -     console.error(e);
-  // -     alert("投稿に失敗しました");
-  // -   }
-  // - };
-  // ↑ onClick との型不一致を解消。form submit に寄せる。
-  const handleSubmit = async (e: React.FormEvent<HTMLFormElement>) => {
-    e.preventDefault();
-    if (!idToken) {
-      alert("ログインしてください");
+  /** 自分の投稿判定：数値ID一致 or email一致 */
+  const isMine = (authorId: string | number) => {
+    if (typeof authorId === "number" && myUserId != null)
+      return myUserId === authorId;
+    if (typeof authorId === "string" && myEmail)
+      return myEmail.toLowerCase() === authorId.toLowerCase();
+    return false;
+  };
+
+  /** 投稿 */
+  const handlePost = async () => {
+    setPosting(true);
+    setError(null);
+
+    const composed = isQA
+      ? `${qaTitle.trim()}\n\n${qaBody.trim()}`
+      : text.trim();
+    if (!composed) {
+      setPosting(false);
       return;
     }
-    if (!input.trim()) {
-      alert("本文を入力してください");
-      return;
+
+    // サーバは body 必須。QA でも body に「タイトル\n\n本文」を入れて保存する。
+    const payload: any = { body: composed };
+    // 互換性のため付けておく（無視されてもOK）
+    if (isQA) {
+      payload.title = qaTitle.trim();
+      payload.question = qaBody.trim();
+    } else {
+      payload.question = composed;
     }
+
     try {
-      await apiHelper.post(
-        basePath,
-        { body: input },
-        { headers: { Authorization: `Bearer ${idToken}` } }
-      );
-      setInput("");
-      await fetchMessages();
-    } catch (e) {
-      console.error(e);
-      alert("投稿に失敗しました");
+      debug && console.log("[ThreadComments][POST]", baseUrl, payload);
+      await apiHelper.post(baseUrl, payload, { headers: authHeader });
+      // 入力リセット & 即再取得（＝即時反映）
+      setText("");
+      setQaTitle("");
+      setQaBody("");
+      await fetchPage();
+    } catch (e: any) {
+      console.error("[ThreadComments][POST][ERR]", e?.response ?? e);
+      setError("投稿に失敗しました");
+    } finally {
+      setPosting(false);
     }
   };
 
-  const handleDelete = async (id: number) => {
-    const ok = window.confirm("本当に削除してよいですか？");
-    if (!ok) return;
-    try {
-      await apiHelper.delete(`/api/messages/${id}`, {
-        headers: { Authorization: `Bearer ${idToken}` },
-      });
-      await fetchMessages();
-    } catch (e) {
-      console.error(e);
-      alert("削除に失敗しました");
+  /** 編集開始 */
+  const startEdit = (item: ThreadItem) => {
+    setEditingId(item.id);
+    if (isQA) {
+      const qa = pickQa(item);
+      setEditTitle(qa.title);
+      setEditText(qa.body);
+    } else {
+      setEditText(item.body ?? item.question ?? "");
     }
   };
 
-  const handleUpdate = async (id: number) => {
-    if (!idToken) return alert("ログインしてください");
-    if (!editText.trim()) return alert("本文を入力してください");
+  /** 編集確定 */
+  const doEdit = async () => {
+    if (!editingId) return;
+    const newBody = isQA
+      ? `${editTitle.trim()}\n\n${editText.trim()}`
+      : editText.trim();
+    if (!newBody) return;
+
     try {
       await apiHelper.put(
-        `/api/messages/${id}`,
-        { body: editText },
-        { headers: { Authorization: `Bearer ${idToken}` } }
+        `/api/messages/${editingId}`,
+        { body: newBody },
+        { headers: authHeader }
       );
       setEditingId(null);
-      await fetchMessages();
+      setEditTitle("");
+      setEditText("");
+      await fetchPage();
     } catch (e) {
-      console.error(e);
-      alert("更新に失敗しました");
+      console.error("[ThreadComments][PUT][ERR]", e);
+      setError("編集に失敗しました");
     }
   };
 
-  // 自分の投稿かの判定
-  // - m.userId?.toLowerCase() === myEmail.toLowerCase()
-  // ↓ emailフィールド（authorEmail想定）で比較。なければサーバに isMine を実装するのが最善。
-  const isMine = (m: ThreadMessage) => {
-    const email = (m as any).authorEmail as string | undefined; // API の実フィールド名に合わせて
-    return !!(
-      myEmail &&
-      email &&
-      email.toLowerCase() === myEmail.toLowerCase()
-    );
+  /** 削除 */
+  const doDelete = async (id: number) => {
+    if (!window.confirm("この投稿を削除しますか？")) return;
+    try {
+      await apiHelper.delete(`/api/messages/${id}`, { headers: authHeader });
+      await fetchPage();
+    } catch (e) {
+      console.error("[ThreadComments][DELETE][ERR]", e);
+      setError("削除に失敗しました");
+    }
   };
 
-  return (
-    <section className="bg-zinc-900 rounded-xl p-6 my-8 shadow-lg max-w-3xl text-zinc-100">
-      {/* 投稿フォーム or ログイン導線 */}
-      {canShowComposer ? (
-        // 投稿フォーム（formに変更）
-        <form
-          className="py-4 mb-6 border-b-4 border-white"
-          onSubmit={handleSubmit}
-        >
-          <textarea
-            className="w-full p-2 rounded bg-zinc-100 border text-black border-zinc-700 resize-none min-h-[70px] focus:ring-2 focus:ring-blue-600 transition"
-            rows={5}
-            placeholder="コメントを書く..."
-            value={input}
-            onChange={(e) => setInput(e.target.value)}
-          />
-          <button
-            type="submit" // ← 送信
-            className="mt-2 px-4 py-1 bg-blue-600 hover:bg-blue-700 rounded text-white font-semibold"
-          >
-            投稿
-          </button>
-        </form>
-      ) : !idToken ? (
-        // 未ログインだけログイン導線を表示
-        <div className="py-4 mb-6 border-b-4 border-white">
-          <LoginCTA
-            text={`ログインすると${
-              category === "qa" ? "Q&Aを投稿" : "コメントを投稿"
-            }できます。`}
-          />
-        </div>
-      ) : null}
+  if (loading && !data)
+    return <div className="text-sm text-zinc-400">読み込み中...</div>;
 
-      {/* 取得状態 */}
-      {loading && <div className="text-zinc-300 py-2">読み込み中…</div>}
-      {error && !loading && (
-        <div className="text-red-300 bg-red-900/30 p-3 rounded mb-3">
+  return (
+    <div className="space-y-3">
+      {error && (
+        <div className="text-sm text-red-300 bg-red-900/30 p-2 rounded">
           {error}
         </div>
       )}
 
-      <ul className="space-y-4">
-        {messages.map((m) => (
-          <li key={m.id} className="bg-zinc-800 p-3 rounded">
-            {editingId === m.id ? (
-              <>
+      {/* Composer（上部固定） */}
+      {!readOnly && !hideComposer && (
+        <div className="rounded-lg bg-white p-4 space-y-3">
+          {isQA ? (
+            <>
+              <input
+                className="w-full rounded border border-zinc-300 bg-white p-2 text-sm text-black"
+                placeholder="タイトル"
+                value={qaTitle}
+                onChange={(e) => setQaTitle(e.target.value)}
+                maxLength={120}
+              />
+              <textarea
+                className="w-full rounded border border-zinc-300 bg-white p-2 text-sm text-black"
+                rows={4}
+                placeholder="本文（Ctrl+Enterで送信）"
+                value={qaBody}
+                onChange={(e) => setQaBody(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                    e.preventDefault();
+                    !posting && handlePost();
+                  }
+                }}
+                maxLength={5000}
+              />
+            </>
+          ) : (
+            <textarea
+              className="w-full rounded border border-zinc-300 bg-white p-2 text-sm text-black"
+              rows={3}
+              placeholder="コメントを書く…（Ctrl+Enterで送信）"
+              value={text}
+              onChange={(e) => setText(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter" && (e.ctrlKey || e.metaKey)) {
+                  e.preventDefault();
+                  !posting && handlePost();
+                }
+              }}
+              maxLength={5000}
+            />
+          )}
+
+          <div className="flex items-center justify-between">
+            <div className="text-xs text-zinc-600">
+              {myEmail
+                ? `投稿者: ${myEmail}`
+                : myUserId
+                ? `投稿者ID: ${myUserId}`
+                : "ログイン情報なし"}
+            </div>
+            <button
+              className="text-sm px-3 py-1.5 rounded bg-blue-600 hover:bg-blue-500 disabled:opacity-60 text-white"
+              disabled={
+                posting ||
+                (!isQA && !text.trim()) ||
+                (isQA && (!qaTitle.trim() || !qaBody.trim()))
+              }
+              onClick={handlePost}
+            >
+              {posting ? "投稿中…" : "投稿する"}
+            </button>
+          </div>
+        </div>
+      )}
+
+      {/* 一覧 */}
+      {(data?.content ?? []).map((t) => {
+        const mine = isMine(t.userId);
+        const display = isQA
+          ? pickQa(t)
+          : { title: "", body: t.body ?? t.question ?? "" };
+
+        return (
+          <div key={t.id} className="rounded-lg bg-zinc-800 p-4">
+            {editingId === t.id ? (
+              <div className="space-y-2">
+                {isQA && (
+                  <input
+                    className="w-full rounded border border-zinc-600 bg-zinc-900 p-2 text-sm text-white"
+                    placeholder="タイトル"
+                    value={editTitle}
+                    onChange={(e) => setEditTitle(e.target.value)}
+                    maxLength={120}
+                  />
+                )}
                 <textarea
-                  className="w-full p-1 rounded bg-zinc-900 border border-zinc-600 text-white"
+                  className="w-full rounded border border-zinc-600 bg-zinc-900 p-2 text-sm text-white"
+                  rows={isQA ? 4 : 3}
                   value={editText}
                   onChange={(e) => setEditText(e.target.value)}
-                  rows={5}
                 />
-                <div className="mt-2 flex gap-2">
+                <div className="flex gap-2 justify-end">
                   <button
-                    className="px-3 py-1 bg-green-600 rounded text-white"
-                    onClick={() => handleUpdate(m.id)}
-                    type="button"
+                    className="px-3 py-1.5 rounded bg-green-600 hover:bg-green-500 text-white text-sm"
+                    onClick={doEdit}
                   >
                     保存
                   </button>
                   <button
-                    className="px-3 py-1 bg-zinc-700 rounded text-white"
-                    onClick={() => setEditingId(null)}
-                    type="button"
+                    className="px-3 py-1.5 rounded bg-zinc-600 hover:bg-zinc-500 text-white text-sm"
+                    onClick={() => {
+                      setEditingId(null);
+                      setEditTitle("");
+                      setEditText("");
+                    }}
                   >
                     キャンセル
                   </button>
                 </div>
-              </>
+              </div>
             ) : (
-              <div>
-                <p className="whitespace-pre-wrap">{m.body}</p>
-                <div className="text-xs text-zinc-400 mt-1">
-                  {m.updatedAt
-                    ? `更新: ${m.updatedAt}`
-                    : `作成: ${m.createdAt}`}
+              <>
+                {isQA && (
+                  <div className="font-semibold text-zinc-100 mb-1">
+                    {display.title || "(無題)"}
+                  </div>
+                )}
+                <div className="text-sm text-zinc-300 whitespace-pre-wrap">
+                  {display.body}
                 </div>
 
-                {/* 自分の投稿だけ操作表示 */}
-                {isMine(m) && (
-                  <div className="mt-1 flex gap-2">
+                {t.response && (
+                  <div className="mt-3 rounded bg-zinc-900/70 p-3">
+                    <div className="text-xs font-semibold text-zinc-400 mb-1">
+                      回答
+                    </div>
+                    <div className="text-sm text-zinc-200 whitespace-pre-wrap">
+                      {t.response}
+                    </div>
+                  </div>
+                )}
+
+                <div className="text-xs text-right text-zinc-500 mt-2">
+                  {new Date(t.createdAt).toLocaleString()}
+                </div>
+
+                {!readOnly && mine && (
+                  <div className="mt-2 flex gap-2 justify-end">
                     <button
-                      className="text-blue-400 underline"
+                      className="px-2.5 py-1 rounded bg-green-600 hover:bg-green-500 text-white text-xs font-semibold"
                       onClick={() => {
-                        setEditingId(m.id);
-                        setEditText(m.body);
+                        setEditingId(t.id);
+                        if (isQA) {
+                          const qa = pickQa(t);
+                          setEditTitle(qa.title);
+                          setEditText(qa.body);
+                        } else {
+                          setEditText(t.body ?? t.question ?? "");
+                        }
                       }}
-                      type="button"
                     >
                       編集
                     </button>
                     <button
-                      className="text-red-400 underline"
-                      onClick={() => handleDelete(m.id)}
-                      type="button"
+                      className="px-2.5 py-1 rounded bg-red-600 hover:bg-red-500 text-white text-xs font-semibold"
+                      onClick={() => doDelete(t.id)}
                     >
                       削除
                     </button>
                   </div>
                 )}
-              </div>
+              </>
             )}
-          </li>
-        ))}
-        {!loading && !messages.length && (
-          <li className="text-zinc-400">まだ投稿はありません。</li>
-        )}
-      </ul>
-    </section>
+          </div>
+        );
+      })}
+
+      {!loading && (data?.content?.length ?? 0) === 0 && (
+        <div className="text-zinc-400 text-sm">まだ投稿はありません。</div>
+      )}
+    </div>
   );
 };

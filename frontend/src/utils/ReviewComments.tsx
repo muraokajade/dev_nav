@@ -1,6 +1,6 @@
 // src/components/ReviewComments.tsx
 import React from "react";
-import { ThreadComments } from "../components/ThreadComments"; 
+import { ThreadComments } from "../components/ThreadComments";
 
 /**
  * 従来の「記事コメント」用コンポーネント。
@@ -12,11 +12,5 @@ export const ReviewComments: React.FC<{
   myUserId?: unknown; // 互換のため残すが未使用
 }> = ({ articleId }) => {
   if (articleId == null) return null; // 記事IDが無ければ何も表示しない
-  return (
-    <ThreadComments
-      type="article"
-      refId={articleId}
-      category="comment"
-    />
-  );
+  return <ThreadComments type="ARTICLE" refId={articleId} category="comment" />;
 };

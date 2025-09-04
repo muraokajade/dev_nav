@@ -42,7 +42,7 @@ public class MessageController {
             @PathVariable Long refId,
             @RequestBody MessageRequest req
     ) {
-        String email = firebaseAuthService.verifyAdminAndGetEmail(token);
+        String email = firebaseAuthService.verifyAndGetEmail(token);
         TargetType t = TargetType.valueOf(type.toUpperCase());
         messageService.add(t, refId, req, email);
         return ResponseEntity.ok().build();

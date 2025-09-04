@@ -1,25 +1,27 @@
-// TechDetailActions.tsx — 全差し替え版
+// src/pages/articles/TechDetailActions.tsx
 import React, { useState } from "react";
 import { Link } from "react-router-dom";
 import { ReviewScore } from "../../../utils/ReviewScore";
 import { ReviewComments } from "../../../utils/ReviewComments";
 import { MessagesNew } from "../../../utils/MessagesNew";
-import { ThreadComments } from "../../../components/ThreadComments";
+// import { ThreadComments } from "../../../components/ThreadComments"; // ← Q&A では使わない
 
 export const TechDetailActions: React.FC<{
   articleId: number;
   myUserId?: number | null;
-}> = ({ articleId, myUserId }) => {
-  // 投稿可否は myUserId の有無だけで判定（idTokenには依存しない）
-  const canPost = myUserId != null;
-
-  const [activeTab, setActiveTab] =
-    useState<"review" | "comment" | "message" | null>(null);
+  myEmail?: string | null;
+  idToken?: string | null;
+  authHeader?: Record<string, string>;
+}> = ({ articleId, myUserId, idToken }) => {
+  const isLoggedIn = !!idToken;
+  const [activeTab, setActiveTab] = useState<
+    "review" | "comment" | "qa" | null
+  >(null);
 
   const tabs = [
     { key: "review", label: "レビュー" },
     { key: "comment", label: "コメント" },
-    { key: "message", label: "Q&A" },
+    { key: "qa", label: "Q&A" },
   ] as const;
 
   const LoginInline: React.FC<{ text: string }> = ({ text }) => (
@@ -36,69 +38,60 @@ export const TechDetailActions: React.FC<{
 
   return (
     <div className="max-w-4xl w-full mx-auto px-4 mt-8">
-      {/* タブボタン */}
       <div className="flex gap-3 mb-4">
-        {tabs.map((tab) => {
-          const isActive = activeTab === tab.key;
+        {tabs.map((t) => {
+          const isActive = activeTab === t.key;
           return (
             <button
-              key={tab.key}
-              onClick={() => setActiveTab(isActive ? null : tab.key)}
-              className={`px-4 py-2 rounded-xl font-bold shadow transition
-                ${
-                  isActive
-                    ? "bg-blue-600 text-white"
-                    : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
-                }`}
+              key={t.key}
+              onClick={() => setActiveTab(isActive ? null : t.key)}
+              className={`px-4 py-2 rounded-xl font-bold shadow transition ${
+                isActive
+                  ? "bg-blue-600 text-white"
+                  : "bg-zinc-800 text-zinc-300 hover:bg-zinc-700"
+              }`}
             >
-              {tab.label}
+              {t.label}
             </button>
           );
         })}
       </div>
 
-      {/* 開閉式エリア */}
       {activeTab && (
-        <div className="bg-zinc-900 p-6 rounded-2xl shadow-lg animate-fade-in mb-6">
-          {/* レビュー：GETは常に、投稿UIはログイン時だけ */}
+        <div className="bg-zinc-900 p-6 rounded-2xl shadow-lg mb-6">
           {activeTab === "review" && (
-            <div>
+            <>
               <ReviewScore
                 targetType="ARTICLE"
                 refId={articleId}
-                myUserId={canPost ? myUserId! : null}
-                readonly={!canPost}
+                myUserId={isLoggedIn ? myUserId ?? null : null}
+                readonly={!isLoggedIn}
               />
-              {!canPost && (
+              {!isLoggedIn && (
                 <LoginInline text="レビューの投稿・自分のスコア編集にはログインが必要です。" />
               )}
-            </div>
+            </>
           )}
 
-          {/* コメント：一覧は常に、投稿可否は子で myUserId を見て制御（未ログインならフォーム非表示想定） */}
           {activeTab === "comment" && (
-            <ReviewComments articleId={articleId} myUserId={myUserId ?? null} />
+            <>
+              <ReviewComments
+                articleId={articleId}
+                myUserId={myUserId ?? null}
+              />
+              {!isLoggedIn && (
+                <LoginInline text="コメントの投稿にはログインが必要です。" />
+              )}
+            </>
           )}
 
-          {/* Q&A：一覧は常に、投稿フォームはログイン時のみ。
-              ログイン導線は ThreadComments 側に任せる（重複防止） */}
-          {activeTab === "message" && (
-            <div className="space-y-4">
-              <ThreadComments
-                type="article"
-                refId={articleId}
-                category="qa"
-                readOnly={true}
-                hideComposer={true}
-              />
-              {canPost && (
-                <MessagesNew
-                  targetType="ARTICLE"
-                  refId={articleId}
-                  myUserId={myUserId!}
-                />
+          {activeTab === "qa" && (
+            <>
+              <MessagesNew targetType="ARTICLE" refId={articleId} />
+              {!isLoggedIn && (
+                <LoginInline text="Q&A の投稿にはログインが必要です。" />
               )}
-            </div>
+            </>
           )}
         </div>
       )}

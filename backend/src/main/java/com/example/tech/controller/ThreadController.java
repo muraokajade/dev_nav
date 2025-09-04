@@ -1,3 +1,4 @@
+// src/main/java/com/example/tech/controller/ThreadController.java
 package com.example.tech.controller;
 
 import com.example.tech.api.MessageDto;
@@ -11,7 +12,6 @@ import com.example.tech.repository.ThreadMessageRepository;
 import com.example.tech.service.ThreadService;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
-import org.springframework.data.domain.PageRequest;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.security.core.Authentication;
@@ -24,8 +24,8 @@ import java.util.List;
 /**
  * ThreadController
  * - 対象(type/refId) × カテゴリ(category) のスレッドを find-or-create
- * - スレッド配下のメッセージを CRUD
- * 認証ユーザーIDは SecurityContextHolder から取得（principal = email の運用）。
+ * - スレッド配下のメッセージ CRUD
+ * 認証ユーザーIDは SecurityContextHolder（principal=email）から取得。
  */
 @RestController
 @RequestMapping("/api")
@@ -35,60 +35,85 @@ public class ThreadController {
     private final ThreadService threadService;
     private final ThreadMessageRepository threadMessageRepository;
 
-    // Helpers: String → Enum 変換（小文字OK）
-    private TargetType parseTargetType(String targetTypeString) {
-        return TargetType.valueOf(targetTypeString.toUpperCase());
-    }
-    private Category parseCategory(String categoryString) {
-        return Category.valueOf(categoryString.toUpperCase());
+    // ========================= Helpers =========================
+    /** "articles" / "syntaxes" / "procedures" / 大文字小文字 を吸収して Enum 化 */
+    private TargetType parseTargetType(String raw) {
+        if (raw == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "type is required");
+        String s = raw.trim().toUpperCase();
+        switch (s) {
+            case "ARTICLES": s = "ARTICLE"; break;
+            case "PROCEDURES": s = "PROCEDURE"; break;
+            case "SYNTAXES": s = "SYNTAX"; break;
+            default:
+                if (s.endsWith("S")) s = s.substring(0, s.length() - 1);
+        }
+        try {
+            return TargetType.valueOf(s);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "unknown type: " + raw);
+        }
     }
 
-    // 現在のログインユーザーのメール（= userId として保存/比較に使用）
+    /** "comments" / "qas" / 大文字小文字 を吸収して Enum 化 */
+    private Category parseCategory(String raw) {
+        if (raw == null) throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "category is required");
+        String s = raw.trim().toUpperCase();
+        switch (s) {
+            case "COMMENTS": s = "COMMENT"; break;
+            case "QAS": s = "QA"; break;
+            default:
+                if (s.endsWith("S")) s = s.substring(0, s.length() - 1);
+        }
+        try {
+            return Category.valueOf(s);
+        } catch (IllegalArgumentException ex) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "unknown category: " + raw);
+        }
+    }
+
+    /** 現在のログインユーザーの email を principal から取得 */
     private String currentUserEmail() {
         Authentication auth = SecurityContextHolder.getContext().getAuthentication();
-        if (auth == null || !auth.isAuthenticated()) {
-            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
-        }
-        String email = auth.getName(); // FirebaseTokenFilter が principal に email を入れている前提
+        if (auth == null || !auth.isAuthenticated()) throw new ResponseStatusException(HttpStatus.UNAUTHORIZED);
+        String email = auth.getName();
         if (email == null || email.isBlank()) {
             throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "email missing");
         }
         return email;
     }
 
+    // ========================= APIs =========================
+
     // GET /api/{type}/{refId}/{category}/messages
-    // スレッド（なければ作成）+ メッセージ一覧の取得（GETはpermitAll推奨）
+    // スレッド（なければ空で返す）+ メッセージ一覧（新しい順）
     @GetMapping("/{type}/{refId}/{category}/messages")
     public ThreadWithMessagesDto getMessages(
             @PathVariable String type,
             @PathVariable Long refId,
             @PathVariable String category
     ) {
-        TargetType targetType = parseTargetType(type);     // "article" → ARTICLE
-        Category categoryEnum = parseCategory(category);   // "comment" → COMMENT
+        TargetType targetType = parseTargetType(type);
+        Category categoryEnum = parseCategory(category);
 
-        var threadEntity = threadService.find(targetType, refId, categoryEnum);
-        // スレッド未作成 → 200 OK + 空で返す（500にしない）
-        if (threadEntity.isEmpty()) {
+        var threadOpt = threadService.find(targetType, refId, categoryEnum);
+        if (threadOpt.isEmpty()) {
             return new ThreadWithMessagesDto(
-                    new ThreadDto(null,targetType, refId, categoryEnum),
+                    new ThreadDto(null, targetType, refId, categoryEnum),
                     List.of()
             );
         }
+        var thread = threadOpt.get();
 
-        var thread = threadEntity.get();
-
-
-        List<MessageDto> messageDtoList = threadMessageRepository
+        List<MessageDto> messages = threadMessageRepository
                 .findByThreadIdOrderByIdDesc(thread.getId())
                 .stream()
-                .map(messageEntity -> new MessageDto(
-                        messageEntity.getId(),
+                .map(m -> new MessageDto(
+                        m.getId(),
                         thread.getId(),
-                        messageEntity.getUserId(),     // ← email 文字列
-                        messageEntity.getBody(),
-                        messageEntity.getCreatedAt(),
-                        messageEntity.getUpdatedAt()
+                        m.getUserId(),          // email 文字列
+                        m.getBody(),
+                        m.getCreatedAt(),
+                        m.getUpdatedAt()
                 ))
                 .toList();
 
@@ -98,88 +123,62 @@ public class ThreadController {
                 thread.getRefId(),
                 thread.getCategory()
         );
-        return new ThreadWithMessagesDto(threadDto, messageDtoList);
+
+        // ThreadWithMessagesDto は { thread, messages } の形
+        return new ThreadWithMessagesDto(threadDto, messages);
     }
 
     // POST /api/{type}/{refId}/{category}/messages  … メッセージ作成
     public record PostBody(@NotBlank String body) {}
 
-    /**
-     * メッセージを指定されたスレッド（targetType + refId + category）に追加する。
-     * スレッドが存在しなければ新規作成してからメッセージを追加。
-     */
     @PostMapping("/{type}/{refId}/{category}/messages")
     public ResponseEntity<MessageDto> postMessage(
-            @PathVariable String type,        // URLパスの {type}（例: "ARTICLE"）を受け取る
-            @PathVariable Long refId,         // URLパスの {refId}（対象記事や手順のID）
-            @PathVariable String category,    // URLパスの {category}（例: "COMMENT"）
-            @RequestBody PostBody requestBody // リクエスト本文 {"body": "コメント内容"}
-    ) {
-        // --- 入力バリデーション ---
-        // requestBody自体がnull、bodyがnull、または空文字の場合は400 Bad Request
-        if (requestBody == null || requestBody.body() == null || requestBody.body().isBlank()) {
-            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "body is required");
-        }
-
-        // --- String → Enum変換 ---
-        // パス変数で受け取った文字列をEnum型（TargetType, Category）に変換
-        // 無効な値の場合はparseXxx内で例外（400や422など）を投げる想定
-        TargetType targetType = parseTargetType(type);
-        Category categoryEnum = parseCategory(category);
-
-        // --- スレッド（会話の箱）の取得 or 作成 ---
-        // 同じ targetType + refId + category のスレッドがあれば取得、なければ新規作成
-        ThreadEntity threadEntity = threadService.getOrCreate(targetType, refId, categoryEnum);
-
-        // --- 投稿者情報の取得 ---
-        // 現在ログイン中のユーザーのメールアドレスを取得（認証情報から）
-        String currentEmail = currentUserEmail();
-
-        // --- メッセージエンティティの生成 ---
-        // ThreadEntity（箱）に紐づく新しいメッセージ（本文＋投稿者）を作成
-        ThreadMessageEntity newMessageEntity = ThreadMessageEntity.builder()
-                .thread(threadEntity)      // 紐づけるスレッド
-                .userId(currentEmail)      // 投稿者のID（ここではメールアドレス）
-                .body(requestBody.body())  // メッセージ本文
-                .build();
-
-        // --- メッセージの保存 ---
-        ThreadMessageEntity saved = threadMessageRepository.save(newMessageEntity);
-
-        // --- レスポンスDTOの生成 ---
-        // 保存されたエンティティの情報をクライアント向けDTOに詰め直す
-        MessageDto response = new MessageDto(
-                saved.getId(),             // メッセージID
-                threadEntity.getId(),      // 紐づくスレッドID
-                saved.getUserId(),         // 投稿者ID
-                saved.getBody(),           // 本文
-                saved.getCreatedAt(),      // 作成日時
-                saved.getUpdatedAt()       // 更新日時
-        );
-
-        // --- 201 Createdでレスポンス返却 ---
-        return ResponseEntity.status(201).body(response);
-    }
-
-
-    // PUT /api/messages/{id}  … メッセージ更新（本人のみ）
-    @PutMapping("/messages/{id}")
-    public MessageDto putMessage(
-            @PathVariable Long id,
+            @PathVariable String type,
+            @PathVariable Long refId,
+            @PathVariable String category,
             @RequestBody PostBody requestBody
     ) {
         if (requestBody == null || requestBody.body() == null || requestBody.body().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "body is required");
         }
 
-        ThreadMessageEntity existing = threadMessageRepository.findById(id).orElseThrow();
-        String currentEmail = currentUserEmail();
+        TargetType targetType = parseTargetType(type);
+        Category categoryEnum = parseCategory(category);
 
-        // 自分の投稿のみ可（大文字小文字差を吸収）
-        if (!existing.getUserId().equalsIgnoreCase(currentEmail)) {
+        ThreadEntity thread = threadService.getOrCreate(targetType, refId, categoryEnum);
+        String email = currentUserEmail();
+
+        ThreadMessageEntity entity = ThreadMessageEntity.builder()
+                .thread(thread)
+                .userId(email)
+                .body(requestBody.body())
+                .build();
+
+        ThreadMessageEntity saved = threadMessageRepository.save(entity);
+
+        MessageDto response = new MessageDto(
+                saved.getId(),
+                thread.getId(),
+                saved.getUserId(),
+                saved.getBody(),
+                saved.getCreatedAt(),
+                saved.getUpdatedAt()
+        );
+        return ResponseEntity.status(HttpStatus.CREATED).body(response);
+    }
+
+    // PUT /api/messages/{id}  … メッセージ更新（本人のみ）
+    @PutMapping("/messages/{id}")
+    public MessageDto putMessage(@PathVariable Long id, @RequestBody PostBody requestBody) {
+        if (requestBody == null || requestBody.body() == null || requestBody.body().isBlank()) {
+            throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "body is required");
+        }
+        ThreadMessageEntity existing = threadMessageRepository.findById(id).orElseThrow();
+        String email = currentUserEmail();
+
+        if (!existing.getUserId().equalsIgnoreCase(email)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         }
-
         existing.setBody(requestBody.body());
         ThreadMessageEntity saved = threadMessageRepository.save(existing);
 
@@ -197,13 +196,11 @@ public class ThreadController {
     @DeleteMapping("/messages/{id}")
     public ResponseEntity<?> deleteMessage(@PathVariable Long id) {
         ThreadMessageEntity existing = threadMessageRepository.findById(id).orElseThrow();
-        String currentEmail = currentUserEmail();
-
-        if (!existing.getUserId().equalsIgnoreCase(currentEmail)) {
+        String email = currentUserEmail();
+        if (!existing.getUserId().equalsIgnoreCase(email)) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         }
-
         threadMessageRepository.delete(existing);
-        return ResponseEntity.noContent().build(); // 204
+        return ResponseEntity.noContent().build();
     }
 }
