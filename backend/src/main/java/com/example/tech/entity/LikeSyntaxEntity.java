@@ -1,35 +1,44 @@
 package com.example.tech.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import jakarta.persistence.EntityManager;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.Setter;
 
-import java.time.LocalDateTime;
+import java.time.Instant;
 
 @Entity
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
-@Table(name = "like_syntaxes")
+@Table(
+        name = "likes_syntax",
+        uniqueConstraints = @UniqueConstraint(
+                name = "uq_likes_user_syntax",
+                columnNames = {"user_id", "syntax_id"}
+        )
+)
+@Getter @Setter @NoArgsConstructor
 public class LikeSyntaxEntity {
-    @Id
-    @GeneratedValue(strategy = GenerationType.IDENTITY)
+
+    @Id @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
 
-    @ManyToOne
-    @JoinColumn(name = "user_id", nullable = false)
-    private UserEntity user;
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "user_id", nullable = false, foreignKey = @ForeignKey(name = "fk_likes_user"))
+    private UserEntity user;          // ← ふつうに参照
 
-    @ManyToOne
-    @JoinColumn(name = "syntax_id", nullable = false)
-    private SyntaxEntity syntax;
+    @ManyToOne(optional = false, fetch = FetchType.LAZY)
+    @JoinColumn(name = "syntax_id", nullable = false, foreignKey = @ForeignKey(name = "fk_likes_syntax"))
+    private SyntaxEntity syntax;      // ← ふつうに参照
 
-    @CreationTimestamp
-    private LocalDateTime createdAt;
+    @Column(name = "created_at", nullable = false, updatable = false)
+    private Instant createdAt = Instant.now();
 
-    @UpdateTimestamp
-    private LocalDateTime updatedAt;
+    public static LikeSyntaxEntity ofUserIdAndSyntaxId(Long userId, Long syntaxId, EntityManager em) {
+        LikeSyntaxEntity e = new LikeSyntaxEntity();
+        UserEntity uRef   = em.getReference(UserEntity.class, userId);
+        SyntaxEntity sRef = em.getReference(SyntaxEntity.class, syntaxId);
+        e.setUser(uRef);
+        e.setSyntax(sRef);
+        return e;
+    }
 }

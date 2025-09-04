@@ -1,12 +1,15 @@
 package com.example.tech.repository;
 
 import com.example.tech.entity.LikeSyntaxEntity;
-import com.example.tech.entity.SyntaxEntity;
-import com.example.tech.entity.UserEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.transaction.annotation.Transactional;
 
 public interface LikeSyntaxRepository extends JpaRepository<LikeSyntaxEntity, Long> {
-    boolean existsByUserAndSyntax(UserEntity user, SyntaxEntity syntax);
-    long countBySyntax(SyntaxEntity syntax);
-}
 
+    boolean existsByUserIdAndSyntaxId(Long userId, Long syntaxId);
+
+    long countBySyntaxId(Long syntaxId);
+
+    @Transactional
+    void deleteByUserIdAndSyntaxId(Long userId, Long syntaxId);
+}

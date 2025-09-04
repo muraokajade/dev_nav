@@ -12,7 +12,7 @@ import java.time.LocalDateTime;
 @Entity
 @Data
 @NoArgsConstructor
-@Table(name = "syntaxes")
+@Table(schema = "public", name = "syntaxes")
 @AllArgsConstructor
 public class SyntaxEntity {
     @Id

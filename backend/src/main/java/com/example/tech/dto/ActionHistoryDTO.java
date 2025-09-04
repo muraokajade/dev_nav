@@ -15,4 +15,7 @@ public class ActionHistoryDTO {
     private LocalDateTime date; // 実行日時
     private String articleTitle; // 対象記事タイトルなど（あれば）
     private Long articleId;      // 対象記事IDなど（あれば）
+
+    public String getText() { return content; }
+    public void setText(String text) { this.content = text; }
 }

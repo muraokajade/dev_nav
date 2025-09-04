@@ -17,20 +17,29 @@ public class LikeSyntaxController {
     private final LikeSyntaxService likeSyntaxService;
     private final FirebaseAuthService firebaseAuthService;
 
+    private String jwt(String header) {
+        return header == null ? null : header.replaceFirst("^Bearer\\s+", "").trim();
+    }
+
     @PostMapping
     public ResponseEntity<Void> likeSyntax(
             @RequestHeader("Authorization") String token,
-            @RequestParam(name="syntaxId", required=false) Long syntaxId,
-            @RequestBody(required=false) Map<String, Object> body) {
+            @RequestParam(name = "syntaxId", required = false) Long syntaxId,
+            @RequestBody(required = false) Map<String, Object> body) {
 
         if (syntaxId == null && body != null) {
             Object v = body.get("syntaxId");
-            if (v != null) syntaxId = Long.valueOf(String.valueOf(v));
+            if (v != null) {
+                try { syntaxId = Long.valueOf(String.valueOf(v)); }
+                catch (NumberFormatException e) { return ResponseEntity.badRequest().build(); }
+            }
         }
         if (syntaxId == null) return ResponseEntity.badRequest().build();
 
-        String email = firebaseAuthService.verifyAndGetEmail(token);
-        likeSyntaxService.likeSyntax(email, syntaxId);
+        final String email = firebaseAuthService.verifyAndGetEmail(jwt(token));
+        if (email == null || email.isBlank()) return ResponseEntity.status(401).build();
+
+        likeSyntaxService.likeSyntax(email, syntaxId); // 冪等
         return ResponseEntity.ok().build();
     }
 
@@ -39,31 +48,29 @@ public class LikeSyntaxController {
             @RequestHeader("Authorization") String token,
             @PathVariable Long syntaxId) {
 
-        String raw = token.replaceFirst("^Bearer\\s+", "");
-        String email = firebaseAuthService.verifyAndGetEmail(raw);
-
-        // 存在しなくても 204 を返す（冪等）
+        final String email = firebaseAuthService.verifyAndGetEmail(jwt(token));
         likeSyntaxService.unlikeSyntax(email, syntaxId);
         return ResponseEntity.noContent().build();
     }
 
-    @GetMapping("/status")
-    public ResponseEntity<LikeStatusDTO> getStatus(@RequestHeader("Authorization") String token,
-                                                   @RequestParam Long syntaxId) {
-        String email = firebaseAuthService.verifyAndGetEmail(token);
-        boolean liked = likeSyntaxService.isLiked(email, syntaxId);
-        long count = likeSyntaxService.countLikes(syntaxId);
-        return ResponseEntity.ok(new LikeStatusDTO(liked, count));
-    }
     @DeleteMapping
     public ResponseEntity<Void> unlikeQuery(
             @RequestHeader("Authorization") String token,
             @RequestParam Long syntaxId) {
 
-        String raw = token.replaceFirst("^Bearer\\s+", "");
-        String email = firebaseAuthService.verifyAndGetEmail(raw);
-
+        final String email = firebaseAuthService.verifyAndGetEmail(jwt(token));
         likeSyntaxService.unlikeSyntax(email, syntaxId);
         return ResponseEntity.noContent().build();
+    }
+
+    @GetMapping("/status")
+    public ResponseEntity<LikeStatusDTO> getStatus(
+            @RequestHeader("Authorization") String token,
+            @RequestParam Long syntaxId) {
+
+        final String email = firebaseAuthService.verifyAndGetEmail(jwt(token));
+        boolean liked = likeSyntaxService.isLiked(email, syntaxId);
+        long count = likeSyntaxService.countLikes(syntaxId);
+        return ResponseEntity.ok(new LikeStatusDTO(liked, count));
     }
 }

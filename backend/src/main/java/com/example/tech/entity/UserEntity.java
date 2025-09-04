@@ -1,27 +1,27 @@
 package com.example.tech.entity;
 
 import jakarta.persistence.*;
-import lombok.AllArgsConstructor;
-import lombok.Data;
+import lombok.Getter;
 import lombok.NoArgsConstructor;
-import org.hibernate.annotations.CreationTimestamp;
-import org.hibernate.annotations.UpdateTimestamp;
+import lombok.Setter;
 
 import java.time.LocalDateTime;
 
 @Entity
-@Table(name = "users")
-@Data
-@AllArgsConstructor
-@NoArgsConstructor
+@Table(schema = "public", name = "users") // 実DBのテーブル名に合わせて変更可
+@Getter @Setter @NoArgsConstructor
 public class UserEntity {
+
     @Id
     @GeneratedValue(strategy = GenerationType.IDENTITY)
     private Long id;
+
+    @Column(nullable=false, length=255, unique=true)
     private String email;
+
+    @Column(name = "display_name", length=255)
     private String displayName;
-    @CreationTimestamp
+
     private LocalDateTime createdAt;
-    @UpdateTimestamp
     private LocalDateTime updatedAt;
 }
