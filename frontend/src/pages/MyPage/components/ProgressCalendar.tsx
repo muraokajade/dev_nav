@@ -32,22 +32,16 @@ function isDayAction(x: unknown): x is DayAction {
   );
 }
 
-/** 入力が配列でない/配列風でも安全に DayAction[] に整形 */
 function normalizeDays(input: unknown): DayAction[] {
   if (!input) return [];
-
-  // 1) まず配列に正規化
   let arr: unknown[];
   if (Array.isArray(input)) {
     arr = input as unknown[];
   } else if (typeof (input as any)[Symbol.iterator] === "function") {
-    // Iterable(Set/Map/NodeList など)のみ Array.from を使用
     arr = Array.from(input as Iterable<unknown>);
   } else {
     return [];
   }
-
-  // 2) DayAction のみ抽出
   return arr.filter(isDayAction);
 }
 
@@ -59,18 +53,39 @@ export const ProgressCalendar: React.FC<ProgressCalendarProps> = ({
   onPrevMonth,
   onNextMonth,
 }) => {
-  // 正規化して安全な配列に
+  // 1) API等から来た配列を正規化
   const safeDays = normalizeDays(days);
 
-  // 7日ごとに分割（足りない分は null でパディング）
+  // 2) 月の日付を全て生成し、safeDays をマージして actions を埋める
+  const first = dayjs(`${year}-${String(month).padStart(2, "0")}-01`);
+  const daysInMonth = first.daysInMonth();
+  const map = new Map<string, number>();
+  for (const d of safeDays)
+    map.set(dayjs(d.date).format("YYYY-MM-DD"), d.actions);
+
+  const monthDays: DayAction[] = [];
+  for (let i = 0; i < daysInMonth; i++) {
+    const d = first.add(i, "day");
+    const key = d.format("YYYY-MM-DD");
+    monthDays.push({ date: key, actions: map.get(key) ?? 0 });
+  }
+
+  // 3) 週グリッドを作る（先頭の曜日に合わせて空セルを入れ、最後も7の倍数にパディング）
+  // dayjs().day(): 0=日, 1=月, ...
+  const startWeekday = first.day(); // 0..6
+  const cells: (DayAction | null)[] = [];
+
+  // 先頭の空き
+  for (let i = 0; i < startWeekday; i++) cells.push(null);
+  // 月の日を並べる
+  for (const d of monthDays) cells.push(d);
+  // 末尾パディング
+  while (cells.length % 7 !== 0) cells.push(null);
+
+  // 7分割
   const weeks: (DayAction | null)[][] = [];
-  for (let i = 0; i < safeDays.length; i += 7) {
-    const chunk = safeDays.slice(i, i + 7);
-    const padded = [
-      ...chunk,
-      ...Array(Math.max(0, 7 - chunk.length)).fill(null),
-    ];
-    weeks.push(padded);
+  for (let i = 0; i < cells.length; i += 7) {
+    weeks.push(cells.slice(i, i + 7));
   }
 
   // スタイル（CSSProperties）
@@ -110,6 +125,17 @@ export const ProgressCalendar: React.FC<ProgressCalendarProps> = ({
     transition: "all .3s ease",
   };
 
+  // 曜日ヘッダ（任意）
+  const weekHeader: React.CSSProperties = {
+    display: "grid",
+    gridTemplateColumns: "repeat(7, 1.5rem)",
+    gap: ".25rem",
+    marginBottom: ".25rem",
+    fontSize: ".7rem",
+    color: "#9ca3af",
+  };
+  const WEEKS = ["日", "月", "火", "水", "木", "金", "土"];
+
   return (
     <div>
       <div style={headerRowStyle}>
@@ -122,6 +148,15 @@ export const ProgressCalendar: React.FC<ProgressCalendarProps> = ({
         <button style={btnStyle} onClick={onNextMonth}>
           次の月 →
         </button>
+      </div>
+
+      {/* 曜日ヘッダ */}
+      <div style={weekHeader}>
+        {WEEKS.map((w) => (
+          <div key={w} style={{ textAlign: "center" }}>
+            {w}
+          </div>
+        ))}
       </div>
 
       <div style={weeksWrapStyle}>
