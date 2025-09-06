@@ -1,73 +1,96 @@
+// src/main/java/com/example/tech/controller/UserController.java
 package com.example.tech.controller;
 
-
 import com.example.tech.dto.*;
-import com.example.tech.dto.CalendarActionDTO;
-import com.example.tech.dto.request.ArticleReadRequest;
-import com.example.tech.entity.ArticleReadEntity;
 import com.example.tech.entity.UserEntity;
 import com.example.tech.repository.UserRepository;
 import com.example.tech.service.ArticleReadService;
-import com.example.tech.service.ArticleService;
 import com.example.tech.service.FirebaseAuthService;
 import com.example.tech.service.UserStatusService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
-import java.time.LocalDateTime;
 import java.util.List;
 
 @RestController
-
-@CrossOrigin(origins = "http://localhost:3000")
-@RequestMapping("/api/")
+// 本番/ローカル双方から叩けるように必要なドメインを並べておく
+@CrossOrigin(
+        origins = {
+                "http://localhost:3000",
+                "https://devnav.tech",
+                "https://www.devnav.tech",
+                "https://chosen-shelba-chokai-engineering-61f48841.koyeb.app" // API と同一なら不要
+        },
+        allowCredentials = "true"
+)
+@RequestMapping("/api")
 @RequiredArgsConstructor
 public class UserController {
+
     private final FirebaseAuthService firebaseAuthService;
     private final UserRepository userRepository;
     private final UserStatusService userStatusService;
     private final ArticleReadService articleReadService;
 
+    /** "Bearer xxx" を想定して先頭の前置詞を除去 */
+    private String stripBearer(String token) {
+        if (token == null) return "";
+        return token.replaceFirst("^Bearer\\s+", "");
+    }
+
     @GetMapping("/me")
-    public UserDTO getMe(@RequestHeader("Authorization") String token) {
-        String email = firebaseAuthService.verifyAndGetEmail(token);
-
-        UserEntity user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("該当ユーザーがDBに存在しません"));;
-        return UserDTO.of(user); // id, email, ... を含む
+    public ResponseEntity<UserDTO> getMe(@RequestHeader("Authorization") String token) {
+        final String email = firebaseAuthService.verifyAndGetEmail(stripBearer(token));
+        final UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("該当ユーザーがDBに存在しません"));
+        return ResponseEntity.ok(UserDTO.of(user));
     }
 
+    /** 既存：自分のステータス（読了・レビュー・いいね・コメント等の合計が含まれる想定） */
     @GetMapping("/status/mine")
-    public UserStatusDTO getMyStatus(@RequestHeader("Authorization") String token)
-    {
-        String email = firebaseAuthService.verifyAndGetEmail(token);
-        UserEntity user = userRepository.findByEmail(email)
+    public ResponseEntity<UserStatusDTO> getMyStatus(@RequestHeader("Authorization") String token) {
+        final String email = firebaseAuthService.verifyAndGetEmail(stripBearer(token));
+        final UserEntity user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません。"));
-
-        Long userId = user.getId();
-        UserStatusDTO status = userStatusService.getStatus(userId);
-        return status;
+        final Long userId = user.getId();
+        final UserStatusDTO status = userStatusService.getStatus(userId);
+        return ResponseEntity.ok(status);
     }
+
+    /**
+     * 互換用：フロントから /api/user/stats を叩けるように追加。
+     * 中身は /api/status/mine と同じ DTO（UserStatusDTO）を返す。
+     * フロントの MyPage 側はこのどちらかを使えば数字が出ます。
+     */
+    @GetMapping("/user/stats")
+    public ResponseEntity<UserStatusDTO> getMyStatsCompat(@RequestHeader("Authorization") String token) {
+        final String email = firebaseAuthService.verifyAndGetEmail(stripBearer(token));
+        final UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() -> new RuntimeException("ユーザーが見つかりません。"));
+        final Long userId = user.getId();
+        final UserStatusDTO status = userStatusService.getStatus(userId);
+        return ResponseEntity.ok(status);
+    }
+
     @GetMapping("/user/actions/calendar")
-    public List<CalendarActionDTO> getCalenderActions(@RequestHeader("Authorization") String token,
-                                                      @RequestParam int year,
-                                                      @RequestParam int month)
-    {
-        String userEmail = firebaseAuthService.verifyAndGetEmail(token);
-        return userStatusService.getCalendarActions(userEmail, year, month);
+    public ResponseEntity<List<CalendarActionDTO>> getCalendarActions(
+            @RequestHeader("Authorization") String token,
+            @RequestParam int year,
+            @RequestParam int month
+    ) {
+        final String email = firebaseAuthService.verifyAndGetEmail(stripBearer(token));
+        final List<CalendarActionDTO> list = userStatusService.getCalendarActions(email, year, month);
+        return ResponseEntity.ok(list);
     }
 
     @GetMapping("/user/actions/history")
-    public List<ActionHistoryDTO> getActionHistories(@RequestHeader("Authorization") String token,
-                                                     @RequestParam(defaultValue = "10") int limit)
-    {
-        String userEmail = firebaseAuthService.verifyAndGetEmail(token);
-        return  userStatusService.getActionHistories(userEmail, limit);
+    public ResponseEntity<List<ActionHistoryDTO>> getActionHistories(
+            @RequestHeader("Authorization") String token,
+            @RequestParam(defaultValue = "10") int limit
+    ) {
+        final String email = firebaseAuthService.verifyAndGetEmail(stripBearer(token));
+        final List<ActionHistoryDTO> list = userStatusService.getActionHistories(email, limit);
+        return ResponseEntity.ok(list);
     }
-
-
-
-
-
 }

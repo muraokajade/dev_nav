@@ -2,9 +2,10 @@
 package com.example.tech.controller;
 
 import com.example.tech.dto.LikeStatusDTO;
-import com.example.tech.service.LikeSyntaxService;
 import com.example.tech.service.FirebaseAuthService;
+import com.example.tech.service.LikeSyntaxService;
 import lombok.RequiredArgsConstructor;
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
@@ -19,16 +20,27 @@ public class LikeSyntaxController {
     private final FirebaseAuthService firebaseAuthService;
 
     private String stripBearer(String token) {
-        if (token == null) return "";
-        return token.replaceFirst("^Bearer\\s+", "");
+        return token == null ? "" : token.replaceFirst("^Bearer\\s+", "");
+    }
+
+    /** Firebase検証を行い、失敗時はUnauthorizedExceptionを投げる（→ GlobalExceptionHandlerで401） */
+    private String verifyOrThrow401(String token) {
+        try {
+            String email = firebaseAuthService.verifyAndGetEmail(stripBearer(token));
+            if (email == null || email.isBlank()) throw new UnauthorizedException();
+            return email;
+        } catch (Exception e) {
+            throw new UnauthorizedException();
+        }
     }
 
     @PostMapping
     public ResponseEntity<Void> likeSyntax(
-            @RequestHeader("Authorization") String token,
-            @RequestParam(name="syntaxId", required=false) Long syntaxId,
-            @RequestBody(required=false) Map<String, Object> body) {
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestParam(name = "syntaxId", required = false) Long syntaxId,
+            @RequestBody(required = false) Map<String, Object> body) {
 
+        // syntaxId を body/param どちらからでも受け取る
         if (syntaxId == null && body != null) {
             Object v = body.get("syntaxId");
             if (v != null) {
@@ -38,52 +50,62 @@ public class LikeSyntaxController {
         }
         if (syntaxId == null) return ResponseEntity.badRequest().build();
 
-        final String email = firebaseAuthService.verifyAndGetEmail(stripBearer(token));
-        if (email == null || email.isBlank()) return ResponseEntity.status(401).build();
+        final String email = verifyOrThrow401(authorization);
 
         try {
-            likeSyntaxService.likeSyntax(email, syntaxId); // 冪等
+            // 既にLIKE済みならno-opになる実装（冪等）
+            likeSyntaxService.likeSyntax(email, syntaxId);
             return ResponseEntity.ok().build();
+        } catch (DataIntegrityViolationException ex) {
+            // 一意制約/外部キー制約など
+            return ResponseEntity.status(409).build();
         } catch (Exception ex) {
-            ex.printStackTrace();
-            return ResponseEntity.status(409).build(); // 制約起因などは409へ
+            // 想定外
+            return ResponseEntity.status(500).build();
         }
     }
 
     @DeleteMapping("/{syntaxId}")
     public ResponseEntity<Void> unlikePath(
-            @RequestHeader("Authorization") String token,
+            @RequestHeader(value = "Authorization", required = false) String authorization,
             @PathVariable Long syntaxId) {
 
-        final String email = firebaseAuthService.verifyAndGetEmail(stripBearer(token));
-        if (email == null || email.isBlank()) return ResponseEntity.status(401).build();
+        final String email = verifyOrThrow401(authorization);
+        try {
+            likeSyntaxService.unlikeSyntax(email, syntaxId); // 無ければno-op想定
+            return ResponseEntity.noContent().build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(500).build();
+        }
+    }
 
-        likeSyntaxService.unlikeSyntax(email, syntaxId); // 冪等
-        return ResponseEntity.noContent().build();
+    @DeleteMapping
+    public ResponseEntity<Void> unlikeQuery(
+            @RequestHeader(value = "Authorization", required = false) String authorization,
+            @RequestParam Long syntaxId) {
+
+        final String email = verifyOrThrow401(authorization);
+        try {
+            likeSyntaxService.unlikeSyntax(email, syntaxId);
+            return ResponseEntity.noContent().build();
+        } catch (Exception ex) {
+            return ResponseEntity.status(500).build();
+        }
     }
 
     @GetMapping("/status")
     public ResponseEntity<LikeStatusDTO> getStatus(
-            @RequestHeader("Authorization") String token,
+            @RequestHeader(value = "Authorization", required = false) String authorization,
             @RequestParam Long syntaxId) {
 
-        final String email = firebaseAuthService.verifyAndGetEmail(stripBearer(token));
-        if (email == null || email.isBlank()) return ResponseEntity.status(401).build();
+        // 未ログインでも count は返したいなら ↓を分岐させてもOK
+        final String email = verifyOrThrow401(authorization);
 
         boolean liked = likeSyntaxService.isLiked(email, syntaxId);
         long count = likeSyntaxService.countLikes(syntaxId);
         return ResponseEntity.ok(new LikeStatusDTO(liked, count));
     }
 
-    @DeleteMapping
-    public ResponseEntity<Void> unlikeQuery(
-            @RequestHeader("Authorization") String token,
-            @RequestParam Long syntaxId) {
-
-        final String email = firebaseAuthService.verifyAndGetEmail(stripBearer(token));
-        if (email == null || email.isBlank()) return ResponseEntity.status(401).build();
-
-        likeSyntaxService.unlikeSyntax(email, syntaxId);
-        return ResponseEntity.noContent().build();
-    }
+    /** 401用の内部例外 */
+    static class UnauthorizedException extends RuntimeException {}
 }
