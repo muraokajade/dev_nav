@@ -73,13 +73,13 @@ export const MyPage: React.FC = () => {
   const [year, setYear] = useState(dayjs().year());
   const [month, setMonth] = useState(dayjs().month() + 1); // 1..12
 
-  // 統計：フォールバックで取得
+  // 統計：フォールバックで取得（本番でまず /api/status/mine を叩く）
   useEffect(() => {
     if (!idToken) {
       setStats(ZERO);
       return;
     }
-    const endpoints = ["/api/user/stats", "/api/status/mine", "/api/me/stats"];
+    const endpoints = ["/api/status/mine", "/api/user/stats", "/api/me/stats"];
     (async () => {
       let normalized: UserStats | null = null;
       for (const url of endpoints) {
@@ -195,7 +195,6 @@ export const MyPage: React.FC = () => {
         <div className="text-2xl font-extrabold tabular-nums">{value}</div>
       </div>
       <div className="mt-2 text-sm opacity-85">{label}</div>
-      {/* ハイライトの光筋 */}
       <div className="pointer-events-none absolute -top-10 -right-10 h-24 w-24 rotate-45 rounded-full bg-white/10 blur-2xl" />
     </div>
   );
@@ -203,7 +202,6 @@ export const MyPage: React.FC = () => {
   return (
     <div className="min-h-screen bg-gray-950 text-white">
       <div className="mx-auto max-w-6xl p-6">
-        {/* ヘッダ */}
         <div className="mb-6 flex items-center justify-between">
           <h1 className="text-3xl font-extrabold tracking-tight">マイページ</h1>
           <div className="rounded-full bg-white/5 px-3 py-1 text-sm text-white/80">
@@ -211,9 +209,7 @@ export const MyPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 上段：経験値／カレンダー */}
         <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-          {/* EXP */}
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
             <div className="mb-3 flex items-center gap-2">
               <span className="text-xl font-bold">Lv.</span>
@@ -229,7 +225,6 @@ export const MyPage: React.FC = () => {
             </div>
           </div>
 
-          {/* Calendar */}
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
             <div className="mb-2 text-center text-lg font-bold">
               学習カレンダー
@@ -248,7 +243,6 @@ export const MyPage: React.FC = () => {
           </div>
         </div>
 
-        {/* 統計カード */}
         <div className="mb-8 grid grid-cols-1 gap-4 sm:grid-cols-2 md:grid-cols-4">
           <StatCard
             label="記事既読数"
@@ -276,7 +270,6 @@ export const MyPage: React.FC = () => {
           />
         </div>
 
-        {/* いいね一覧（プレースホルダー） + 履歴 */}
         <div className="space-y-6">
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
             <div className="mb-2 flex items-center gap-2">
