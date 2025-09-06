@@ -88,7 +88,19 @@ public class UserController {
             @RequestParam(defaultValue = "10") int limit
     ) {
         final String email = firebaseAuthService.verifyAndGetEmail(stripBearer(token));
-        final List<ActionHistoryDTO> list = userStatusService.getActionHistories(email, limit);
-        return ResponseEntity.ok(list);
+        if (email == null || email.isBlank()) return ResponseEntity.status(401).build();
+
+        // （ユーザー未登録で落ちるのを回避）
+        final var userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty()) return ResponseEntity.status(404).build();
+
+        try {
+            final List<ActionHistoryDTO> list = userStatusService.getActionHistories(email, limit);
+            return ResponseEntity.ok(list != null ? list : List.of());
+        } catch (Exception e) {
+            e.printStackTrace();                    // 本番では logger.warn/error 推奨
+            return ResponseEntity.ok(List.of());    // 500にせず空配列で返す
+        }
     }
+
 }
