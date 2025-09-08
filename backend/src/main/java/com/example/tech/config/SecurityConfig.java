@@ -29,20 +29,17 @@ public class SecurityConfig {
                 )
                 .authorizeHttpRequests(auth -> auth
                         .requestMatchers(HttpMethod.OPTIONS, "/**").permitAll()
+                        .requestMatchers(HttpMethod.HEAD, "/api/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/**").permitAll()
-                        .requestMatchers("/api/articles/**","/api/syntaxes/**","/api/procedures/**").permitAll()
                         .requestMatchers("/api/register").permitAll()
                         .requestMatchers("/api/admin/**", "/api/messages/admin/**").hasRole("ADMIN")
-                        .requestMatchers(HttpMethod.GET, "/api/*/read/all").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/*/read/status").authenticated()
-                        .requestMatchers(HttpMethod.POST, "/api/*/*/read").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/messages").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/review-scores/**", "/api/review-comments/**").permitAll()
-                        .requestMatchers("/api/review-scores/**", "/api/review-comments/**").authenticated()
-                        .requestMatchers(HttpMethod.GET, "/api/likes/count").permitAll()
+                        // 公開したいread系があるならここでpermitAllに
+                        //.requestMatchers(HttpMethod.GET, "/api/*/read/all").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/likes/status").authenticated()
+                        .requestMatchers(HttpMethod.POST, "/api/*/*/read").authenticated()
                         .requestMatchers("/api/**").authenticated()
                         .anyRequest().permitAll()
+
                 )
                 .addFilterBefore(new FirebaseTokenFilter(), UsernamePasswordAuthenticationFilter.class);
 
