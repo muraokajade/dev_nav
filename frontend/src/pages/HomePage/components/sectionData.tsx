@@ -110,7 +110,9 @@ export const sections: SectionItem[] = [
         <ul className="list-disc text-gray-200 text-xl md:text-2xl font-semibold space-y-8 w-full max-w-3xl mx-auto px-2">
           <li>
             レビュー・コメント・Q&A機能
-            <p>管理者が投稿した記事に対するレビュー、コメント、Q&Aを送信できます。</p>
+            <p>
+              管理者が投稿した記事に対するレビュー、コメント、Q&Aを送信できます。
+            </p>
             <p>後日、管理者が回答をお送りします。</p>
           </li>
           <div className="w-full bg-white rounded-xl shadow-lg p-4 mt-4 flex justify-center items-center">
@@ -137,9 +139,7 @@ export const sections: SectionItem[] = [
     content: (
       <div className="flex flex-col items-center gap-12 w-full">
         <ul className="list-disc text-gray-200 text-xl md:text-2xl font-semibold space-y-8 w-full max-w-3xl mx-auto px-2">
-          <li>
-            管理者権限を持つと記事投稿、記事一覧を確認できます。
-          </li>
+          <li>管理者権限を持つと記事投稿、記事一覧を確認できます。</li>
           <li>
             自分オリジナルの教科書を作成することも可能！
             <div className="w-full bg-white rounded-xl shadow-lg p-4 mt-4 flex justify-center items-center">
@@ -171,7 +171,11 @@ export const sections: SectionItem[] = [
             開発用PC: <b>MacBook Pro（Appleシリコン）</b>
           </li>
           <li>
-            メインIDE: <b>IntelliJ IDEA（バックエンド）、Visual Studio Code（フロントエンド）</b>
+            メインIDE:{" "}
+            <b>
+              IntelliJ IDEA（バックエンド）、Visual Studio
+              Code（フロントエンド）
+            </b>
           </li>
           <li>
             バックエンド: <b>Spring Boot 3.x + Java 17</b>
@@ -180,27 +184,30 @@ export const sections: SectionItem[] = [
             フロントエンド: <b>React 19 + TypeScript</b>
           </li>
           <li>
-            インフラ: <b>Vercel（フロント）、Render.com（API）</b>
+            インフラ: <b>Vercel（フロント）、Koyeb（バックエンド）</b>
           </li>
           <li>
-            データベース: <b>MySQL（管理はMySQL Workbenchを使用）</b>
+            データベース: <b>PostgreSQL（管理はDBeaverを使用）</b>
           </li>
           <li>
             APIテスト: <b>Insomnia</b>
           </li>
           <li>
-            その他: <b>Tailwind CSS, framer-motion, JWT認証, GitHub Actions, Docker（一部開発環境で利用）</b>
+            その他: <b>Tailwind CSS, framer-motion, JWT認証, GitHub Actions,</b>
           </li>
         </ul>
         <div className="bg-gray-800/70 rounded-xl p-8 mt-4 shadow-lg max-w-3xl mx-auto w-full text-base md:text-lg text-gray-200 leading-relaxed">
           <p className="mb-2">
             <span className="font-bold text-blue-500">この環境の特徴：</span>
             <br />
-            Mac上でIntelliJ IDEAとVSCodeを使い分けて効率よく開発。API動作確認はInsomnia、DB管理はMySQL Workbenchでリアルタイムにテストしながら進めています。  
-           
+            Mac上でIntelliJ
+            IDEAとVSCodeを使い分けて効率よく開発。API動作確認はInsomnia、DB管理はPostgreSQL　DBeaver
+            でリアルタイムにテストしながら進めています。
           </p>
           <p>
-            <span className="font-bold text-blue-500">セットアップ・開発フロー：</span>
+            <span className="font-bold text-blue-500">
+              セットアップ・開発フロー：
+            </span>
             <br />
             コード編集→ローカル実行→APIテスト（Insomnia）→DB確認（Workbench）→GitHubへpush→CI/CDで自動デプロイというサイクルで品質向上・効率化を実現しています。
           </p>
@@ -213,7 +220,6 @@ export const sections: SectionItem[] = [
       </div>
     ),
   },
-  
 
   {
     key: "about",
@@ -229,14 +235,11 @@ export const sections: SectionItem[] = [
       <div className="flex flex-col gap-8 w-full items-center">
         <ul className="list-disc text-gray-200 text-xl md:text-2xl font-semibold space-y-6 w-full max-w-3xl mx-auto px-2">
           <li>
-            日本語でまとまった「Spring Boot × React」教材が少ない現状を変えるべく開発。
+            日本語でまとまった「Spring Boot ×
+            React」教材が少ない現状を変えるべく開発。
           </li>
-          <li>
-            最新トレンドや現場経験を取り入れた、実践的な技術ガイド。
-          </li>
-          <li>
-            技術の「かっこよさ」「楽しさ」を直感的に感じられるUI設計。
-          </li>
+          <li>最新トレンドや現場経験を取り入れた、実践的な技術ガイド。</li>
+          <li>技術の「かっこよさ」「楽しさ」を直感的に感じられるUI設計。</li>
         </ul>
         {/* ↓追記：ユーザー層ごとへのメッセージ */}
         <div className="bg-gray-800/70 rounded-xl p-8 mt-4 shadow-lg max-w-3xl mx-auto w-full text-base md:text-lg text-gray-200 leading-relaxed">
