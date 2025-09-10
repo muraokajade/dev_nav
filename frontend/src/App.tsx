@@ -37,6 +37,7 @@ import { AddProcedureForm } from "./pages/AdminPage/components/AddProcedureForm"
 
 import { MypageRoute } from "./routes/MyPageRoute";
 import { MyPage } from "./pages/MyPage/MyPage";
+import NotFound from "./pages/NotFound";
 
 export default function App() {
   return (
@@ -76,7 +77,7 @@ export default function App() {
               </MypageRoute>
             }
           />
-
+          <Route path="*" element={<NotFound />} />
           {/* Admin */}
           <Route
             path="/admin"
