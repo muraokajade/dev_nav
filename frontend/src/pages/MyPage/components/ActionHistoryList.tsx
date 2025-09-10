@@ -1,10 +1,11 @@
 // src/pages/MyPage/components/ActionHistoryList.tsx
 import React, { useEffect, useState } from "react";
-import axios from "axios";
+
 import dayjs from "dayjs";
 import { ActionHistory } from "../../../models/ActionHistory";
 import { useAuth } from "../../../context/useAuthContext";
 import { Link } from "react-router-dom";
+import { apiHelper } from "../../../libs/apiHelper";
 
 function isActionHistory(x: unknown): x is ActionHistory {
   return (
@@ -52,30 +53,34 @@ export const ActionHistoryList = ({
   const { idToken } = useAuth();
 
   useEffect(() => {
-    if (!idToken) {
-      setHistory([]);
-      setLoading(false);
-      return;
-    }
     let aborted = false;
     setLoading(true);
 
-    axios
-      .get("/api/user/actions/history?limit=10", {
-        headers: { Authorization: `Bearer ${idToken}` },
-      })
-      .then((res) => {
-        if (aborted) return;
-        const list = normalizeHistory(res?.data);
-        setHistory(list);
-      })
-      .catch(() => {
-        if (!aborted) setHistory([]);
-      })
-      .finally(() => {
-        if (!aborted) setLoading(false);
-      });
+    const run = async () => {
+      if (!idToken) {
+        setHistory([]);
+        setLoading(false);
+        return;
+      }
 
+      try {
+        const res = await apiHelper.get("/api/user/actions/history?limit=10", {
+          headers: { Authorization: `Bearer ${idToken}` },
+        });
+        if (aborted) return;
+
+        const list = normalizeHistory(res?.data ?? []);
+        setHistory(list);
+      } catch (err: any) {
+        if (aborted) return;
+        console.log("history err", err?.response?.status, err?.response?.data);
+        setHistory([]);
+      } finally {
+        if (!aborted) setLoading(false);
+      }
+    };
+
+    run();
     return () => {
       aborted = true;
     };
