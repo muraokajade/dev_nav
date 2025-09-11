@@ -1,5 +1,11 @@
 // src/pages/admin/AdminTechList.tsx
-import React, { useCallback, useEffect, useState } from "react";
+import React, {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+} from "react";
 import { Link } from "react-router-dom";
 import dayjs from "dayjs";
 import ReactMarkdown from "react-markdown";
@@ -11,7 +17,6 @@ import { useAuth } from "../../../context/useAuthContext";
 import { usePagination } from "../../../hooks/usePagination";
 import { Pagination } from "../../../utils/Pagination";
 import { ArticleModel } from "../../../models/ArticleModel";
-// - import { SpinnerLoading } from "../../../components/SpinnerLoading"; // ← 作ってあるなら使う
 
 export const AdminTechList = () => {
   const [articles, setArticles] = useState<ArticleModel[]>([]);
@@ -31,71 +36,96 @@ export const AdminTechList = () => {
   const { totalPages, pageIndex, displayPage, setDisplayPage, setTotalPages } =
     usePagination();
 
-  const [busy, setBusy] = useState(false); // - API操作時のビジー制御
-  const [fetching, setFetching] = useState(false); // - 一覧取得のローディング
-  const [error, setError] = useState<string | null>(null); // - 画面上部で見えるエラー
+  const [busy, setBusy] = useState(false);
+  const [fetching, setFetching] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  const categories = [
-    "Spring",
-    "React",
-    "Vue",
-    "Firebase",
-    "Tailwind",
-    "Other",
-  ];
+  // 再生成を避ける
+  const categories = useMemo(
+    () => ["Spring", "React", "Vue", "Firebase", "Tailwind", "Other"],
+    []
+  );
 
-  const authHeader = idToken
-    ? { Authorization: `Bearer ${idToken}` }
-    : undefined; // - ヘッダを毎回書かない
+  // Authorization ヘッダは idToken だけに依存
+  const authHeader = useMemo(
+    () => (idToken ? { Authorization: `Bearer ${idToken}` } : undefined),
+    [idToken]
+  );
 
-  const fetchArticles = useCallback(async () => {
-    if (!idToken) return; // - 未ログイン対策
-    setFetching(true); // - ローディングON
-    setError(null);
-    try {
-      const res = await apiHelper.get(
-        `/api/admin/articles?page=${pageIndex}&size=10`,
-        { headers: authHeader }
-      );
-      setArticles(res.data.content);
-      setTotalPages(res.data.totalPages);
-    } catch (e: any) {
-      console.error("記事取得失敗", e);
-      setError(
-        e?.response?.data?.message ||
-          "記事一覧の取得に失敗しました。時間をおいて再試行してください。"
-      ); // - 見えるエラー
-      setArticles([]);
-      setTotalPages(0);
-    } finally {
-      setFetching(false); // - ローディングOFF
-    }
-  }, [pageIndex, idToken, authHeader, setTotalPages]);
+  /** 取得ロジック（副作用レス） */
+  const fetchArticles = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!idToken) return;
+      setError(null);
+      try {
+        const res = await apiHelper.get(
+          `/api/admin/articles?page=${pageIndex}&size=10`,
+          { headers: authHeader, signal }
+        );
+        const list: ArticleModel[] = res.data?.content ?? [];
+        const pages: number = res.data?.totalPages ?? 0;
+
+        setArticles((prev) => (shallowEqual(prev, list) ? prev : list));
+        setTotalPages((prev) => (prev === pages ? prev : pages));
+      } catch (e: any) {
+        // axios のキャンセルは name か code で判別できる
+        if (e?.name === "CanceledError" || e?.code === "ERR_CANCELED") return;
+        console.error("記事取得失敗", e?.response?.status || e?.message);
+        setError(
+          e?.response?.data?.message ||
+            "記事一覧の取得に失敗しました。時間をおいて再試行してください。"
+        );
+        setArticles([]);
+        setTotalPages(0);
+      }
+    },
+    [idToken, pageIndex, authHeader, setTotalPages]
+  );
+
+  /** 直近のリクエストを握るための ref（完了時の setFetching の取り違いを防ぐ） */
+  const acRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    if (!loading && idToken) fetchArticles(); // - idTokenが揃ってから
-  }, [loading, idToken, fetchArticles]);
+    if (loading || !idToken) return;
 
+    // 既存の取得をキャンセルして新規開始
+    if (acRef.current) acRef.current.abort();
+    const ac = new AbortController();
+    acRef.current = ac;
+
+    setFetching(true);
+    fetchArticles(ac.signal)
+      .catch(() => {})
+      .finally(() => {
+        if (!ac.signal.aborted) setFetching(false);
+      });
+
+    return () => ac.abort();
+  }, [loading, idToken, pageIndex, fetchArticles]);
+
+  /** 公開切替 */
   const togglePublish = async (id: number) => {
-    if (busy || !idToken) return; // - 多重防止
+    if (busy || !idToken) return;
     setBusy(true);
     setError(null);
-    try {
-      // - 楽観更新（体感向上）: 先にUIだけ切り替え
-      setArticles((prev) =>
-        prev.map((a) => (a.id === id ? { ...a, published: !a.published } : a))
-      );
 
+    // 楽観更新（UI先行）
+    setArticles((prev) =>
+      prev.map((a) => (a.id === id ? { ...a, published: !a.published } : a))
+    );
+
+    try {
       await apiHelper.put(`/api/admin/articles/toggle/${id}`, null, {
         headers: authHeader,
       });
 
-      // - サーバーが正とするため再取得
-      await fetchArticles();
+      // 最新を反映（fetching は触らない）
+      const ac = new AbortController();
+      await fetchArticles(ac.signal);
     } catch (e: any) {
-      console.error("公開状態切替失敗", e);
+      console.error("公開状態切替失敗", e?.response?.status || e?.message);
       setError(e?.response?.data?.message || "公開状態の更新に失敗しました。");
-      // - 失敗時は反映を戻す
+      // 失敗時ロールバック
       setArticles((prev) =>
         prev.map((a) => (a.id === id ? { ...a, published: !a.published } : a))
       );
@@ -104,6 +134,7 @@ export const AdminTechList = () => {
     }
   };
 
+  /** 編集開始 */
   const handleEdit = async (id: number) => {
     if (busy || !idToken) return;
     setBusy(true);
@@ -112,19 +143,19 @@ export const AdminTechList = () => {
       const res = await apiHelper.get(`/api/admin/articles/${id}`, {
         headers: authHeader,
       });
-      setArticle(res.data);
+      const s: ArticleModel = res.data;
+      setArticle(s);
 
-      // - 編集対象を反映
-      setSlug(res.data.slug ?? "");
-      setTitle(res.data.title ?? "");
-      setSummary(res.data.summary ?? "");
-      setContent(res.data.content ?? "");
-      setCategory(res.data.category ?? "");
-      setImageFile(null); // - 直前の選択をクリア
+      setSlug(s.slug ?? "");
+      setTitle(s.title ?? "");
+      setSummary(s.summary ?? "");
+      setContent(s.content ?? "");
+      setCategory(s.category ?? "");
+      setImageFile(null);
 
       setIsEditModalOpen(true);
     } catch (e: any) {
-      console.error("記事取得失敗", e);
+      console.error("記事取得失敗", e?.response?.status || e?.message);
       setError(e?.response?.data?.message || "記事の取得に失敗しました。");
       alert("記事の取得に失敗しました");
     } finally {
@@ -132,10 +163,10 @@ export const AdminTechList = () => {
     }
   };
 
+  /** 更新 */
   const handleUpdate = async (id: number) => {
     if (busy || !idToken) return;
-    if (!slug || !title || !category || !content) {
-      // - 必須チェック
+    if (!slug.trim() || !title.trim() || !category.trim() || !content.trim()) {
       alert("slug / title / category / content は必須です。");
       return;
     }
@@ -143,7 +174,7 @@ export const AdminTechList = () => {
     setError(null);
     try {
       const formData = new FormData();
-      formData.append("slug", slug.trim()); // - trim
+      formData.append("slug", slug.trim());
       formData.append("title", title.trim());
       formData.append("category", category);
       formData.append("summary", summary || "");
@@ -151,36 +182,36 @@ export const AdminTechList = () => {
       if (imageFile) formData.append("image", imageFile);
 
       await apiHelper.put(`/api/admin/articles/${id}`, formData, {
-        headers: {
-          ...authHeader,
-          // - Content-Type を FormData に任せる（axios が自動で boundary 付与）
-        },
+        headers: { ...authHeader },
       });
 
       setIsEditModalOpen(false);
-      setImageFile(null); // - 後始末
-      await fetchArticles(); // - 最新状態で反映
+      setImageFile(null);
+      const ac = new AbortController();
+      await fetchArticles(ac.signal);
     } catch (e: any) {
-      console.error("データ更新失敗", e);
+      console.error("データ更新失敗", e?.response?.status || e?.message);
       setError(e?.response?.data?.message || "更新に失敗しました。");
     } finally {
       setBusy(false);
     }
   };
 
+  /** 削除 */
   const handleDelete = async (id: number) => {
     if (busy || !idToken) return;
     if (!window.confirm("本当に削除しますか？")) return;
+
     setBusy(true);
     setError(null);
     try {
       await apiHelper.delete(`/api/admin/articles/${id}`, {
         headers: authHeader,
       });
-      // - 成功後にリスト更新
-      await fetchArticles();
+      const ac = new AbortController();
+      await fetchArticles(ac.signal);
     } catch (e: any) {
-      console.error("削除失敗", e);
+      console.error("削除失敗", e?.response?.status || e?.message);
       setError(e?.response?.data?.message || "削除に失敗しました。");
     } finally {
       setBusy(false);
@@ -196,16 +227,13 @@ export const AdminTechList = () => {
           📚 投稿済み記事
         </h2>
 
-        {/* - 一覧のロード/エラー表示 */}
         {error && (
           <div className="mb-4 rounded bg-red-900/30 text-red-200 px-3 py-2">
             {error}
           </div>
         )}
-        {/* {fetching && <SpinnerLoading label="読み込み中..." />} */}
         {fetching && <div className="mb-4 text-zinc-300">読み込み中...</div>}
 
-        {/* - 編集モーダル */}
         {isEditModalOpen && (
           <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
             <div className="bg-gray-900 text-white p-6 rounded-lg w-full max-w-2xl shadow-lg">
@@ -246,7 +274,7 @@ export const AdminTechList = () => {
                 className="w-full text-black border px-3 py-2 rounded mb-4"
                 value={summary}
                 onChange={(e) => setSummary(e.target.value)}
-                placeholder="記事の要約を入力（または自動生成）"
+                placeholder="記事の要約を入力（任意）"
                 rows={6}
               />
 
@@ -265,7 +293,6 @@ export const AdminTechList = () => {
                 className="w-full"
                 onChange={(e) => {
                   const file = e.target.files?.[0] ?? null;
-                  // - サイズ/拡張子の簡易チェック（任意）
                   if (file && file.size > 5 * 1024 * 1024) {
                     alert("5MB以下の画像を選択してください。");
                     return;
@@ -278,7 +305,7 @@ export const AdminTechList = () => {
                 <button
                   onClick={() => setIsEditModalOpen(false)}
                   className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500"
-                  disabled={busy} // - 操作ロック
+                  disabled={busy}
                 >
                   キャンセル
                 </button>
@@ -300,7 +327,6 @@ export const AdminTechList = () => {
           </div>
         )}
 
-        {/* 一覧 */}
         <div className="space-y-2">
           {articles.map((a) => (
             <div
@@ -325,10 +351,9 @@ export const AdminTechList = () => {
               {/* 区切り線 */}
               <div className="hidden sm:block border-l border-gray-600 h-full mx-4" />
 
-              {/* 要約（Markdown対応） */}
-              <div className="prose prose-invert max-w-none text-sm text-gray-200 break-words flex-grow mb-4 sm:mb-0 sm:pr-4 overflow-x-auto">
+              {/* 要約（スクロール可能・高さ制限） */}
+              <div className="prose prose-invert max-w-none text-sm text-gray-200 break-words flex-grow sm:pr-4 overflow-auto max-h-32 rounded border border-white/10 p-3 bg-white/5">
                 <ReactMarkdown
-                  // - children prop は ReactMarkdown v8+ でもOK
                   children={a.summary}
                   components={{
                     code({ className, children, ...props }: any) {
@@ -361,7 +386,7 @@ export const AdminTechList = () => {
               <div className="flex flex-row sm:flex-col gap-2 items-start sm:items-end w-full sm:w-auto">
                 <button
                   onClick={() => togglePublish(a.id)}
-                  disabled={busy} // - 操作ロック
+                  disabled={busy}
                   className={`px-3 py-1 rounded text-sm font-semibold border w-full sm:w-auto ${
                     a.published
                       ? "bg-green-600 text-white border-green-700 hover:bg-green-500"
@@ -377,7 +402,7 @@ export const AdminTechList = () => {
                   className={`px-3 py-1 rounded text-sm font-semibold border w-full sm:w-auto ${
                     busy
                       ? "bg-blue-900 text-white"
-                      : "bg-blue-600 text-white border-blue-700 hover:bg-blue-500"
+                      : "bg-blue-600 text-white border border-blue-700 hover:bg-blue-500"
                   }`}
                 >
                   編集
@@ -389,7 +414,7 @@ export const AdminTechList = () => {
                   className={`px-3 py-1 rounded text-sm font-semibold border w-full sm:w-auto ${
                     busy
                       ? "bg-red-900 text-white"
-                      : "bg-red-600 text-white border-red-700 hover:bg-red-500"
+                      : "bg-red-600 text-white border border-red-700 hover:bg-red-500"
                   }`}
                 >
                   削除
@@ -409,3 +434,22 @@ export const AdminTechList = () => {
     </div>
   );
 };
+
+/** 同一配列なら setState しないための浅い比較 */
+function shallowEqual(a: any, b: any) {
+  if (a === b) return true;
+  if (!a || !b) return false;
+  if (!Array.isArray(a) || !Array.isArray(b)) return false;
+  if (a.length !== b.length) return false;
+  for (let i = 0; i < a.length; i++) {
+    const x = a[i],
+      y = b[i];
+    if (x === y) continue;
+    if (!x || !y) return false;
+    const kx = Object.keys(x);
+    const ky = Object.keys(y);
+    if (kx.length !== ky.length) return false;
+    for (const k of kx) if ((x as any)[k] !== (y as any)[k]) return false;
+  }
+  return true;
+}

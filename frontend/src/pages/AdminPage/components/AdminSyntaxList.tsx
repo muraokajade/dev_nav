@@ -1,5 +1,5 @@
 // src/pages/admin/AdminSyntaxList.tsx
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import { apiHelper } from "../../../libs/apiHelper";
 import { SyntaxModel } from "../../../models/SyntaxModel";
 import { useAuth } from "../../../context/useAuthContext";
@@ -36,48 +36,87 @@ export const AdminSyntaxList = () => {
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  const categories = [
-    "Spring",
-    "React",
-    "Vue",
-    "Firebase",
-    "Tailwind",
-    "Other",
-  ];
+  const categories = useMemo(
+    () => ["Spring", "React", "Vue", "Firebase", "Tailwind", "Other"],
+    []
+  );
 
   // - ヘッダー共通化
-  const authHeader = idToken
-    ? { Authorization: `Bearer ${idToken}` }
-    : undefined;
-
-  const fetchAllSyntax = useCallback(async () => {
-    if (!idToken) return; // - 未ログイン防衛
-    setFetching(true);
-    setError(null);
-    try {
-      const res = await apiHelper.get(
-        `/api/admin/syntaxes?page=${pageIndex}&size=10`,
-        { headers: authHeader }
-      );
-      setSyntaxes(res.data.content);
-      setTotalPages(res.data.totalPages);
-    } catch (e: any) {
-      console.error("記事取得失敗", e);
-      setError(
-        e?.response?.data?.message ||
-          "文法記事一覧の取得に失敗しました。時間をおいて再試行してください。"
-      );
-      setSyntaxes([]);
-      setTotalPages(0);
-    } finally {
-      setFetching(false);
+  const authHeader = useMemo(
+    () => (idToken ? { Authorization: `Bearer ${idToken}` } : undefined),
+    [idToken]
+  );
+  function shallowEqual(a: any, b: any) {
+    if (a === b) return true;
+    if (!a || !b) return false;
+    if (!Array.isArray(a) || !Array.isArray(b)) return false;
+    if (a.length !== b.length) return false;
+    for (let i = 0; i < a.length; i++) {
+      const x = a[i],
+        y = b[i];
+      if (x === y) continue;
+      if (!x || !y) return false;
+      // よくある一覧の浅い比較（必要なら強化）
+      const kx = Object.keys(x);
+      const ky = Object.keys(y);
+      if (kx.length !== ky.length) return false;
+      for (const k of kx) if (x[k] !== y[k]) return false;
     }
-  }, [pageIndex, idToken, authHeader, setTotalPages]);
+    return true;
+  }
+
+  // ★ fetching をここでは触らない
+  const fetchAllSyntax = useCallback(
+    async (signal?: AbortSignal) => {
+      if (!idToken) return;
+      setError(null);
+      try {
+        const res = await apiHelper.get(
+          `/api/admin/syntaxes?page=${pageIndex}&size=10`,
+          { headers: authHeader, signal }
+        );
+        // 浅い比較で無駄レンダー抑制
+        setSyntaxes((prev) =>
+          shallowEqual(prev, res.data.content) ? prev : res.data.content
+        );
+        setTotalPages((tp) =>
+          tp === res.data.totalPages ? tp : res.data.totalPages
+        );
+      } catch (e: any) {
+        // axios の cancel は e.code === 'ERR_CANCELED' になることが多い
+        if (e?.name === "CanceledError" || e?.code === "ERR_CANCELED") return;
+        console.error("記事取得失敗", e?.response?.status || e?.message);
+        setError(
+          e?.response?.data?.message ||
+            "文法記事一覧の取得に失敗しました。時間をおいて再試行してください。"
+        );
+        setSyntaxes([]);
+        setTotalPages(0);
+      }
+    },
+    [pageIndex, idToken, authHeader, setTotalPages]
+  );
+
+  const acRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
-    // - 依存を付けずに即時関数＋依存なしだったため毎レンダー実行→API連打になっていた
-    if (!loading && idToken) fetchAllSyntax();
-  }, [loading, idToken, fetchAllSyntax]); // - 依存を適切に
+    if (loading || !idToken) return;
+
+    // 既存リクエストをキャンセルしてから新しく発行
+    if (acRef.current) acRef.current.abort();
+    const ac = new AbortController();
+    acRef.current = ac;
+
+    setFetching(true);
+    fetchAllSyntax(ac.signal)
+      .catch(() => {}) // ここでは握りつぶし
+      .finally(() => {
+        // 自分が発行したリクエストが生きていた場合のみ終了させる
+        if (!ac.signal.aborted) setFetching(false);
+      });
+
+    return () => ac.abort();
+  }, [loading, idToken, pageIndex, fetchAllSyntax]);
 
   const togglePublish = async (slug: string) => {
     if (busy || !idToken) return; // - 多重防止

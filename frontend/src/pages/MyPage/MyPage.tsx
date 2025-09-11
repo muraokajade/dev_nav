@@ -5,6 +5,8 @@ import { ProgressCalendar, DayAction } from "./components/ProgressCalendar";
 import { ActionHistoryList } from "./components/ActionHistoryList";
 import { apiHelper } from "../../libs/apiHelper";
 import { LevelBar } from "./components/LevelBar";
+import { LikedArticlesList } from "./components/LikedArticlesList";
+import { useLikedArticles } from "../../hooks/useLikedArticles";
 
 /* ---------- types ---------- */
 type UserStats = {
@@ -87,6 +89,11 @@ export const MyPage: React.FC = () => {
     () => (idToken ? { Authorization: `Bearer ${idToken}` } : undefined),
     [idToken]
   );
+  const {
+    data: likedArticles,
+    loading: loadingLikes,
+    error,
+  } = useLikedArticles(authHeader);
 
   const [stats, setStats] = useState<UserStats>(ZERO);
   const [calendarDays, setCalendarDays] = useState<DayAction[]>([]);
@@ -286,7 +293,7 @@ export const MyPage: React.FC = () => {
         </div>
 
         <div className="space-y-6">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+          {/* <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
             <div className="mb-2 flex items-center gap-2">
               <span className="text-xl">🧡</span>
               <h2 className="text-xl font-bold">いいねした記事一覧</h2>
@@ -294,10 +301,15 @@ export const MyPage: React.FC = () => {
             <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white/70">
               まだありません
             </div>
-          </div>
+          </div> */}
 
           <ActionHistoryList showTitle variant="card" />
         </div>
+        <LikedArticlesList
+          articles={likedArticles}
+          showTitle={false}
+          variant="bare"
+        />
       </div>
     </div>
   );
