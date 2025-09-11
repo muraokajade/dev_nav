@@ -1,52 +1,47 @@
-// CorsConfig.java
 package com.example.tech.config;
 
-import org.springframework.beans.factory.annotation.Qualifier;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
-import org.springframework.core.Ordered;
-import org.springframework.context.annotation.Primary; // ★ 追加
+import org.springframework.context.annotation.Primary;
 import org.springframework.web.cors.CorsConfiguration;
 import org.springframework.web.cors.CorsConfigurationSource;
 import org.springframework.web.cors.UrlBasedCorsConfigurationSource;
-import org.springframework.web.filter.CorsFilter;
 
 import java.util.List;
-import java.util.stream.Stream;
 
 @Configuration
 public class CorsConfig {
 
-    @Value("${app.cors.allowed-origins:https://www.devnav.tech,https://devnav.tech,http://localhost:*}")
-    private String allowedOrigins;
-    @Value("${app.cors.allowed-headers:*}") private String allowedHeaders;
-    @Value("${app.cors.exposed-headers:Location,Content-Disposition}") private String exposedHeaders;
-    @Value("${app.cors.allow-credentials:true}") private boolean allowCredentials;
-    @Value("${app.cors.max-age-seconds:3600}") private long maxAgeSeconds;
-
+    /**
+     * Spring Security の .cors() から参照される唯一の CORS 設定。
+     * ※ ここだけに集約（他で CORS を定義しない）
+     */
     @Bean
-    @Primary // ★ これで自作の CorsConfigurationSource を優先
+    @Primary
     public CorsConfigurationSource corsConfigurationSource() {
         CorsConfiguration cfg = new CorsConfiguration();
-        Stream.of(allowedOrigins.split(",")).map(String::trim).filter(s->!s.isEmpty()).forEach(cfg::addAllowedOriginPattern);
-        cfg.setAllowedMethods(List.of("GET","POST","PUT","PATCH","DELETE","OPTIONS"));
-        Stream.of(allowedHeaders.split(",")).map(String::trim).filter(s->!s.isEmpty()).forEach(cfg::addAllowedHeader);
-        Stream.of(exposedHeaders.split(",")).map(String::trim).filter(s->!s.isEmpty()).forEach(cfg::addExposedHeader);
-        cfg.setAllowCredentials(allowCredentials);
-        cfg.setMaxAge(maxAgeSeconds);
+
+        // 本番フロントのオリジンを固定で許可（credentials=true の場合は * ではなく固定値にする）
+        cfg.setAllowedOrigins(List.of(
+                "https://www.devnav.tech",
+                "https://devnav.tech",
+                "http://localhost:3000"   // 開発用（不要なら削除）
+        ));
+
+        // プリフライトを通すため OPTIONS を必ず含める
+        cfg.setAllowedMethods(List.of("GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS"));
+
+        // Authorization 等を通す
+        cfg.setAllowedHeaders(List.of("*"));
+
+        // ブラウザから見せたいレスポンスヘッダ（必要に応じて追加）
+        cfg.setExposedHeaders(List.of("Location", "Content-Disposition"));
+
+        cfg.setAllowCredentials(true);
+        cfg.setMaxAge(3600L);
+
         UrlBasedCorsConfigurationSource src = new UrlBasedCorsConfigurationSource();
         src.registerCorsConfiguration("/**", cfg);
         return src;
-    }
-
-    @Bean(name = "corsFilterRegistration")
-    public FilterRegistrationBean<CorsFilter> corsFilterRegistration(
-            @Qualifier("corsConfigurationSource") CorsConfigurationSource source // ★ 明示的に指定
-    ) {
-        FilterRegistrationBean<CorsFilter> bean = new FilterRegistrationBean<>(new CorsFilter(source));
-        bean.setOrder(Ordered.HIGHEST_PRECEDENCE);
-        return bean;
     }
 }
