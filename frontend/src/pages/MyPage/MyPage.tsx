@@ -293,23 +293,17 @@ export const MyPage: React.FC = () => {
         </div>
 
         <div className="space-y-6">
-          {/* <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
+          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-4">
             <div className="mb-2 flex items-center gap-2">
               <span className="text-xl">🧡</span>
               <h2 className="text-xl font-bold">いいねした記事一覧</h2>
             </div>
             <div className="rounded-lg border border-white/10 bg-white/5 px-4 py-3 text-white/70">
-              まだありません
+              <LikedArticlesList articles={likedArticles} variant="bare" />
             </div>
-          </div> */}
-
+          </div>
           <ActionHistoryList showTitle variant="card" />
         </div>
-        <LikedArticlesList
-          articles={likedArticles}
-          showTitle={false}
-          variant="bare"
-        />
       </div>
     </div>
   );

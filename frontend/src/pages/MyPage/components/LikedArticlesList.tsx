@@ -8,11 +8,7 @@ type Props = {
   variant?: "card" | "bare"; // 追加
 };
 
-export const LikedArticlesList = ({
-  articles,
-  showTitle = true,
-  variant = "card",
-}: Props) => {
+export const LikedArticlesList = ({ articles, variant = "card" }: Props) => {
   const Wrapper: React.FC<{ children: React.ReactNode }> = ({ children }) =>
     variant === "card" ? (
       <div className="rounded-2xl bg-white/5 border border-white/10 p-4 divide-y divide-white/10">
@@ -24,9 +20,6 @@ export const LikedArticlesList = ({
 
   return (
     <Wrapper>
-      {showTitle && (
-        <h2 className="text-xl font-bold mb-2">いいねした記事一覧</h2>
-      )}
       {articles.length === 0 ? (
         <div className="px-4 py-3 text-gray-400">まだありません</div>
       ) : (

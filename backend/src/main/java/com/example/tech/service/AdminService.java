@@ -11,6 +11,7 @@ import com.example.tech.repository.AdminRepository;
 import com.example.tech.repository.ArticleRepository;
 import com.example.tech.repository.SyntaxRepository;
 import com.example.tech.repository.UserRepository;
+import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
@@ -45,6 +46,7 @@ public class AdminService {
 
     }
 
+    @Transactional
     public void postSyntax(SyntaxRequest request, String adminEmail) {
         SyntaxEntity entity = new SyntaxEntity();
         UserEntity user = userRepository.findUserByEmail(adminEmail)
@@ -57,7 +59,7 @@ public class AdminService {
         entity.setSummary(request.getSummary());
         entity.setContent(request.getContent());
         entity.setPublished(true);
-        syntaxRepository.save(entity);
+        syntaxRepository.saveAndFlush(entity); // ← ここで即INSERTさせて例外を表面化
     }
 
     public Page<ArticleDTO> getAllArticles(Pageable pageable) {
