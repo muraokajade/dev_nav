@@ -1,5 +1,6 @@
 package com.example.tech.repository;
 
+import com.example.tech.dto.ArticleDTO;
 import com.example.tech.dto.CalendarActionDTO;
 import com.example.tech.entity.LikeEntity;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -45,4 +46,26 @@ public interface LikeRepository extends JpaRepository<LikeEntity,Long> {
                                                   @Param("start") LocalDateTime start,
                                                   @Param("end") LocalDateTime  end);
 
+
+    @Query("""
+    select new com.example.tech.dto.ArticleDTO(
+            a.id,
+            a.slug,
+            a.title,
+            a.summary,
+            a.imageUrl,
+            a.authorName,
+            a.category,
+            a.createdAt,
+            a.updatedAt,
+            a.published,
+            a.userEmail
+        )
+        from LikeEntity l
+        left join l.article a
+        where l.user.id = :userId
+            and a.published = true
+        order by l.createdAt desc 
+    """)
+    List<ArticleDTO> findLikedArticles(@Param("userId") Long userId);
 }

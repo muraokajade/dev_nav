@@ -78,13 +78,13 @@ public class ArticleController {
 
         return ResponseEntity.ok(readArticleIds);
     }
-    @GetMapping("/liked")
-    public ResponseEntity<List<ArticleDTO>> geLikedArticles(@RequestHeader(name = "Authorization") String token)
-    {
-        String userEmail = firebaseAuthService.verifyAndGetEmail(token);
-        List<ArticleDTO> likeArticles = articleService.findLikedArticlesByUser(userEmail);
-        return ResponseEntity.ok(likeArticles);
-    }
+//    @GetMapping("/liked")
+//    public ResponseEntity<List<ArticleDTO>> geLikedArticles(@RequestHeader(name = "Authorization") String token)
+//    {
+//        String userEmail = firebaseAuthService.verifyAndGetEmail(token);
+//        List<ArticleDTO> likeArticles = articleService.findLikedArticlesByUser(userEmail);
+//        return ResponseEntity.ok(likeArticles);
+//    }
     @GetMapping("/read/status")
     public Boolean isReadArticle(@RequestHeader(name = "Authorization") String token,
                                  @RequestParam Long articleId)

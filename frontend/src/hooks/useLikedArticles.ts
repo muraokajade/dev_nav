@@ -22,21 +22,29 @@ export function useLikedArticles(authHeader?: Record<string, string>): {
       setLoading(true);
       setError(null);
       try {
-        const res = await apiHelper.get("api/articles/liked", {
+        const res = await apiHelper.get("/api/articles/liked", {
           headers: authHeader,
         });
-        const raw = Array.isArray(res.data)
+        console.log(res.data);
+        const arr = Array.isArray(res.data)
           ? res.data
-          : typeof res.data === "object" && res.data
-          ? Object.values(res.data as Record<string, string>)
+          : Array.isArray(res.data?.content)
+          ? res.data.content
           : [];
-        const safe: Article[] = (raw as any[])
-          .map((a) => ({
+
+        const safe: Article[] = arr
+          .map((a: any) => ({
             id: Number(a?.id ?? a?.articleId),
-            title: String(a?.tittle ?? ""),
-            authorName: String(a?.authorName ?? a?.authoer ?? ""),
+            title: String(a?.title ?? a?.articleTitle ?? ""), // ← tittle→title
+            authorName: String(
+              a?.authorName ?? a?.author ?? a?.displayName ?? ""
+            ),
           }))
-          .filter((a) => Number.isFinite(a.id) && a.title);
+          .filter((a: any) => Number.isFinite(a.id) && a.title);
+
+        // デバッグ：キー確認
+        console.log("sample keys:", arr[0] && Object.keys(arr[0]));
+
         if (!abort) setData(safe);
       } catch (e) {
         if (!abort) {

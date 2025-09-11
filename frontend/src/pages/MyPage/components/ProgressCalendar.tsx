@@ -141,9 +141,9 @@ export const ProgressCalendar: React.FC<ProgressCalendarProps> = ({
         <button style={btnStyle} onClick={onPrevMonth}>
           ← 前の月
         </button>
-        <span style={{ fontWeight: 700 }}>
+        <p style={{ fontWeight: 700 }}>
           {year}年{month}月
-        </span>
+        </p>
         <button style={btnStyle} onClick={onNextMonth}>
           次の月 →
         </button>

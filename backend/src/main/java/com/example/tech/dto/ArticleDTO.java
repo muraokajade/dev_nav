@@ -28,4 +28,32 @@ public class ArticleDTO {
         this.userEmail = userEmail;
         this.authorName = authorName;
     }
+
+    // ArticleDTO に追加（順序はJPQLと完全一致させる）
+    public ArticleDTO(
+            Long id,
+            String slug,
+            String title,
+            String summary,
+            String imageUrl,
+            String authorName,
+            String category,
+            LocalDateTime createdAt,
+            LocalDateTime updatedAt,
+            boolean published,
+            String userEmail // ←必要なら最後に
+    ) {
+        this.id = id;
+        this.slug = slug;
+        this.title = title;
+        this.summary = summary;
+        this.imageUrl = imageUrl;
+        this.authorName = authorName;
+        this.category = category;
+        this.createdAt = createdAt;
+        this.updatedAt = updatedAt;
+        this.published = published;
+        this.userEmail = userEmail;
+    }
+
 }

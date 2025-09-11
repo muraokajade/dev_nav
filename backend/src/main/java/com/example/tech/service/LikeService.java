@@ -1,5 +1,6 @@
 package com.example.tech.service;
 
+import com.example.tech.dto.ArticleDTO;
 import com.example.tech.entity.ArticleEntity;
 import com.example.tech.entity.LikeEntity;
 import com.example.tech.entity.UserEntity;
@@ -9,6 +10,8 @@ import com.example.tech.repository.UserRepository;
 import jakarta.transaction.Transactional;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
+
+import java.util.List;
 
 @Service
 @Transactional
@@ -61,5 +64,12 @@ public class LikeService {
 
     public Long countOnlyByArticleId(Long articleId) {
         return likeRepository.countByArticleId(articleId);
+    }
+
+    public List<ArticleDTO> likedArticles(String email) {
+        UserEntity user = userRepository.findByEmail(email)
+                .orElseThrow(() ->new RuntimeException("ユーザーが見つかりません"));
+        Long userId = user.getId();
+        return likeRepository.findLikedArticles(userId);
     }
 }

@@ -1,14 +1,14 @@
 // src/main/java/com/example/tech/controller/UserController.java
 package com.example.tech.controller;
 
-import com.example.tech.dto.ActionHistoryDTO;
-import com.example.tech.dto.CalendarActionDTO;
-import com.example.tech.dto.UserDTO;
-import com.example.tech.dto.UserStatusDTO;
+import com.example.tech.dto.*;
 import com.example.tech.entity.UserEntity;
+import com.example.tech.repository.ArticleRepository;
+import com.example.tech.repository.LikeRepository;
 import com.example.tech.repository.UserRepository;
 import com.example.tech.service.ArticleReadService;
 import com.example.tech.service.FirebaseAuthService;
+import com.example.tech.service.LikeService;
 import com.example.tech.service.UserStatusService;
 import lombok.RequiredArgsConstructor;
 import org.springframework.http.ResponseEntity;
@@ -33,7 +33,9 @@ public class UserController {
     private final FirebaseAuthService firebaseAuthService;
     private final UserRepository userRepository;
     private final UserStatusService userStatusService;
-    private final ArticleReadService articleReadService; // 未使用なら削除してOK
+    private final ArticleReadService articleReadService;
+    private final ArticleRepository articleRepository;
+    private final LikeService likeService;// 未使用なら削除してOK
 
     /** "Bearer xxx" の前置詞を除去 */
     private String stripBearer(String token) {
@@ -101,6 +103,12 @@ public class UserController {
             e.printStackTrace();                    // 本番では logger.warn/error 推奨
             return ResponseEntity.ok(List.of());    // 500にせず空配列で返す
         }
+    }
+
+    @GetMapping("/articles/liked")
+    public List<ArticleDTO> getLikedArticles(@RequestHeader("Authorization") String token) {
+        String email = firebaseAuthService.verifyAndGetEmail(token);
+        return likeService.likedArticles(email);
     }
 
 }
