@@ -1,5 +1,5 @@
 // src/pages/ProceduresPage.tsx
-import React, { useEffect, useMemo, useState } from "react";
+import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { apiHelper } from "../../../libs/apiHelper";
 import { usePagination } from "../../../hooks/usePagination";
@@ -7,7 +7,12 @@ import { Procedure } from "../../../models/Procedure";
 import { Pagination } from "../../../utils/Pagination";
 import { useReadStatus, ReadTarget } from "../../../hooks/useReadStatus";
 
-// セクション見出し
+/* ================== 設定 ================== */
+const CACHE_KEY = "procedures_normalized_v1";
+const CACHE_TTL_MS = 10 * 60 * 1000; // 10分
+const PAGE_SIZE = 10;
+
+/* ================== セクション見出し ================== */
 const sectionTitles: Record<string, string> = {
   "1": "セクション1:環境構築",
   "2": "セクション2:firebase × Reactで管理者ユーザー作成 + 認証機能実装",
@@ -22,45 +27,44 @@ const sectionTitles: Record<string, string> = {
   "11": "セクション11:マイページ機能",
 };
 
-// 全角→半角（数字のみ）
+/* ================== 正規化ユーティリティ ================== */
+// 事前コンパイルして微最適化
+const reZenkakuDigits = /[０-９]/g;
+const reDelimsToHyphen = /[‐–—−－/／⁄・\.．,、]/g;
+const reSpaces = /\s+/g;
+
 const toHalfWidthDigits = (s: string) =>
-  (s || "").replace(/[０-９]/g, (ch) =>
+  (s || "").replace(reZenkakuDigits, (ch) =>
     String.fromCharCode(ch.charCodeAt(0) - 0xfee0)
   );
 
-// stepNumber 正規化
-// 例: "59" -> "5-09", "509" -> "5-09", "5/9" -> "5-09"
+// 入力例: "59" -> "5-09", "509" -> "5-09", "5/9" -> "5-09", "5-9" -> "5-09"
 const normalizeStep = (raw: string): string => {
   const t0 = toHalfWidthDigits(String(raw ?? ""))
-    .replace(/[‐–—−－/／⁄・\.．,、]/g, "-") // 記号類をハイフンに寄せる
-    .replace(/\s+/g, "")
+    .replace(reDelimsToHyphen, "-")
+    .replace(reSpaces, "")
     .trim();
 
-  // 既に "x-yy" 形式なら整形だけして返す
   const mHyphen = t0.match(/^(\d+)-(\d+)$/);
   if (mHyphen) {
-    const major = String(parseInt(mHyphen[1], 10)); // 先頭ゼロ除去
-    const minor = mHyphen[2].padStart(2, "0"); // 2桁固定
+    const major = String(parseInt(mHyphen[1], 10));
+    const minor = mHyphen[2].padStart(2, "0");
     return `${major}-${minor}`;
   }
 
-  // 数字のみ（ハイフンなし）
   if (/^\d+$/.test(t0)) {
     const len = t0.length;
-    if (len === 1) return `0-0${t0}`; // 安全側（並びに影響しないよう後段で999扱いしない）
-    if (len === 2) return `${t0[0]}-${t0.slice(1).padStart(2, "0")}`; // "59" -> "5-09"
-    if (len === 3) return `${t0[0]}-${t0.slice(1).padStart(2, "0")}`; // "509" -> "5-09"
-    // 4桁以上: 末尾2桁=minor, それ以外=major
+    if (len === 1) return `0-0${t0}`;
+    if (len === 2) return `${t0[0]}-${t0.slice(1).padStart(2, "0")}`;
+    if (len === 3) return `${t0[0]}-${t0.slice(1).padStart(2, "0")}`;
     const major = String(parseInt(t0.slice(0, -2), 10));
     const minor = t0.slice(-2).padStart(2, "0");
     return `${major}-${minor}`;
   }
 
-  // それ以外はそのまま返す（後段でフォールバック）
   return t0;
 };
 
-// major, minor を抽出（失敗時は [999,999] で最後尾へ）
 const parseStep = (raw: string): [number, number] => {
   const s = normalizeStep(raw);
   const m = s.match(/^(\d+)-(\d{2})$/);
@@ -74,8 +78,14 @@ const parseStep = (raw: string): [number, number] => {
 
 type Row = Procedure & { major: number; minor: number; stepNumber: string };
 
+type CacheShape = {
+  at: number;
+  rows: Row[];
+};
+
+/* ================== 本体 ================== */
 export const ProceduresPage = () => {
-  const [procedures, setProcedures] = useState<Row[]>([]);
+  const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
@@ -85,63 +95,101 @@ export const ProceduresPage = () => {
 
   const { totalPages, displayPage, setDisplayPage, setTotalPages } =
     usePagination(initialPage);
-  const pageSize = 10;
 
   const { isRead } = useReadStatus(ReadTarget.Procedures);
 
+  const abortRef = useRef<AbortController | null>(null);
+
   useEffect(() => {
-    const fetchAll = async () => {
+    // 1) キャッシュ命中なら即描画
+    const cachedRaw = sessionStorage.getItem(CACHE_KEY);
+    if (cachedRaw) {
+      try {
+        const cached: CacheShape = JSON.parse(cachedRaw);
+        if (
+          Date.now() - cached.at < CACHE_TTL_MS &&
+          Array.isArray(cached.rows)
+        ) {
+          setRows(cached.rows);
+          setTotalPages(Math.ceil(cached.rows.length / PAGE_SIZE));
+          setLoading(false);
+          return;
+        }
+      } catch {
+        /* ignore */
+      }
+    }
+
+    // 2) 未命中なら取得
+    abortRef.current?.abort();
+    const ac = new AbortController();
+    abortRef.current = ac;
+
+    (async () => {
       setLoading(true);
       setError(null);
       try {
-        // まとめて全件取得
-        const first = await apiHelper.get(`/api/procedures?page=0&size=50`);
-        const total = Number(first.data.totalPages) || 1;
+        // まず1ページ取得して total を知る
+        const first = await apiHelper.get(`/api/procedures`, {
+          params: { page: 0, size: 50 },
+          signal: ac.signal as AbortSignal,
+        });
+        const total = Number(first.data?.totalPages) || 1;
+
         const rest =
           total > 1
             ? await Promise.all(
                 Array.from({ length: total - 1 }, (_, i) =>
-                  apiHelper.get(`/api/procedures?page=${i + 1}&size=50`)
+                  apiHelper.get(`/api/procedures`, {
+                    params: { page: i + 1, size: 50 },
+                    signal: ac.signal as AbortSignal,
+                  })
                 )
               )
             : [];
 
         const content: Procedure[] = [
-          ...first.data.content,
-          ...rest.flatMap((r) => r.data.content),
+          ...(first.data?.content ?? []),
+          ...rest.flatMap((r) => r.data?.content ?? []),
         ];
 
-        // 正規化 + major/minor 算出
+        // 正規化 + ソート
         const normalized: Row[] = content.map((p) => {
           const step = normalizeStep(p.stepNumber);
           const [major, minor] = parseStep(step);
           return { ...p, stepNumber: step, major, minor };
         });
-
-        // major -> minor で昇順ソート
         normalized.sort((a, b) =>
           a.major !== b.major ? a.major - b.major : a.minor - b.minor
         );
 
-        setProcedures(normalized);
-        setTotalPages(Math.ceil(normalized.length / pageSize));
+        setRows(normalized);
+        const totalP = Math.ceil(normalized.length / PAGE_SIZE);
+        setTotalPages(totalP);
+
+        // キャッシュ保存
+        const payload: CacheShape = { at: Date.now(), rows: normalized };
+        sessionStorage.setItem(CACHE_KEY, JSON.stringify(payload));
       } catch (e: any) {
-        console.error("手順一覧取得失敗", e);
-        setError("手順一覧の取得に失敗しました");
-        setProcedures([]);
+        if (e?.name !== "CanceledError") {
+          console.error("手順一覧取得失敗", e);
+          setError("手順一覧の取得に失敗しました");
+        }
+        setRows([]);
         setTotalPages(0);
       } finally {
         setLoading(false);
       }
-    };
+    })();
 
-    fetchAll();
+    return () => ac.abort();
   }, [setTotalPages]);
 
-  const start = (displayPage - 1) * pageSize;
+  // 表示ページの行だけ切り出し
+  const start = (displayPage - 1) * PAGE_SIZE;
   const visible = useMemo(
-    () => procedures.slice(start, start + pageSize),
-    [procedures, start]
+    () => rows.slice(start, start + PAGE_SIZE),
+    [rows, start]
   );
 
   return (

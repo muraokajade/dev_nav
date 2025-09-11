@@ -4,12 +4,42 @@
 import React, { useEffect, useRef, useState } from "react";
 import { Link, useParams } from "react-router-dom";
 import ReactMarkdown from "react-markdown";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+
 import dayjs from "dayjs";
 import { useAuth } from "../../../context/useAuthContext";
 import { apiHelper } from "../../../libs/apiHelper";
 import { ThreadComments } from "../../../components/ThreadComments";
+
+// ★ PrismLight + 必要言語だけ登録
+import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
+import oneDark from "react-syntax-highlighter/dist/esm/styles/prism/one-dark";
+
+import tsx from "react-syntax-highlighter/dist/esm/languages/prism/tsx";
+import typescript from "react-syntax-highlighter/dist/esm/languages/prism/typescript";
+import javascript from "react-syntax-highlighter/dist/esm/languages/prism/javascript";
+import jsx from "react-syntax-highlighter/dist/esm/languages/prism/jsx";
+import java from "react-syntax-highlighter/dist/esm/languages/prism/java";
+import bash from "react-syntax-highlighter/dist/esm/languages/prism/bash";
+import json from "react-syntax-highlighter/dist/esm/languages/prism/json";
+import yaml from "react-syntax-highlighter/dist/esm/languages/prism/yaml";
+import sql from "react-syntax-highlighter/dist/esm/languages/prism/sql";
+import python from "react-syntax-highlighter/dist/esm/languages/prism/python";
+import css from "react-syntax-highlighter/dist/esm/languages/prism/css";
+import markup from "react-syntax-highlighter/dist/esm/languages/prism/markup";
+
+SyntaxHighlighter.registerLanguage("tsx", tsx);
+SyntaxHighlighter.registerLanguage("typescript", typescript);
+SyntaxHighlighter.registerLanguage("javascript", javascript);
+SyntaxHighlighter.registerLanguage("jsx", jsx);
+SyntaxHighlighter.registerLanguage("java", java);
+SyntaxHighlighter.registerLanguage("bash", bash);
+SyntaxHighlighter.registerLanguage("json", json);
+SyntaxHighlighter.registerLanguage("yaml", yaml);
+SyntaxHighlighter.registerLanguage("yml", yaml);
+SyntaxHighlighter.registerLanguage("sql", sql);
+SyntaxHighlighter.registerLanguage("python", python);
+SyntaxHighlighter.registerLanguage("css", css);
+SyntaxHighlighter.registerLanguage("html", markup);
 
 /* --- UI bits --- */
 type CodeBlockProps = {
@@ -106,7 +136,6 @@ export const ProcedureDetailPage = () => {
     ? { Authorization: `Bearer ${idToken}` }
     : undefined;
 
-  // 表示用
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [createdAt, setCreatedAt] = useState("");
@@ -114,19 +143,16 @@ export const ProcedureDetailPage = () => {
   const [imageUrl, setImageUrl] = useState("");
   const [content, setContent] = useState("");
 
-  // 状態
   const [procedureId, setProcedureId] = useState<number | null>(null);
   const [isRead, setIsRead] = useState(false);
   const [myUserId, setMyUserId] = useState<number | null>(null);
   const [myEmail, setMyEmail] = useState<string | null>(null);
   const [tab, setTab] = useState<"comment" | "qa">("comment");
 
-  // UI
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [pending, setPending] = useState(false);
 
-  // Toast
   const [toast, setToast] = useState<{
     msg: string;
     kind?: "success" | "error";
@@ -172,7 +198,6 @@ export const ProcedureDetailPage = () => {
     }
   };
 
-  // 詳細取得
   useEffect(() => {
     if (!id) {
       setErrorMsg("URLのIDが取得できません");
@@ -204,7 +229,6 @@ export const ProcedureDetailPage = () => {
     };
   }, [id]);
 
-  // ログインユーザー（id/email）
   useEffect(() => {
     if (!idToken) {
       setMyUserId(null);
@@ -223,7 +247,6 @@ export const ProcedureDetailPage = () => {
       });
   }, [idToken]);
 
-  // 読了状態
   useEffect(() => {
     if (!idToken || !procedureId) return;
     (async () => {
@@ -353,7 +376,7 @@ export const ProcedureDetailPage = () => {
         </div>
       </div>
 
-      {/* タブ & コメント/Q&A */}
+      {/* コメント/Q&A */}
       <div className="max-w-4xl mx-auto mt-8 rounded-2xl bg-zinc-900 text-white shadow-2xl p-4">
         <div className="flex gap-2 mb-4">
           <button
@@ -380,14 +403,14 @@ export const ProcedureDetailPage = () => {
 
         {procedureId && tab === "comment" && (
           <ThreadComments
-            type="PROCEDURE" // or "SYNTAX" | "PROCEDURE"
+            type="PROCEDURE"
             refId={procedureId}
-            category="comment" // or "qa"
+            category="comment"
             readOnly={!idToken}
             hideComposer={!idToken}
             myUserId={myUserId ?? null}
-            myEmail={myEmail ?? null} // ★ これが無いと所有判定できず編集/削除が出ない
-            authHeader={authHeader} // ★ PUT/DELETE/POST 用
+            myEmail={myEmail ?? null}
+            authHeader={authHeader}
           />
         )}
         {procedureId && tab === "qa" && (

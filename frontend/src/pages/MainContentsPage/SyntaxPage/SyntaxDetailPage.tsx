@@ -4,15 +4,43 @@
 import React, { useEffect, useRef, useState } from "react";
 import ReactMarkdown from "react-markdown";
 import { Link, useParams } from "react-router-dom";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
-import dayjs from "dayjs";
 
+import dayjs from "dayjs";
 import { useAuth } from "../../../context/useAuthContext";
 import { LikeButton } from "../../../utils/LikeButton";
 import { apiHelper } from "../../../libs/apiHelper";
 import { ReviewScore } from "../../../utils/ReviewScore";
 import { ThreadComments } from "../../../components/ThreadComments";
+// ★ PrismLight + 必要言語だけ登録
+import { PrismLight as SyntaxHighlighter } from "react-syntax-highlighter";
+import oneDark from "react-syntax-highlighter/dist/esm/styles/prism/one-dark";
+
+import tsx from "react-syntax-highlighter/dist/esm/languages/prism/tsx";
+import typescript from "react-syntax-highlighter/dist/esm/languages/prism/typescript";
+import javascript from "react-syntax-highlighter/dist/esm/languages/prism/javascript";
+import jsx from "react-syntax-highlighter/dist/esm/languages/prism/jsx";
+import java from "react-syntax-highlighter/dist/esm/languages/prism/java";
+import bash from "react-syntax-highlighter/dist/esm/languages/prism/bash";
+import json from "react-syntax-highlighter/dist/esm/languages/prism/json";
+import yaml from "react-syntax-highlighter/dist/esm/languages/prism/yaml";
+import sql from "react-syntax-highlighter/dist/esm/languages/prism/sql";
+import python from "react-syntax-highlighter/dist/esm/languages/prism/python";
+import css from "react-syntax-highlighter/dist/esm/languages/prism/css";
+import markup from "react-syntax-highlighter/dist/esm/languages/prism/markup";
+
+SyntaxHighlighter.registerLanguage("tsx", tsx);
+SyntaxHighlighter.registerLanguage("typescript", typescript);
+SyntaxHighlighter.registerLanguage("javascript", javascript);
+SyntaxHighlighter.registerLanguage("jsx", jsx);
+SyntaxHighlighter.registerLanguage("java", java);
+SyntaxHighlighter.registerLanguage("bash", bash);
+SyntaxHighlighter.registerLanguage("json", json);
+SyntaxHighlighter.registerLanguage("yaml", yaml);
+SyntaxHighlighter.registerLanguage("yml", yaml);
+SyntaxHighlighter.registerLanguage("sql", sql);
+SyntaxHighlighter.registerLanguage("python", python);
+SyntaxHighlighter.registerLanguage("css", css);
+SyntaxHighlighter.registerLanguage("html", markup);
 
 /* ---------- helpers ---------- */
 const emailFromJwt = (token?: string | null): string | null => {
@@ -107,9 +135,8 @@ const Toast = ({
 export const SyntaxDetailPage = () => {
   const { idAndSlug } = useParams();
   const id = idAndSlug?.match(/^\d+/)?.[0] ?? idAndSlug?.split("-")[0] ?? null;
-  const { idToken } = useAuth(); // user は使わない
+  const { idToken } = useAuth();
 
-  // axios: Authorization をデフォルト設定
   useEffect(() => {
     if (idToken) {
       apiHelper.defaults.headers.common["Authorization"] = `Bearer ${idToken}`;
@@ -122,7 +149,6 @@ export const SyntaxDetailPage = () => {
     ? { Authorization: `Bearer ${idToken}` }
     : undefined;
 
-  // 本文
   const [title, setTitle] = useState("");
   const [author, setAuthor] = useState("");
   const [createdAt, setCreatedAt] = useState("");
@@ -131,16 +157,14 @@ export const SyntaxDetailPage = () => {
   const [content, setContent] = useState("");
   const [syntaxId, setSyntaxId] = useState<number | null>(null);
 
-  // 状態
   const [liked, setLiked] = useState(false);
   const [likeCount, setLikeCount] = useState(0);
   const [isRead, setIsRead] = useState(false);
   const [myUserId, setMyUserId] = useState<number | null>(null);
   const [myEmail, setMyEmail] = useState<string | null>(emailFromJwt(idToken));
   const [pending, setPending] = useState(false);
-  const [tab, setTab] = useState<"review" | "comment" | "qa">("review"); // ★ 初期は review
+  const [tab, setTab] = useState<"review" | "comment" | "qa">("review");
 
-  // toast
   const [toast, setToast] = useState<{
     msg: string;
     kind?: "success" | "error";
@@ -197,7 +221,6 @@ export const SyntaxDetailPage = () => {
     }
   };
 
-  // 読了トグル
   const handleRead = async () => {
     if (!idToken || !syntaxId || pending) return;
     setPending(true);
@@ -226,7 +249,6 @@ export const SyntaxDetailPage = () => {
     }
   };
 
-  // 初期取得
   useEffect(() => {
     if (!id) return;
     apiHelper
@@ -238,12 +260,11 @@ export const SyntaxDetailPage = () => {
         setCategory(res.data.category ?? "");
         setImageUrl(res.data.imageUrl ?? "");
         setContent(res.data.content);
-        setSyntaxId(Number(res.data.id)); // ★ number化
+        setSyntaxId(Number(res.data.id));
       })
       .catch((e) => console.error("fetch syntaxes failed", e));
   }, [id]);
 
-  // /api/me から id と email を取得（失敗時は JWT から推測）
   useEffect(() => {
     if (!idToken) {
       setMyUserId(null);
@@ -262,7 +283,6 @@ export const SyntaxDetailPage = () => {
       });
   }, [idToken]);
 
-  // 読了状態
   useEffect(() => {
     if (!idToken || !syntaxId) return;
     let cancelled = false;
@@ -288,7 +308,6 @@ export const SyntaxDetailPage = () => {
     };
   }, [idToken, syntaxId]);
 
-  // いいね状態
   useEffect(() => {
     if (!idToken || !syntaxId) return;
     syncLikeState(syntaxId);
@@ -301,13 +320,11 @@ export const SyntaxDetailPage = () => {
     <div className="min-h-screen bg-gray-900">
       {toast && <Toast message={toast.msg} kind={toast.kind} />}
 
-      {/* いいね */}
       <div className="max-w-4xl mx-auto pt-6">
         <LikeButton liked={liked} count={likeCount} onClick={handleLike} />
       </div>
 
       <div className="max-w-4xl mx-auto py-6">
-        {/* 本文 */}
         <div className="prose prose-invert max-w-none whitespace-normal text-white bg-zinc-900 rounded-2xl shadow-2xl p-6">
           {imageUrl && (
             <img
@@ -380,7 +397,7 @@ export const SyntaxDetailPage = () => {
           </ReactMarkdown>
         </div>
 
-        {/* 本文の下：アクション行（読了ボタン） */}
+        {/* Actions */}
         <div className="flex flex-col md:flex-row items-start md:items-center gap-4 mt-6">
           <div className="flex-1" />
           <div className="flex-shrink-0">
@@ -394,7 +411,42 @@ export const SyntaxDetailPage = () => {
                   ? "opacity-60 cursor-not-allowed"
                   : ""
               }`}
-              onClick={handleRead}
+              onClick={
+                /* same as before */ () => {
+                  if (!idToken || !syntaxId || pending) return;
+                  (async () => {
+                    await (async () => {
+                      try {
+                        if (!isRead) {
+                          await apiHelper.post(
+                            `/api/syntaxes/read`,
+                            { syntaxId },
+                            {
+                              headers: {
+                                ...authHeader,
+                                "Content-Type": "application/json",
+                              },
+                            }
+                          );
+                          setIsRead(true);
+                          showToast("読了完了");
+                        } else {
+                          await apiHelper.delete(
+                            `/api/syntaxes/read/${syntaxId}`,
+                            { headers: authHeader }
+                          );
+                          setIsRead(false);
+                          showToast("読了解除");
+                        }
+                      } catch (e) {
+                        setIsRead((v) => !v);
+                        console.error(e);
+                        showToast("読了更新に失敗しました", "error");
+                      }
+                    })();
+                  })();
+                }
+              }
               disabled={!idToken || !syntaxId || pending}
               title={
                 !idToken
@@ -409,7 +461,7 @@ export const SyntaxDetailPage = () => {
           </div>
         </div>
 
-        {/* タブ & 各コンテンツ */}
+        {/* Tabs */}
         <div className="mt-8 rounded-2xl bg-zinc-900 text-white shadow-2xl p-4">
           <div className="flex gap-2 mb-4">
             <button
@@ -453,21 +505,19 @@ export const SyntaxDetailPage = () => {
             />
           )}
 
-          {/* コメント（上部Composer＋一覧、自分の投稿のみ 編集=緑／削除=赤） */}
           {syntaxId && tab === "comment" && (
             <ThreadComments
-              type="SYNTAX" // or "SYNTAX" | "PROCEDURE"
+              type="SYNTAX"
               refId={syntaxId}
-              category="comment" // or "qa"
+              category="comment"
               readOnly={!idToken}
               hideComposer={!idToken}
               myUserId={myUserId ?? null}
-              myEmail={myEmail ?? null} // ★ これが無いと所有判定できず編集/削除が出ない
-              authHeader={authHeader} // ★ PUT/DELETE/POST 用
+              myEmail={myEmail ?? null}
+              authHeader={authHeader}
             />
           )}
 
-          {/* Q&A（スレッド式） */}
           {syntaxId && tab === "qa" && (
             <ThreadComments
               type="SYNTAX"
@@ -482,7 +532,6 @@ export const SyntaxDetailPage = () => {
           )}
         </div>
 
-        {/* 戻る */}
         <div className="py-8">
           <Link to="/syntaxes">
             <p className="inline-block bg-blue-600 hover:bg-blue-700 text-white font-semibold py-2 px-4 rounded shadow transition duration-200">

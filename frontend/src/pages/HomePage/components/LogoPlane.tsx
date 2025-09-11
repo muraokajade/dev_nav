@@ -1,76 +1,85 @@
-import { useRef, useEffect } from "react";
+import React, { useEffect, useMemo, useRef } from "react";
 import { useFrame, useLoader } from "@react-three/fiber";
-import { TextureLoader, DoubleSide, Mesh, Texture, sRGBEncoding } from "three";
+import {
+  TextureLoader,
+  DoubleSide,
+  Mesh,
+  Texture,
+  SRGBColorSpace,
+} from "three";
 
 type LogoProps = {
   url: string;
-  position: [x: number, y: number, z: number];
-  rotationSpeed?: number;
+  position: [number, number, number];
   scale?: [number, number, number];
+  rotationSpeed?: number;
   bounce?: boolean;
   opacity?: number;
   initialRotation?: [number, number, number];
-  color?: string;
 };
+
 export const LogoPlane: React.FC<LogoProps> = ({
   url,
   position,
-  rotationSpeed = 0,
   scale = [1, 1, 1],
+  rotationSpeed = 0,
   bounce = false,
   opacity = 1,
   initialRotation = [0, 0, 0],
-  color,
 }) => {
   const mesh = useRef<Mesh>(null!);
-  const texture = useLoader(TextureLoader, url) as Texture;
+  const texture = useLoader(TextureLoader as any, url) as Texture;
 
-  // LogoPlane の useEffect を強化（追記2行：premultiplyAlpha と既存の sRGB 設定）
+  // テクスチャ設定：r152+ の colorSpace を使用（sRGBEncoding は使わない）
   useEffect(() => {
     texture.flipY = false;
-
-    // 互換：r152+ なら colorSpace、r150 なら encoding
+    // 型定義の差異を吸収するため in チェック
     if ("colorSpace" in texture) {
-      (texture as any).colorSpace = sRGBEncoding;
-    } else {
-      (texture as any).encoding = sRGBEncoding;
+      (texture as any).colorSpace = SRGBColorSpace;
     }
-
-    // 透明PNG/SVGを綺麗に
-    (texture as any).premultiplyAlpha = true;
-
+    (texture as any).premultiplyAlpha = true; // 透明PNGを綺麗に
     texture.needsUpdate = true;
   }, [texture]);
 
-  // 初期rotation
+  // 初期回転
   useEffect(() => {
-    if (mesh.current) {
-      mesh.current.rotation.set(...initialRotation);
-    }
+    if (mesh.current) mesh.current.rotation.set(...initialRotation);
   }, [initialRotation]);
 
+  // 画像アスペクト（未ロード時は 1）
+  const aspect = useMemo(() => {
+    const img: any = (texture as any).image;
+    const w = img?.width ?? img?.videoWidth ?? 1;
+    const h = img?.height ?? img?.videoHeight ?? 1;
+    return h > 0 ? w / h : 1;
+  }, [texture]);
+
+  // 回転＆バウンス（transform のみ）
   useFrame(() => {
-    if (rotationSpeed && mesh.current) {
-      mesh.current.rotation.z += rotationSpeed;
-    }
+    if (rotationSpeed && mesh.current) mesh.current.rotation.z += rotationSpeed;
     if (bounce && mesh.current) {
       mesh.current.position.y =
         position[1] + Math.sin(performance.now() * 0.002) * 0.2;
     }
   });
-  const image = texture.image as HTMLImageElement;
-  const aspect = image.width / image.height;
+
+  // 基準高さ 5、幅はアスペクトで決定。geometry は 1x1 固定で押し出し回避
+  const [sx, sy, sz] = scale;
+  const finalScale: [number, number, number] = [sx * 5 * aspect, sy * 5, sz];
 
   return (
-    <mesh ref={mesh} position={position} scale={scale}>
-      <planeGeometry args={[5 * aspect, 5]} />
-      <meshStandardMaterial
+    <mesh ref={mesh} position={position} scale={finalScale}>
+      <planeGeometry args={[1, 1]} />
+      <meshBasicMaterial
         map={texture}
         transparent
-        opacity={opacity} // opacity=1なら完全不透明
-        color="white" // "white"でテクスチャ本来の色
+        opacity={opacity}
+        color="white"
         side={DoubleSide}
+        toneMapped={false} // three@0.171 での正しい無効化
       />
     </mesh>
   );
 };
+
+export default LogoPlane;
