@@ -19,7 +19,7 @@ public class ThreadMessageEntity {
     private ThreadEntity thread;
 
     @Column(name = "user_id", nullable = false)
-    private String userId;
+    private Long userId;
     @Column(name = "body", nullable = false, columnDefinition = "TEXT")
     private String body;
 

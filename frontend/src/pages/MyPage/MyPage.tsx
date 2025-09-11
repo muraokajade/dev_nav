@@ -84,7 +84,10 @@ export const MyPage: React.FC = () => {
       let normalized: UserStats | null = null;
       for (const url of endpoints) {
         try {
+          // stats取得のtry内、normalize前に
+
           const { data } = await apiHelper.get(url, { headers: authHeader });
+          console.log("[stats raw]", url, data);
           normalized = normalizeStats(data);
           if (normalized) break;
         } catch (e: any) {

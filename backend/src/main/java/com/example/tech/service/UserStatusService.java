@@ -28,17 +28,19 @@ public class UserStatusService {
     private final ReviewCommentRepository reviewCommentRepository;
     private final UserRepository userRepository;
     private final ArticleReadRepository articleReadRepository;
+    private final ThreadMessageRepository threadMessageRepository;
+
     public UserStatusDTO getStatus(Long userId) {
         // 1. 各種累計取得
-        int articlesRead = articleReadRepository.countByUserId(userId);
-        int reviews = reviewScoreRepository.countByUserId(userId);
-        int likes = likeRepository.countByUserId(userId);
-        int comments = reviewCommentRepository.countByUserId(userId);
+        long articlesRead = articleReadRepository.countByUserId(userId);
+        long reviews = reviewScoreRepository.countByUserId(userId);
+        long likes = likeRepository.countByUserId(userId);
+        long comments = threadMessageRepository.countByUserId(userId);
 
         // 2. レベル・経験値計算例（超シンプルver）
-        int exp = articlesRead * 10 + reviews * 10 + likes * 5 + comments * 3; // ポイント合計
-        int level = exp / 100 + 1;
-        int expPercent = exp % 100;
+        long exp = articlesRead * 10 + reviews * 10 + likes * 5 + comments * 3; // ポイント合計
+        long level = exp / 100 + 1;
+        long expPercent = exp % 100;
 
         List<ArticleDTO> likedArticles = articleRepository.findLikedArticlesByUserId(userId);
 

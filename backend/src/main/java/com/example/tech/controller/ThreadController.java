@@ -8,7 +8,9 @@ import com.example.tech.domain.Category;
 import com.example.tech.domain.TargetType;
 import com.example.tech.domain.ThreadEntity;
 import com.example.tech.domain.ThreadMessageEntity;
+import com.example.tech.entity.UserEntity;
 import com.example.tech.repository.ThreadMessageRepository;
+import com.example.tech.repository.UserRepository;
 import com.example.tech.service.ThreadService;
 import jakarta.validation.constraints.NotBlank;
 import lombok.RequiredArgsConstructor;
@@ -20,6 +22,7 @@ import org.springframework.web.bind.annotation.*;
 import org.springframework.web.server.ResponseStatusException;
 
 import java.util.List;
+import java.util.Optional;
 
 /**
  * ThreadController
@@ -34,6 +37,7 @@ public class ThreadController {
 
     private final ThreadService threadService;
     private final ThreadMessageRepository threadMessageRepository;
+    private final UserRepository userRepository;
 
     // ========================= Helpers =========================
     /** "articles" / "syntaxes" / "procedures" / 大文字小文字 を吸収して Enum 化 */
@@ -105,7 +109,7 @@ public class ThreadController {
         var thread = threadOpt.get();
 
         List<MessageDto> messages = threadMessageRepository
-                .findByThreadIdOrderByIdDesc(thread.getId())
+                .findByThread_IdOrderByIdDesc(thread.getId())
                 .stream()
                 .map(m -> new MessageDto(
                         m.getId(),
@@ -147,10 +151,19 @@ public class ThreadController {
 
         ThreadEntity thread = threadService.getOrCreate(targetType, refId, categoryEnum);
         String email = currentUserEmail();
+        Optional<UserEntity> userOpt = userRepository.findByEmail(email);
+
+        if (userOpt.isEmpty()) {
+            return ResponseEntity.ok().build();  // 認証は通ってるが未登録
+            // return ResponseEntity.status(404).build();                    // 見つからない
+            // return ResponseEntity.ok().build();                           // 200で空返し（UIで無視）
+        }
+
+        Long userId = userOpt.get().getId();
 
         ThreadMessageEntity entity = ThreadMessageEntity.builder()
                 .thread(thread)
-                .userId(email)
+                .userId(userId)
                 .body(requestBody.body())
                 .build();
 
@@ -173,33 +186,68 @@ public class ThreadController {
         if (requestBody == null || requestBody.body() == null || requestBody.body().isBlank()) {
             throw new ResponseStatusException(HttpStatus.BAD_REQUEST, "body is required");
         }
-        ThreadMessageEntity existing = threadMessageRepository.findById(id).orElseThrow();
-        String email = currentUserEmail();
 
-        if (!existing.getUserId().equalsIgnoreCase(email)) {
+        // 対象メッセージ
+        ThreadMessageEntity existing = threadMessageRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        // 現在ユーザー（email → User → Long id）
+        String email = currentUserEmail();
+        var userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            // 認証は通っているがアプリ側ユーザー未登録
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "user not registered");
+        }
+        Long currentUserId = userOpt.get().getId();
+
+        // 自分のメッセージ以外は 403（※管理者は許可したいなら isAdmin() で例外）
+        if (!currentUserId.equals(existing.getUserId()) && !isAdmin()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         }
+
+        // 更新
         existing.setBody(requestBody.body());
         ThreadMessageEntity saved = threadMessageRepository.save(existing);
 
         return new MessageDto(
                 saved.getId(),
                 saved.getThread().getId(),
-                saved.getUserId(),
+                saved.getUserId(), // Long のまま返す or DTOをStringにしたいなら String.valueOf(...)
                 saved.getBody(),
                 saved.getCreatedAt(),
                 saved.getUpdatedAt()
         );
     }
 
+    // 例：管理者判定（任意）
+    private boolean isAdmin() {
+        return SecurityContextHolder.getContext().getAuthentication() != null &&
+                SecurityContextHolder.getContext().getAuthentication().getAuthorities().stream()
+                        .anyMatch(a -> a.getAuthority().equals("ROLE_ADMIN"));
+    }
+
+
     // DELETE /api/messages/{id}  … メッセージ削除（本人のみ）
     @DeleteMapping("/messages/{id}")
-    public ResponseEntity<?> deleteMessage(@PathVariable Long id) {
-        ThreadMessageEntity existing = threadMessageRepository.findById(id).orElseThrow();
+    public ResponseEntity<Void> deleteMessage(@PathVariable Long id) {
+        // 対象メッセージ取得（なければ 404）
+        ThreadMessageEntity existing = threadMessageRepository.findById(id)
+                .orElseThrow(() -> new ResponseStatusException(HttpStatus.NOT_FOUND));
+
+        // 現在ユーザー（email → User → Long id）
         String email = currentUserEmail();
-        if (!existing.getUserId().equalsIgnoreCase(email)) {
+        var userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            // 認証は通ってるがアプリ側ユーザー未登録
+            throw new ResponseStatusException(HttpStatus.UNAUTHORIZED, "user not registered");
+        }
+        Long currentUserId = userOpt.get().getId();
+
+        // 自分の投稿でなければ 403（管理者は許可したいなら isAdmin() で例外）
+        if (!currentUserId.equals(existing.getUserId()) && !isAdmin()) {
             throw new ResponseStatusException(HttpStatus.FORBIDDEN);
         }
+
         threadMessageRepository.delete(existing);
         return ResponseEntity.noContent().build();
     }

@@ -10,12 +10,12 @@ import java.util.List;
 @AllArgsConstructor
 @NoArgsConstructor
 public class UserStatusDTO {
-    private int articlesRead;
-    private int reviews;
-    private int likes;
-    private int comments;
-    private int level;
-    private int expPercent;
+    private Long articlesRead;
+    private Long reviews;
+    private Long likes;
+    private Long comments;
+    private Long level;
+    private Long expPercent;
     private List<ArticleDTO> likedArticles;
 }
 
