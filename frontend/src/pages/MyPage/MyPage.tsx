@@ -4,6 +4,7 @@ import { useAuth } from "../../context/useAuthContext";
 import { ProgressCalendar, DayAction } from "./components/ProgressCalendar";
 import { ActionHistoryList } from "./components/ActionHistoryList";
 import { apiHelper } from "../../libs/apiHelper";
+import { LevelBar } from "./components/LevelBar";
 
 /* ---------- types ---------- */
 type UserStats = {
@@ -11,35 +12,55 @@ type UserStats = {
   reviewCount: number;
   likeCount: number;
   commentCount: number;
+  level: number; // Lv. 表示用
+  expPercent: number;
 };
 const ZERO: UserStats = {
   readCount: 0,
   reviewCount: 0,
   likeCount: 0,
   commentCount: 0,
+  level: 1, // Lv. 表示用
+  expPercent: 0,
 };
 
 /* ---------- normalizers ---------- */
 function normalizeStats(data: any): UserStats | null {
   if (!data || typeof data !== "object") return null;
+
   const obj = data.data ?? data.status ?? data;
-  const pick = (keys: string[], fallback = 0) => {
+
+  const pickNum = (keys: string[], fallback = 0) => {
     for (const k of keys) {
       const v = obj?.[k];
-      if (typeof v === "number" && Number.isFinite(v)) return v;
+      const n = Number(v);
+      if (Number.isFinite(n)) return n;
     }
     return fallback;
   };
-  const readCount = pick([
+
+  const clamp0to100 = (n: number) => Math.max(0, Math.min(100, Math.round(n)));
+
+  const readCount = pickNum([
     "readCount",
     "reads",
     "read_count",
     "articlesRead",
     "read_total",
   ]);
-  const reviewCount = pick(["reviewCount", "reviews", "review_count"]);
-  const likeCount = pick(["likeCount", "likes", "like_count"]);
-  const commentCount = pick(["commentCount", "comments", "comment_count"]);
+  const reviewCount = pickNum(["reviewCount", "reviews", "review_count"]);
+  const likeCount = pickNum(["likeCount", "likes", "like_count"]);
+  const commentCount = pickNum([
+    "commentCount",
+    "comments",
+    "comment_count",
+    "threadMessages",
+  ]);
+
+  // 追加: level / expPercent もマッピング
+  const level = pickNum(["level", "lv"], 1) || 1;
+  const expPercentRaw = pickNum(["expPercent", "exp_percent", "exp"], 0);
+  const expPercent = clamp0to100(expPercentRaw);
 
   if (
     readCount + reviewCount + likeCount + commentCount === 0 &&
@@ -48,7 +69,8 @@ function normalizeStats(data: any): UserStats | null {
     // eslint-disable-next-line no-console
     console.warn("[MyPage] stats mapping fallback (all zero). raw =", data);
   }
-  return { readCount, reviewCount, likeCount, commentCount };
+
+  return { readCount, reviewCount, likeCount, commentCount, level, expPercent };
 }
 
 /* ---------- component ---------- */
@@ -213,20 +235,10 @@ export const MyPage: React.FC = () => {
         </div>
 
         <div className="mb-6 grid grid-cols-1 gap-6 md:grid-cols-2">
-          <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
-            <div className="mb-3 flex items-center gap-2">
-              <span className="text-xl font-bold">Lv.</span>
-              <span className="rounded-full bg-blue-500/20 px-2 py-0.5 text-xs text-blue-300">
-                EXP
-              </span>
-            </div>
-            <div className="h-3 w-full overflow-hidden rounded bg-white/10">
-              <div className="h-3 w-[35%] animate-[pulse_2.2s_ease-in-out_infinite] rounded bg-gradient-to-r from-blue-500 via-indigo-500 to-purple-500" />
-            </div>
-            <div className="mt-2 text-xs text-white/60">
-              ※ ダミー表示。今後スコアと連動
-            </div>
-          </div>
+          <LevelBar
+            level={stats.level ?? 1}
+            expPercent={stats.expPercent ?? 0}
+          />
 
           <div className="rounded-2xl border border-white/10 bg-white/[0.03] p-5">
             <div className="mb-2 text-center text-lg font-bold">
