@@ -1,4 +1,3 @@
-// src/pages/admin/AdminTechList.tsx
 import React, {
   useCallback,
   useEffect,
@@ -40,19 +39,23 @@ export const AdminTechList = () => {
   const [fetching, setFetching] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
-  // 再生成を避ける
+  // 追加: クライアント側検索・フィルタ・ソート
+  const [q, setQ] = useState("");
+  const [catFilter, setCatFilter] = useState("");
+  const [pubFilter, setPubFilter] = useState<"all" | "pub" | "draft">("all");
+  const [sortKey, setSortKey] = useState<"date" | "title">("date");
+  const [sortDir, setSortDir] = useState<"desc" | "asc">("desc");
+
   const categories = useMemo(
     () => ["Spring", "React", "Vue", "Firebase", "Tailwind", "Other"],
     []
   );
 
-  // Authorization ヘッダは idToken だけに依存
   const authHeader = useMemo(
     () => (idToken ? { Authorization: `Bearer ${idToken}` } : undefined),
     [idToken]
   );
 
-  /** 取得ロジック（副作用レス） */
   const fetchArticles = useCallback(
     async (signal?: AbortSignal) => {
       if (!idToken) return;
@@ -68,7 +71,6 @@ export const AdminTechList = () => {
         setArticles((prev) => (shallowEqual(prev, list) ? prev : list));
         setTotalPages((prev) => (prev === pages ? prev : pages));
       } catch (e: any) {
-        // axios のキャンセルは name か code で判別できる
         if (e?.name === "CanceledError" || e?.code === "ERR_CANCELED") return;
         console.error("記事取得失敗", e?.response?.status || e?.message);
         setError(
@@ -82,13 +84,11 @@ export const AdminTechList = () => {
     [idToken, pageIndex, authHeader, setTotalPages]
   );
 
-  /** 直近のリクエストを握るための ref（完了時の setFetching の取り違いを防ぐ） */
   const acRef = useRef<AbortController | null>(null);
 
   useEffect(() => {
     if (loading || !idToken) return;
 
-    // 既存の取得をキャンセルして新規開始
     if (acRef.current) acRef.current.abort();
     const ac = new AbortController();
     acRef.current = ac;
@@ -103,13 +103,12 @@ export const AdminTechList = () => {
     return () => ac.abort();
   }, [loading, idToken, pageIndex, fetchArticles]);
 
-  /** 公開切替 */
   const togglePublish = async (id: number) => {
     if (busy || !idToken) return;
     setBusy(true);
     setError(null);
 
-    // 楽観更新（UI先行）
+    // 楽観更新
     setArticles((prev) =>
       prev.map((a) => (a.id === id ? { ...a, published: !a.published } : a))
     );
@@ -118,14 +117,12 @@ export const AdminTechList = () => {
       await apiHelper.put(`/api/admin/articles/toggle/${id}`, null, {
         headers: authHeader,
       });
-
-      // 最新を反映（fetching は触らない）
       const ac = new AbortController();
       await fetchArticles(ac.signal);
     } catch (e: any) {
       console.error("公開状態切替失敗", e?.response?.status || e?.message);
       setError(e?.response?.data?.message || "公開状態の更新に失敗しました。");
-      // 失敗時ロールバック
+      // ロールバック
       setArticles((prev) =>
         prev.map((a) => (a.id === id ? { ...a, published: !a.published } : a))
       );
@@ -134,7 +131,6 @@ export const AdminTechList = () => {
     }
   };
 
-  /** 編集開始 */
   const handleEdit = async (id: number) => {
     if (busy || !idToken) return;
     setBusy(true);
@@ -163,7 +159,6 @@ export const AdminTechList = () => {
     }
   };
 
-  /** 更新 */
   const handleUpdate = async (id: number) => {
     if (busy || !idToken) return;
     if (!slug.trim() || !title.trim() || !category.trim() || !content.trim()) {
@@ -197,7 +192,6 @@ export const AdminTechList = () => {
     }
   };
 
-  /** 削除 */
   const handleDelete = async (id: number) => {
     if (busy || !idToken) return;
     if (!window.confirm("本当に削除しますか？")) return;
@@ -220,222 +214,326 @@ export const AdminTechList = () => {
 
   const paginate = (pageNumber: number) => setDisplayPage(pageNumber);
 
+  // 現ページのクライアントサイド絞り込み
+  const filtered = useMemo(() => {
+    let list = [...articles];
+    if (q.trim()) {
+      const s = q.trim().toLowerCase();
+      list = list.filter(
+        (a) =>
+          a.title.toLowerCase().includes(s) ||
+          a.slug.toLowerCase().includes(s) ||
+          (a.summary || "").toLowerCase().includes(s)
+      );
+    }
+    if (catFilter) list = list.filter((a) => a.category === catFilter);
+    if (pubFilter !== "all")
+      list = list.filter((a) =>
+        pubFilter === "pub" ? a.published : !a.published
+      );
+    list.sort((x, y) => {
+      if (sortKey === "date") {
+        const dx = +new Date(x.createdAt);
+        const dy = +new Date(y.createdAt);
+        return sortDir === "desc" ? dy - dx : dx - dy;
+      }
+      const tx = x.title.localeCompare(y.title);
+      return sortDir === "desc" ? tx * -1 : tx;
+    });
+    return list;
+  }, [articles, q, catFilter, pubFilter, sortKey, sortDir]);
+
   return (
-    <div className="min-h-screen bg-gray-900">
-      <div className="p-8 max-w-5xl mx-auto">
-        <h2 className="text-2xl text-white font-bold mb-4 border-b pb-2">
-          📚 投稿済み記事
-        </h2>
+    <div className="min-h-screen bg-gray-950">
+      <div className="p-6 md:p-8 max-w-6xl mx-auto">
+        <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-4">
+          <h2 className="text-xl md:text-2xl text-white font-bold">
+            📚 投稿済み記事
+          </h2>
+
+          {/* ツールバー（アイコンなし） */}
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-2 w-full md:w-auto">
+            <input
+              className="md:col-span-2 w-full pl-3 pr-3 py-2 rounded-lg bg-zinc-900/70 border border-white/10 text-zinc-100 placeholder:text-zinc-500"
+              placeholder="検索（タイトル/要約/slug）"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+            <select
+              className="rounded-lg bg-zinc-900/70 border border-white/10 text-zinc-100 px-3 py-2"
+              value={catFilter}
+              onChange={(e) => setCatFilter(e.target.value)}
+            >
+              <option value="">全部カテゴリ</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <select
+              className="rounded-lg bg-zinc-900/70 border border-white/10 text-zinc-100 px-3 py-2"
+              value={pubFilter}
+              onChange={(e) => setPubFilter(e.target.value as any)}
+            >
+              <option value="all">全て</option>
+              <option value="pub">公開</option>
+              <option value="draft">非公開</option>
+            </select>
+            <div className="flex gap-2">
+              <select
+                className="flex-1 rounded-lg bg-zinc-900/70 border border-white/10 text-zinc-100 px-3 py-2"
+                value={sortKey}
+                onChange={(e) => setSortKey(e.target.value as any)}
+              >
+                <option value="date">日付</option>
+                <option value="title">タイトル</option>
+              </select>
+              <button
+                className="rounded-lg border border-white/10 bg-zinc-900/70 px-3 text-zinc-200"
+                onClick={() =>
+                  setSortDir((d) => (d === "desc" ? "asc" : "desc"))
+                }
+                title="昇順/降順"
+              >
+                {sortDir === "desc" ? "降順" : "昇順"}
+              </button>
+            </div>
+          </div>
+        </header>
 
         {error && (
-          <div className="mb-4 rounded bg-red-900/30 text-red-200 px-3 py-2">
+          <div className="mb-3 rounded bg-red-900/30 text-red-200 px-3 py-2">
             {error}
           </div>
         )}
-        {fetching && <div className="mb-4 text-zinc-300">読み込み中...</div>}
-
-        {isEditModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/50">
-            <div className="bg-gray-900 text-white p-6 rounded-lg w-full max-w-2xl shadow-lg">
-              <h3 className="text-xl font-semibold mb-4">🛠️ 記事の編集</h3>
-
-              <label>slug</label>
-              <input
-                className="w-full text-black border px-3 py-2 rounded mb-2"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                placeholder="スラッグ（URL識別子）"
+        {fetching && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-40 rounded-lg bg-zinc-900/60 border border-white/10 animate-pulse"
               />
-
-              <label>title</label>
-              <input
-                className="w-full text-black border px-3 py-2 rounded mb-2"
-                placeholder="タイトル"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-
-              <label>category</label>
-              <select
-                className="w-full text-black border p-2 rounded mb-2"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                <option value="">カテゴリを選択</option>
-                {categories.map((cat) => (
-                  <option key={cat} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-
-              <label>summary</label>
-              <textarea
-                className="w-full text-black border px-3 py-2 rounded mb-4"
-                value={summary}
-                onChange={(e) => setSummary(e.target.value)}
-                placeholder="記事の要約を入力（任意）"
-                rows={6}
-              />
-
-              <label>content</label>
-              <textarea
-                className="w-full text-black border px-3 py-2 rounded mb-4"
-                placeholder="本文"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={6}
-              />
-
-              <input
-                type="file"
-                accept="image/*"
-                className="w-full"
-                onChange={(e) => {
-                  const file = e.target.files?.[0] ?? null;
-                  if (file && file.size > 5 * 1024 * 1024) {
-                    alert("5MB以下の画像を選択してください。");
-                    return;
-                  }
-                  setImageFile(file);
-                }}
-              />
-
-              <div className="flex justify-end gap-2 mt-4">
-                <button
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500"
-                  disabled={busy}
-                >
-                  キャンセル
-                </button>
-                {article && (
-                  <button
-                    onClick={() => handleUpdate(article.id)}
-                    className={`px-4 py-2 rounded ${
-                      busy
-                        ? "bg-blue-900 cursor-wait"
-                        : "bg-blue-600 hover:bg-blue-500"
-                    }`}
-                    disabled={busy}
-                  >
-                    {busy ? "更新中..." : "更新する"}
-                  </button>
-                )}
-              </div>
-            </div>
+            ))}
           </div>
         )}
 
-        <div className="space-y-2">
-          {articles.map((a) => (
-            <div
-              key={a.id}
-              className="flex flex-col sm:flex-row items-start bg-gray-800 text-white rounded-lg px-4 py-3 shadow-sm hover:shadow-md overflow-hidden"
-            >
-              {/* 左カラム */}
-              <div className="sm:w-[240px] w-full shrink-0 sm:pr-4 text-sm space-y-1 mb-4 sm:mb-0">
-                <Link
-                  to={`/articles/${a.id}-${a.slug}`}
-                  className="text-3xl hover:underline text-blue-200 break-words whitespace-normal"
-                >
-                  {a.title}
-                </Link>
-                <p className="text-gray-400 break-words">Slug: {a.slug}</p>
-                <p className="text-gray-400">カテゴリー: {a.category}</p>
-                <p className="text-gray-500 text-xs">
-                  投稿日: {dayjs(a.createdAt).format("YYYY/MM/DD HH:mm")}
-                </p>
-              </div>
+        {filtered.length === 0 && !fetching ? (
+          <div className="text-zinc-400 bg-zinc-900/50 border border-white/10 rounded-lg p-6">
+            該当する記事がありません。
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+            {filtered.map((a) => (
+              <article
+                key={a.id}
+                className="group rounded-xl bg-zinc-900/60 border border-white/10 hover:border-white/20 transition overflow-hidden"
+              >
+                <div className="p-4">
+                  <div className="flex items-start justify-between gap-3">
+                    <Link
+                      to={`/articles/${a.id}-${a.slug}`}
+                      className="text-lg md:text-xl font-semibold text-blue-200 leading-tight hover:underline break-words"
+                    >
+                      {a.title}
+                    </Link>
+                    <span
+                      className={`shrink-0 rounded px-2 py-1 text-xs font-semibold ${
+                        a.published
+                          ? "bg-emerald-500/15 text-emerald-300 border border-emerald-700/40"
+                          : "bg-yellow-500/20 text-yellow-200 border border-yellow-700/40"
+                      }`}
+                    >
+                      {a.published ? "公開中" : "非公開"}
+                    </span>
+                  </div>
 
-              {/* 区切り線 */}
-              <div className="hidden sm:block border-l border-gray-600 h-full mx-4" />
+                  <div className="mt-1 flex flex-wrap gap-2 text-xs text-zinc-400">
+                    <span className="rounded bg-white/5 border border-white/10 px-2 py-0.5">
+                      {a.category}
+                    </span>
+                    <span>{dayjs(a.createdAt).format("YYYY/MM/DD HH:mm")}</span>
+                    <span className="truncate">Slug: {a.slug}</span>
+                  </div>
 
-              {/* 要約（スクロール可能・高さ制限） */}
-              <div className="prose prose-invert max-w-none text-sm text-gray-200 break-words flex-grow sm:pr-4 overflow-auto max-h-32 rounded border border-white/10 p-3 bg-white/5">
-                <ReactMarkdown
-                  children={a.summary}
-                  components={{
-                    code({ className, children, ...props }: any) {
-                      const match = /language-(\w+)/.exec(className || "");
-                      const codeString = Array.isArray(children)
-                        ? children.join("")
-                        : String(children);
-                      return match ? (
-                        <SyntaxHighlighter
-                          style={oneDark}
-                          language={match[1]}
-                          PreTag="div"
-                          className="not-prose"
-                          {...props}
-                        >
-                          {codeString.replace(/\n$/, "")}
-                        </SyntaxHighlighter>
-                      ) : (
-                        <code className={className} {...props}>
-                          {children}
-                        </code>
-                      );
-                    },
-                    pre: ({ children }) => <>{children}</>,
-                  }}
-                />
-              </div>
+                  <div className="mt-3 prose prose-invert max-w-none text-sm text-zinc-200 break-words overflow-auto max-h-32 rounded border border-white/10 p-3 bg-white/5">
+                    <ReactMarkdown
+                      children={a.summary}
+                      components={{
+                        code({ className, children, ...props }: any) {
+                          const match = /language-(\w+)/.exec(className || "");
+                          const codeString = Array.isArray(children)
+                            ? children.join("")
+                            : String(children);
+                          return match ? (
+                            <SyntaxHighlighter
+                              style={oneDark}
+                              language={match[1]}
+                              PreTag="div"
+                              className="not-prose"
+                              {...props}
+                            >
+                              {codeString.replace(/\n$/, "")}
+                            </SyntaxHighlighter>
+                          ) : (
+                            <code className={className} {...props}>
+                              {children}
+                            </code>
+                          );
+                        },
+                        pre: ({ children }) => <>{children}</>,
+                      }}
+                    />
+                  </div>
 
-              {/* 右端 操作 */}
-              <div className="flex flex-row sm:flex-col gap-2 items-start sm:items-end w-full sm:w-auto">
-                <button
-                  onClick={() => togglePublish(a.id)}
-                  disabled={busy}
-                  className={`px-3 py-1 rounded text-sm font-semibold border w-full sm:w-auto ${
-                    a.published
-                      ? "bg-green-600 text-white border-green-700 hover:bg-green-500"
-                      : "bg-yellow-500 text-black border-yellow-600 hover:bg-yellow-400"
-                  } ${busy ? "opacity-70 cursor-wait" : ""}`}
-                >
-                  {a.published ? "公開中" : "非公開"}
-                </button>
+                  <div className="mt-4 flex items-center justify-end gap-2">
+                    <button
+                      onClick={() => togglePublish(a.id)}
+                      disabled={busy}
+                      className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm border ${
+                        a.published
+                          ? "bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-500"
+                          : "bg-yellow-500 text-black border-yellow-600 hover:bg-yellow-400"
+                      } ${busy ? "opacity-70 cursor-wait" : ""}`}
+                    >
+                      {a.published ? "公開中" : "非公開"}
+                    </button>
+                    <button
+                      onClick={() => handleEdit(a.id)}
+                      disabled={busy}
+                      className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm border ${
+                        busy
+                          ? "bg-blue-900 text-white"
+                          : "bg-blue-600 text-white border-blue-700 hover:bg-blue-500"
+                      }`}
+                    >
+                      編集
+                    </button>
+                    <button
+                      onClick={() => handleDelete(a.id)}
+                      disabled={busy}
+                      className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm border ${
+                        busy
+                          ? "bg-red-900 text-white"
+                          : "bg-red-600 text-white border-red-700 hover:bg-red-500"
+                      }`}
+                    >
+                      削除
+                    </button>
+                  </div>
+                </div>
+              </article>
+            ))}
+          </div>
+        )}
 
-                <button
-                  onClick={() => handleEdit(a.id)}
-                  disabled={busy}
-                  className={`px-3 py-1 rounded text-sm font-semibold border w-full sm:w-auto ${
-                    busy
-                      ? "bg-blue-900 text-white"
-                      : "bg-blue-600 text-white border border-blue-700 hover:bg-blue-500"
-                  }`}
-                >
-                  編集
-                </button>
-
-                <button
-                  onClick={() => handleDelete(a.id)}
-                  disabled={busy}
-                  className={`px-3 py-1 rounded text-sm font-semibold border w-full sm:w-auto ${
-                    busy
-                      ? "bg-red-900 text-white"
-                      : "bg-red-600 text-white border border-red-700 hover:bg-red-500"
-                  }`}
-                >
-                  削除
-                </button>
-              </div>
-            </div>
-          ))}
+        <div className="mt-6">
+          <Pagination
+            displayPage={displayPage}
+            totalPages={totalPages}
+            maxPageLinks={5}
+            paginate={paginate}
+          />
         </div>
-
-        <Pagination
-          displayPage={displayPage}
-          totalPages={totalPages}
-          maxPageLinks={5}
-          paginate={paginate}
-        />
       </div>
+
+      {/* 編集モーダル */}
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-gray-900 text-white p-6 rounded-lg w-full max-w-2xl shadow-2xl border border-white/10">
+            <h3 className="text-xl font-semibold mb-4">🛠️ 記事の編集</h3>
+
+            <label>slug</label>
+            <input
+              className="w-full text-black border px-3 py-2 rounded mb-2"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              placeholder="スラッグ（URL識別子）"
+            />
+
+            <label>title</label>
+            <input
+              className="w-full text-black border px-3 py-2 rounded mb-2"
+              placeholder="タイトル"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+
+            <label>category</label>
+            <select
+              className="w-full text-black border p-2 rounded mb-2"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              <option value="">カテゴリを選択</option>
+              {categories.map((cat) => (
+                <option key={cat} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+
+            <label>summary</label>
+            <textarea
+              className="w-full text-black border px-3 py-2 rounded mb-4"
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              placeholder="記事の要約を入力（任意）"
+              rows={6}
+            />
+
+            <label>content</label>
+            <textarea
+              className="w-full text-black border px-3 py-2 rounded mb-4"
+              placeholder="本文"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={6}
+            />
+
+            <input
+              type="file"
+              accept="image/*"
+              className="w-full"
+              onChange={(e) => {
+                const file = e.target.files?.[0] ?? null;
+                if (file && file.size > 5 * 1024 * 1024) {
+                  alert("5MB以下の画像を選択してください。");
+                  return;
+                }
+                setImageFile(file);
+              }}
+            />
+
+            <div className="flex justify-end gap-2 mt-4">
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500"
+                disabled={busy}
+              >
+                キャンセル
+              </button>
+              {article && (
+                <button
+                  onClick={() => handleUpdate(article.id)}
+                  className={`px-4 py-2 rounded ${
+                    busy
+                      ? "bg-blue-900 cursor-wait"
+                      : "bg-blue-600 hover:bg-blue-500"
+                  }`}
+                  disabled={busy}
+                >
+                  {busy ? "更新中..." : "更新する"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };
 
-/** 同一配列なら setState しないための浅い比較 */
 function shallowEqual(a: any, b: any) {
   if (a === b) return true;
   if (!a || !b) return false;

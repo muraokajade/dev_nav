@@ -74,13 +74,26 @@ public class AdminService {
     }
 
 
-    public void togglePublished(Long id) {
-        ArticleEntity entity = articleRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("記事が見つかりません。"));
-        entity.setPublished(!entity.published());//boolean反転
+    @Transactional
+    public void togglePublished(long id) {
+        ArticleEntity a = articleRepository.findById(id).orElseThrow();
+        a.setPublished(!a.isPublished());
 
-        articleRepository.save(entity);
+        // ★ ログ/監査で getUser().getDisplayName() を直叩きしない
+        String author = resolveAuthor(a);
+
+        articleRepository.save(a);
     }
+
+
+    private static String resolveAuthor(ArticleEntity e) {
+        UserEntity u = e.getUser();
+        if (e.getAuthorName() != null && !e.getAuthorName().isBlank()) return e.getAuthorName();
+        if (u != null && u.getDisplayName() != null && !u.getDisplayName().isBlank()) return u.getDisplayName();
+        if (e.getUserEmail() != null && !e.getUserEmail().isBlank()) return e.getUserEmail();
+        return "不明";
+    }
+
 
     public void toggleSyntaxPublished(Long id) {
         SyntaxEntity entity = syntaxRepository.findById(id)
@@ -97,22 +110,48 @@ public class AdminService {
 
         return convertToArticleDTO(entity);
     }
-    private ArticleDTO convertToArticleDTO(ArticleEntity entity) {
+    // AdminService.java
+    private static boolean isBlank(String s) {
+        return s == null || s.trim().isEmpty();
+    }
+
+    private static String firstNonBlank(String... arr) {
+        if (arr == null) return "不明";
+        for (String s : arr) {
+            if (!isBlank(s)) return s;
+        }
+        return "不明";
+    }
+
+    private ArticleDTO convertToArticleDTO(ArticleEntity e) {
+        if (e == null) throw new IllegalArgumentException("ArticleEntity is null");
+
+        // ★ 1回だけ呼ぶ（nullの可能性あり）
+        UserEntity u = e.getUser();
+
+        // ★ ここで絶対にチェーン呼び出しをしない
+        String author = firstNonBlank(
+                e.getAuthorName(),
+                (u != null ? u.getDisplayName() : null),
+                e.getUserEmail()
+        );
+
         return new ArticleDTO(
-                entity.getId(),
-                entity.getSlug(),
-                entity.getTitle(),
-                entity.getUserEmail(),
-                entity.getUser().getDisplayName(),
-                entity.getCategory(),
-                entity.getSummary(),
-                entity.getContent(),
-                entity.getImageUrl(),
-                entity.getCreatedAt(),
-                entity.getUpdatedAt(),
-                entity.isPublished()
+                e.getId(),
+                e.getSlug(),
+                e.getTitle(),
+                e.getUserEmail(), // submitterEmail等の意味ならそのまま
+                author,
+                e.getCategory(),
+                e.getSummary(),
+                e.getContent(),
+                e.getImageUrl(),
+                e.getCreatedAt(),
+                e.getUpdatedAt(),
+                e.isPublished()
         );
     }
+
     private SyntaxDTO convertToSyntaxDTO(SyntaxEntity entity) {
         return new SyntaxDTO(
                 entity.getId(),

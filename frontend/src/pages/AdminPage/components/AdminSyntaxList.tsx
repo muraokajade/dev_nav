@@ -1,4 +1,3 @@
-// src/pages/admin/AdminSyntaxList.tsx
 import { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import { apiHelper } from "../../../libs/apiHelper";
 import { SyntaxModel } from "../../../models/SyntaxModel";
@@ -23,29 +22,30 @@ export const AdminSyntaxList = () => {
   const [summary, setSummary] = useState("");
   const [content, setContent] = useState("");
 
-  // - 画像アップロードがないなら外す。使うなら残してOK
-  // const [imageFile, setImageFile] = useState<File | null>(null);
-
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
 
   const { totalPages, pageIndex, displayPage, setTotalPages, setDisplayPage } =
     usePagination();
 
-  // - 画面UX向上：ロード/多重送信/エラー
   const [fetching, setFetching] = useState(false);
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState<string | null>(null);
+
+  // 追加: クライアント側検索・フィルタ
+  const [q, setQ] = useState("");
+  const [catFilter, setCatFilter] = useState("");
+  const [pubFilter, setPubFilter] = useState<"all" | "pub" | "draft">("all");
 
   const categories = useMemo(
     () => ["Spring", "React", "Vue", "Firebase", "Tailwind", "Other"],
     []
   );
 
-  // - ヘッダー共通化
   const authHeader = useMemo(
     () => (idToken ? { Authorization: `Bearer ${idToken}` } : undefined),
     [idToken]
   );
+
   function shallowEqual(a: any, b: any) {
     if (a === b) return true;
     if (!a || !b) return false;
@@ -56,7 +56,6 @@ export const AdminSyntaxList = () => {
         y = b[i];
       if (x === y) continue;
       if (!x || !y) return false;
-      // よくある一覧の浅い比較（必要なら強化）
       const kx = Object.keys(x);
       const ky = Object.keys(y);
       if (kx.length !== ky.length) return false;
@@ -65,7 +64,6 @@ export const AdminSyntaxList = () => {
     return true;
   }
 
-  // ★ fetching をここでは触らない
   const fetchAllSyntax = useCallback(
     async (signal?: AbortSignal) => {
       if (!idToken) return;
@@ -75,7 +73,6 @@ export const AdminSyntaxList = () => {
           `/api/admin/syntaxes?page=${pageIndex}&size=10`,
           { headers: authHeader, signal }
         );
-        // 浅い比較で無駄レンダー抑制
         setSyntaxes((prev) =>
           shallowEqual(prev, res.data.content) ? prev : res.data.content
         );
@@ -83,7 +80,6 @@ export const AdminSyntaxList = () => {
           tp === res.data.totalPages ? tp : res.data.totalPages
         );
       } catch (e: any) {
-        // axios の cancel は e.code === 'ERR_CANCELED' になることが多い
         if (e?.name === "CanceledError" || e?.code === "ERR_CANCELED") return;
         console.error("記事取得失敗", e?.response?.status || e?.message);
         setError(
@@ -102,41 +98,38 @@ export const AdminSyntaxList = () => {
   useEffect(() => {
     if (loading || !idToken) return;
 
-    // 既存リクエストをキャンセルしてから新しく発行
     if (acRef.current) acRef.current.abort();
     const ac = new AbortController();
     acRef.current = ac;
 
     setFetching(true);
     fetchAllSyntax(ac.signal)
-      .catch(() => {}) // ここでは握りつぶし
+      .catch(() => {})
       .finally(() => {
-        // 自分が発行したリクエストが生きていた場合のみ終了させる
         if (!ac.signal.aborted) setFetching(false);
       });
 
     return () => ac.abort();
   }, [loading, idToken, pageIndex, fetchAllSyntax]);
 
-  const togglePublish = async (slug: string) => {
-    if (busy || !idToken) return; // - 多重防止
+  const togglePublish = async (id: number) => {
+    if (busy || !idToken) return;
     setBusy(true);
     setError(null);
 
-    // - 楽観更新：UI先行反映
     setSyntaxes((prev) =>
       prev.map((s) => (s.slug === slug ? { ...s, published: !s.published } : s))
     );
 
     try {
-      await apiHelper.put(`/api/admin/syntaxes/${slug}/toggle`, null, {
+      await apiHelper.put(`/api/admin/syntaxes/${id}/toggle`, null, {
         headers: authHeader,
       });
-      await fetchAllSyntax(); // - サーバーを正とする
+      await fetchAllSyntax();
     } catch (e: any) {
       console.error("公開状態切替失敗", e);
       setError(e?.response?.data?.message || "公開状態の更新に失敗しました。");
-      // - 失敗時ロールバック
+      // ロールバック
       setSyntaxes((prev) =>
         prev.map((s) =>
           s.slug === slug ? { ...s, published: !s.published } : s
@@ -158,7 +151,6 @@ export const AdminSyntaxList = () => {
       const s = res.data as SyntaxModel;
       setSyntax(s);
 
-      // - 編集フォームへ反映（undefined防衛）
       setSlug(s.slug ?? "");
       setTitle(s.title ?? "");
       setSummary(s.summary ?? "");
@@ -177,7 +169,6 @@ export const AdminSyntaxList = () => {
 
   const handleUpdate = async (id: number) => {
     if (busy || !idToken) return;
-    // - 必須チェック
     if (!slug.trim() || !title.trim() || !category.trim() || !content.trim()) {
       alert("slug / title / category / content は必須です。");
       return;
@@ -189,7 +180,6 @@ export const AdminSyntaxList = () => {
       await apiHelper.put(
         `/api/admin/syntaxes/${id}`,
         {
-          // - trim()を通して不要な空白を除去
           slug: slug.trim(),
           title: title.trim(),
           category: category.trim(),
@@ -200,7 +190,7 @@ export const AdminSyntaxList = () => {
       );
 
       setIsEditModalOpen(false);
-      await fetchAllSyntax(); // - 最新反映
+      await fetchAllSyntax();
     } catch (e: any) {
       console.error("データ更新失敗", e);
       setError(e?.response?.data?.message || "更新に失敗しました。");
@@ -230,208 +220,272 @@ export const AdminSyntaxList = () => {
 
   const paginate = (pageNumber: number) => setDisplayPage(pageNumber);
 
-  return (
-    <div className="min-h-screen bg-gray-900">
-      <div className="p-8 max-w-5xl mx-auto">
-        <h2 className="text-2xl text-white font-bold mb-4 border-b pb-2">
-          📚 投稿済み文法
-        </h2>
+  const filtered = useMemo(() => {
+    let list = [...syntaxes];
+    if (q.trim()) {
+      const s = q.trim().toLowerCase();
+      list = list.filter(
+        (a) =>
+          a.title.toLowerCase().includes(s) ||
+          a.slug.toLowerCase().includes(s) ||
+          (a.summary || "").toLowerCase().includes(s)
+      );
+    }
+    if (catFilter) list = list.filter((a) => a.category === catFilter);
+    if (pubFilter !== "all")
+      list = list.filter((a) =>
+        pubFilter === "pub" ? a.published : !a.published
+      );
+    return list;
+  }, [syntaxes, q, catFilter, pubFilter]);
 
-        {/* - エラー/ローディング */}
+  return (
+    <div className="min-h-screen bg-gray-950">
+      <div className="p-6 md:p-8 max-w-6xl mx-auto">
+        <header className="flex flex-col md:flex-row md:items-end md:justify-between gap-3 mb-4">
+          <h2 className="text-xl md:text-2xl text-white font-bold">
+            📚 投稿済み文法
+          </h2>
+
+          {/* ツールバー（アイコンなし） */}
+          <div className="grid grid-cols-1 md:grid-cols-4 gap-2 w-full md:w-auto">
+            <input
+              className="md:col-span-2 w-full pl-3 pr-3 py-2 rounded-lg bg-zinc-900/70 border border-white/10 text-zinc-100 placeholder:text-zinc-500"
+              placeholder="検索（タイトル/要約/slug）"
+              value={q}
+              onChange={(e) => setQ(e.target.value)}
+            />
+            <select
+              className="rounded-lg bg-zinc-900/70 border border-white/10 text-zinc-100 px-3 py-2"
+              value={catFilter}
+              onChange={(e) => setCatFilter(e.target.value)}
+            >
+              <option value="">全部カテゴリ</option>
+              {categories.map((c) => (
+                <option key={c} value={c}>
+                  {c}
+                </option>
+              ))}
+            </select>
+            <select
+              className="rounded-lg bg-zinc-900/70 border border-white/10 text-zinc-100 px-3 py-2"
+              value={pubFilter}
+              onChange={(e) => setPubFilter(e.target.value as any)}
+            >
+              <option value="all">全て</option>
+              <option value="pub">公開</option>
+              <option value="draft">非公開</option>
+            </select>
+          </div>
+        </header>
+
         {error && (
-          <div className="mb-4 rounded bg-red-900/30 text-red-200 px-3 py-2">
+          <div className="mb-3 rounded bg-red-900/30 text-red-200 px-3 py-2">
             {error}
           </div>
         )}
-        {fetching && <div className="mb-4 text-zinc-300">読み込み中...</div>}
-
-        {isEditModalOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black bg-opacity-50">
-            <div className="bg-gray-900 text-white p-6 rounded-lg w-full max-w-2xl shadow-lg">
-              <h3 className="text-xl font-semibold mb-4">🛠️ 文法記事の編集</h3>
-
-              <label>slug</label>
-              <input
-                className="w-full text-black border px-3 py-2 rounded mb-2"
-                value={slug}
-                onChange={(e) => setSlug(e.target.value)}
-                placeholder="スラッグ（URL識別子）"
+        {fetching && (
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <div
+                key={i}
+                className="h-40 rounded-lg bg-zinc-900/60 border border-white/10 animate-pulse"
               />
-
-              <label>title</label>
-              <input
-                className="w-full text-black px-3 py-2 rounded mb-2"
-                placeholder="タイトル"
-                value={title}
-                onChange={(e) => setTitle(e.target.value)}
-              />
-
-              <label>category</label>
-              <select
-                className="w-full text-black border p-2"
-                value={category}
-                onChange={(e) => setCategory(e.target.value)}
-              >
-                <option value="">カテゴリを選択</option>
-                {categories.map((cat, i) => (
-                  <option key={i} value={cat}>
-                    {cat}
-                  </option>
-                ))}
-              </select>
-
-              <label>summary</label>
-              <textarea
-                className="w-full text-black px-3 py-2 rounded mb-4"
-                value={summary}
-                onChange={(e) => setSummary(e.target.value)}
-                placeholder="記事の要約（任意）"
-                rows={6}
-              />
-
-              <label>content</label>
-              <textarea
-                className="w-full text-black px-3 py-2 rounded mb-4"
-                placeholder="本文"
-                value={content}
-                onChange={(e) => setContent(e.target.value)}
-                rows={6}
-              />
-
-              {/* - 画像を使うならここに <input type="file" ... /> を追加 */}
-
-              <div className="flex justify-end space-x-2">
-                <button
-                  onClick={() => setIsEditModalOpen(false)}
-                  className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500"
-                  disabled={busy} // - 操作ロック
-                >
-                  キャンセル
-                </button>
-                {syntax && (
-                  <button
-                    onClick={() => handleUpdate(syntax.id)}
-                    className={`px-4 py-2 rounded ${
-                      busy
-                        ? "bg-blue-900 cursor-wait"
-                        : "bg-blue-500 hover:bg-blue-400"
-                    }`}
-                    disabled={busy}
-                  >
-                    {busy ? "更新中..." : "更新する"}
-                  </button>
-                )}
-              </div>
-            </div>
+            ))}
           </div>
         )}
 
-        <div className="space-y-2">
-          {syntaxes.map((sx) => (
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
+          {filtered.map((sx) => (
             <div
               key={sx.slug}
-              className="flex flex-col sm:flex-row items-start bg-gray-800 text-white rounded-lg px-4 py-3 shadow-sm hover:shadow-md overflow-hidden"
+              className="group rounded-xl bg-zinc-900/60 border border-white/10 hover:border-white/20 transition overflow-hidden"
             >
-              {/* 左側：基本情報 */}
-              <div className="sm:w-[240px] w-full shrink-0 sm:pr-4 text-sm space-y-1 mb-4 sm:mb-0">
-                <Link
-                  to={`/syntaxes/${sx.id}-${sx.slug}`}
-                  className="text-3xl hover:underline text-blue-200 break-words whitespace-normal"
-                >
-                  {sx.title}
-                </Link>
+              <div className="p-4">
+                <div className="flex items-start justify-between gap-3">
+                  <Link
+                    to={`/syntaxes/${sx.id}-${sx.slug}`}
+                    className="text-lg md:text-xl font-semibold text-blue-200 leading-tight hover:underline break-words"
+                  >
+                    {sx.title}
+                  </Link>
+                  <span
+                    className={`shrink-0 rounded px-2 py-1 text-xs font-semibold ${
+                      sx.published
+                        ? "bg-emerald-500/15 text-emerald-300 border border-emerald-700/40"
+                        : "bg-yellow-500/20 text-yellow-200 border border-yellow-700/40"
+                    }`}
+                  >
+                    {sx.published ? "公開中" : "非公開"}
+                  </span>
+                </div>
 
-                <p className="text-gray-400 break-words">Slug: {sx.slug}</p>
-                <p className="text-gray-400">カテゴリー: {sx.category}</p>
-                <p className="text-gray-500 text-xs">
-                  投稿日: {dayjs(sx.createdAt).format("YYYY/MM/DD HH:mm")}
-                </p>
-              </div>
+                <div className="mt-1 flex flex-wrap gap-2 text-xs text-zinc-400">
+                  <span className="rounded bg-white/5 border border-white/10 px-2 py-0.5">
+                    {sx.category}
+                  </span>
+                  <span>{dayjs(sx.createdAt).format("YYYY/MM/DD HH:mm")}</span>
+                  <span className="truncate">Slug: {sx.slug}</span>
+                </div>
 
-              {/* 中央：縦線（スマホでは非表示） */}
-              <div className="hidden sm:block border-l border-gray-600 h-full mx-4" />
+                <div className="mt-3 prose prose-invert max-w-none text-sm text-zinc-200 break-words overflow-auto max-h-32 rounded border border-white/10 p-3 bg-white/5">
+                  <ReactMarkdown
+                    children={sx.summary}
+                    components={{
+                      code({ className, children, ...props }: any) {
+                        const match = /language-(\w+)/.exec(className || "");
+                        const codeString = Array.isArray(children)
+                          ? children.join("")
+                          : String(children);
+                        return match ? (
+                          <SyntaxHighlighter
+                            style={oneDark}
+                            language={match[1]}
+                            PreTag="div"
+                            className="not-prose"
+                            {...props}
+                          >
+                            {codeString.replace(/\n$/, "")}
+                          </SyntaxHighlighter>
+                        ) : (
+                          <code className={className} {...props}>
+                            {children}
+                          </code>
+                        );
+                      },
+                      pre: ({ children }) => <>{children}</>,
+                    }}
+                  />
+                </div>
 
-              {/* 中央右：要約表示（Markdown対応） */}
-              <div className="prose prose-invert max-w-none text-sm text-gray-200 break-words flex-grow mb-4 sm:mb-0 sm:pr-4 overflow-x-auto">
-                <ReactMarkdown
-                  children={sx.summary}
-                  components={{
-                    code({ className, children, ...props }: any) {
-                      const match = /language-(\w+)/.exec(className || "");
-                      const codeString = Array.isArray(children)
-                        ? children.join("")
-                        : String(children);
-
-                      return match ? (
-                        <SyntaxHighlighter
-                          style={oneDark}
-                          language={match[1]}
-                          PreTag="div"
-                          className="not-prose"
-                          {...props}
-                        >
-                          {codeString.replace(/\n$/, "")}
-                        </SyntaxHighlighter>
-                      ) : (
-                        <code className={className} {...props}>
-                          {children}
-                        </code>
-                      );
-                    },
-                    pre: ({ children }) => <>{children}</>,
-                  }}
-                />
-              </div>
-
-              {/* 右端：編集・削除ボタン */}
-              <div className="flex flex-row sm:flex-col space-x-2 sm:space-x-0 sm:space-y-2 items-start sm:items-end w-full sm:w-auto">
-                <button
-                  onClick={() => togglePublish(sx.slug)}
-                  disabled={busy}
-                  className={`px-3 py-1 rounded text-sm font-semibold border w-full sm:w-auto ${
-                    sx.published
-                      ? "bg-green-600 text-white border-green-700 hover:bg-green-500"
-                      : "bg-yellow-500 text-black border-yellow-600 hover:bg-yellow-400"
-                  } ${busy ? "opacity-70 cursor-wait" : ""}`}
-                >
-                  {sx.published ? "公開中" : "非公開"}
-                </button>
-
-                <button
-                  onClick={() => handleEdit(sx.id)}
-                  disabled={busy}
-                  className={`px-3 py-1 rounded text-sm font-semibold w-full sm:w-auto ${
-                    busy
-                      ? "bg-blue-900 text-white"
-                      : "bg-blue-600 text-white border border-blue-700 hover:bg-blue-500"
-                  }`}
-                >
-                  編集
-                </button>
-
-                <button
-                  onClick={() => handleDelete(sx.id)}
-                  disabled={busy}
-                  className={`px-3 py-1 rounded text-sm font-semibold w-full sm:w-auto ${
-                    busy
-                      ? "bg-red-900 text-white"
-                      : "bg-red-600 text-white border border-red-700 hover:bg-red-500"
-                  }`}
-                >
-                  削除
-                </button>
+                <div className="mt-4 flex items-center justify-end gap-2">
+                  <button
+                    onClick={() => togglePublish(sx.id)}
+                    disabled={busy}
+                    className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm border ${
+                      sx.published
+                        ? "bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-500"
+                        : "bg-yellow-500 text-black border-yellow-600 hover:bg-yellow-400"
+                    } ${busy ? "opacity-70 cursor-wait" : ""}`}
+                  >
+                    {sx.published ? "公開中" : "非公開"}
+                  </button>
+                  <button
+                    onClick={() => handleEdit(sx.id)}
+                    disabled={busy}
+                    className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm border ${
+                      busy
+                        ? "bg-blue-900 text-white"
+                        : "bg-blue-600 text-white border-blue-700 hover:bg-blue-500"
+                    }`}
+                  >
+                    編集
+                  </button>
+                  <button
+                    onClick={() => handleDelete(sx.id)}
+                    disabled={busy}
+                    className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm border ${
+                      busy
+                        ? "bg-red-900 text-white"
+                        : "bg-red-600 text-white border-red-700 hover:bg-red-500"
+                    }`}
+                  >
+                    削除
+                  </button>
+                </div>
               </div>
             </div>
           ))}
         </div>
 
-        <Pagination
-          displayPage={displayPage}
-          totalPages={totalPages}
-          maxPageLinks={5}
-          paginate={paginate}
-        />
+        <div className="mt-6">
+          <Pagination
+            displayPage={displayPage}
+            totalPages={totalPages}
+            maxPageLinks={5}
+            paginate={paginate}
+          />
+        </div>
       </div>
+
+      {isEditModalOpen && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
+          <div className="bg-gray-900 text-white p-6 rounded-lg w-full max-w-2xl shadow-2xl border border-white/10">
+            <h3 className="text-xl font-semibold mb-4">🛠️ 文法記事の編集</h3>
+
+            <label>slug</label>
+            <input
+              className="w-full text-black border px-3 py-2 rounded mb-2"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              placeholder="スラッグ（URL識別子）"
+            />
+
+            <label>title</label>
+            <input
+              className="w-full text-black px-3 py-2 rounded mb-2"
+              placeholder="タイトル"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+            />
+
+            <label>category</label>
+            <select
+              className="w-full text-black border p-2"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+            >
+              <option value="">カテゴリを選択</option>
+              {categories.map((cat, i) => (
+                <option key={i} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
+
+            <label>summary</label>
+            <textarea
+              className="w-full text-black px-3 py-2 rounded mb-4"
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              placeholder="記事の要約（任意）"
+              rows={6}
+            />
+
+            <label>content</label>
+            <textarea
+              className="w-full text-black px-3 py-2 rounded mb-4"
+              placeholder="本文"
+              value={content}
+              onChange={(e) => setContent(e.target.value)}
+              rows={6}
+            />
+
+            <div className="flex justify-end space-x-2">
+              <button
+                onClick={() => setIsEditModalOpen(false)}
+                className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500"
+                disabled={busy}
+              >
+                キャンセル
+              </button>
+              {syntax && (
+                <button
+                  onClick={() => handleUpdate(syntax.id)}
+                  className={`px-4 py-2 rounded ${
+                    busy
+                      ? "bg-blue-900 cursor-wait"
+                      : "bg-blue-500 hover:bg-blue-400"
+                  }`}
+                  disabled={busy}
+                >
+                  {busy ? "更新中..." : "更新する"}
+                </button>
+              )}
+            </div>
+          </div>
+        </div>
+      )}
     </div>
   );
 };

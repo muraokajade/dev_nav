@@ -56,22 +56,21 @@ public class ArticleService {
 
         return convertToArticleDTO(entity);
     }
-    private ArticleDTO convertToArticleDTO(ArticleEntity entity) {
+    private ArticleDTO convertToArticleDTO(ArticleEntity e) {
+        UserEntity u = e.getUser();               // ★ 1回だけ呼ぶ
+        String author =
+                (e.getAuthorName() != null && !e.getAuthorName().isBlank()) ? e.getAuthorName() :
+                        (u != null && u.getDisplayName() != null && !u.getDisplayName().isBlank()) ? u.getDisplayName() :
+                                (e.getUserEmail() != null && !e.getUserEmail().isBlank()) ? e.getUserEmail() :
+                                        "不明";
+
         return new ArticleDTO(
-                entity.getId(),
-                entity.getSlug(),
-                entity.getTitle(),
-                entity.getUserEmail(),
-                entity.getUser() != null ? entity.getUser().getDisplayName() : "不明",
-                entity.getCategory(),
-                entity.getSummary(),
-                entity.getContent(),
-                entity.getImageUrl(),
-                entity.getCreatedAt(),
-                entity.getUpdatedAt(),
-                entity.isPublished()
+                e.getId(), e.getSlug(), e.getTitle(), e.getUserEmail(),
+                author, e.getCategory(), e.getSummary(), e.getContent(),
+                e.getImageUrl(), e.getCreatedAt(), e.getUpdatedAt(), e.isPublished()
         );
     }
+
 
     // Service
     @Transactional(readOnly = true)
