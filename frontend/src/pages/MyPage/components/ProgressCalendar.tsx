@@ -79,11 +79,16 @@ export const ProgressCalendar: React.FC<ProgressCalendarProps> = ({
 
   /* ====== スタイル（固定値で崩れない） ====== */
   const headerRowStyle: React.CSSProperties = {
-    display: "flex",
+    display: "grid",
+    gridTemplateColumns: "1fr auto 1fr",
     alignItems: "center",
-    justifyContent: "space-between",
     gap: 8,
     margin: "8px 0",
+    minWidth: 7 * CELL + 6 * GAP, // ← width固定をやめて最小幅だけ確保
+  };
+  const labelStyle: React.CSSProperties = {
+    fontWeight: 700,
+    whiteSpace: "nowrap",
   };
   const btnStyle: React.CSSProperties = {
     fontSize: 14,
@@ -137,15 +142,22 @@ export const ProgressCalendar: React.FC<ProgressCalendarProps> = ({
       style={{ display: "flex", flexDirection: "column", alignItems: "center" }}
     >
       {/* ヘッダ */}
-      <div style={{ ...headerRowStyle, width: gridCommon.width as number }}>
-        <button style={btnStyle} onClick={onPrevMonth}>
-          ← 前の月
+      {/* ヘッダ */}
+      <div style={headerRowStyle}>
+        <button
+          style={{ ...btnStyle, justifySelf: "start" }}
+          onClick={onPrevMonth}
+        >
+          ← 前月
         </button>
-        <p style={{ fontWeight: 700 }}>
+        <p style={{ ...labelStyle, justifySelf: "center" }}>
           {year}年{month}月
         </p>
-        <button style={btnStyle} onClick={onNextMonth}>
-          次の月 →
+        <button
+          style={{ ...btnStyle, justifySelf: "end" }}
+          onClick={onNextMonth}
+        >
+          翌月 →
         </button>
       </div>
 
