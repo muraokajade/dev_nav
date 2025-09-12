@@ -7,6 +7,7 @@ import { useEffect, useState } from "react";
 import { motion } from "framer-motion";
 import { SectionScrollMotion } from "./components/SectionScrollMotion";
 import { useAuth } from "../../context/useAuthContext";
+import HeroImpact from "./components/HeroImpact";
 
 export const Home = () => {
   const { idToken } = useAuth();
@@ -39,7 +40,7 @@ export const Home = () => {
     ? [0.5, -0.5, 1]
     : [0.62, -0.62, 1];
   const springScale: [number, number, number] = isMobile
-    ? [0.20, -0.20, 1]
+    ? [0.2, -0.2, 1]
     : [0.31, -0.3, 1];
   const tsScale: [number, number, number] = isMobile
     ? [0.11, -0.11, 1]
@@ -157,7 +158,6 @@ export const Home = () => {
         >
           ↓ もっと見る
         </motion.div>
-
         {/* セクション：見出しとの間隔を一定に */}
         <div className="w-full mt-16 space-y-16">
           {sections.map((section, i) => (

@@ -1,5 +1,8 @@
 import React from "react";
 import { MiniCanvas3D } from "./MiniCanvas3D";
+import HeroImpact from "./HeroImpact";
+import { Navigate, useNavigate } from "react-router-dom";
+
 export type SectionItem = {
   key: string;
   title: React.ReactNode;
@@ -19,7 +22,7 @@ export const sections: SectionItem[] = [
       </div>
     ),
     content: (
-      <div className="flex flex-col items-center gap-12 w-full">
+      <div className="flex flex-col items-center gap-14 w-full">
         <p className="text-lg md:text-xl mb-8 text-gray-200 font-bold max-w-2xl mx-auto">
           <span className="text-blue-300 font-bold">Spring Boot</span>と
           <span className="text-blue-300 font-bold">React</span>
@@ -28,13 +31,6 @@ export const sections: SectionItem[] = [
           実務で通用する設計とモダンなUI/UXを体感しながら、「コードを書く楽しさ」と「開発の最前線」を体験できます。
         </p>
         {/* 画像を白背景で枠囲い */}
-        <div className="w-full max-w-3xl mx-auto bg-white rounded-xl shadow-lg p-4 flex justify-center items-center">
-          <img
-            src="/assets/images/tech-detail-top.png"
-            alt="top"
-            className="w-full rounded-lg object-contain"
-          />
-        </div>
       </div>
     ),
   },
@@ -52,13 +48,14 @@ export const sections: SectionItem[] = [
       <div className="flex flex-col items-center gap-12 w-full">
         <ul className="list-disc text-gray-200 text-xl md:text-2xl font-semibold space-y-8 w-full max-w-3xl mx-auto px-2">
           <li>
-            Spring Boot／Reactの記事・コードサンプルを体系的にまとめて参照。
+            Spring
+            Boot／Reactの記事・コードサンプルを体系的にまとめて参照することができます。
           </li>
           <li>
-            技術ごとの「使えるTips」や実践ノウハウを収集可能。
+            技術ごとの「使えるTips」や実践ノウハウを収集可能です。
             <div className="w-full bg-white rounded-xl shadow-lg p-4 mt-4 flex justify-center items-center">
               <img
-                src="/assets/images/detail-syntax.png"
+                src="/assets/images/p1.png"
                 alt="syntax"
                 className="w-full rounded-lg object-contain"
               />
@@ -81,16 +78,19 @@ export const sections: SectionItem[] = [
     content: (
       <div className="flex flex-col items-center gap-12 w-full">
         <ul className="list-disc text-gray-200 text-xl md:text-2xl font-semibold space-y-8 w-full max-w-3xl mx-auto px-2">
-          <li>
-            自分の学習記録やアクション履歴を可視化（マイページ機能）
-            <div className="w-full bg-white rounded-xl shadow-lg p-4 mt-4 flex justify-center items-center">
-              <img
-                src="/assets/images/mypage.png"
-                alt="mypage"
-                className="w-full rounded-lg object-contain"
-              />
-            </div>
-          </li>
+          <p>①記事読了機能：その記事を読了↔︎未読に切り替えることができます。</p>
+          <p>②レビュー機能：記事に対する評価をつけることができます。</p>
+          <p>③コメント機能：記事に対するコメントを書くことができます。</p>
+          <p>
+            ④Q&A機能：記事を書いた管理者に対して、質問をすることができます。
+          </p>
+          <div className="w-full bg-white rounded-xl shadow-lg p-4 mt-4 flex justify-center items-center">
+            <img
+              src="/assets/images/comment.png"
+              alt="mypage"
+              className="w-full rounded-lg object-contain"
+            />
+          </div>
         </ul>
       </div>
     ),
@@ -109,23 +109,20 @@ export const sections: SectionItem[] = [
       <div className="flex flex-col items-center gap-12 w-full">
         <ul className="list-disc text-gray-200 text-xl md:text-2xl font-semibold space-y-8 w-full max-w-3xl mx-auto px-2">
           <li>
-            レビュー・コメント・Q&A機能
-            <p>
-              管理者が投稿した記事に対するレビュー、コメント、Q&Aを送信できます。
-            </p>
-            <p>後日、管理者が回答をお送りします。</p>
+            ログインユーザーは自分の学習記録やアクション履歴をカレンダーやレベルバーで見ることができます。
+            <div className="w-full bg-white rounded-xl shadow-lg p-4 mt-4 flex justify-center items-center">
+              <img
+                src="/assets/images/p2.png"
+                alt="mypage"
+                className="w-full rounded-lg object-contain"
+              />
+            </div>
           </li>
-          <div className="w-full bg-white rounded-xl shadow-lg p-4 mt-4 flex justify-center items-center">
-            <img
-              src="/assets/images/Q_and_A.png"
-              alt="mypage"
-              className="w-full rounded-lg object-contain"
-            />
-          </div>
         </ul>
       </div>
     ),
   },
+
   {
     key: "features",
     title: (
@@ -141,7 +138,7 @@ export const sections: SectionItem[] = [
         <ul className="list-disc text-gray-200 text-xl md:text-2xl font-semibold space-y-8 w-full max-w-3xl mx-auto px-2">
           <li>管理者権限を持つと記事投稿、記事一覧を確認できます。</li>
           <li>
-            自分オリジナルの教科書を作成することも可能！
+            自分オリジナルの教科書を作成することも可能です。
             <div className="w-full bg-white rounded-xl shadow-lg p-4 mt-4 flex justify-center items-center">
               <img
                 src="/assets/images/admin.png"
@@ -181,10 +178,10 @@ export const sections: SectionItem[] = [
             バックエンド: <b>Spring Boot 3.x + Java 17</b>
           </li>
           <li>
-            フロントエンド: <b>React 19 + TypeScript</b>
+            フロントエンド: <b>React 18 + TypeScript</b>
           </li>
           <li>
-            インフラ: <b>Vercel（フロント）、Koyeb（バックエンド）</b>
+            インフラ: <b>Vercel（フロント）、Koyeb（バックエンド）、Neon(DB)</b>
           </li>
           <li>
             データベース: <b>PostgreSQL（管理はDBeaverを使用）</b>
@@ -236,16 +233,20 @@ export const sections: SectionItem[] = [
         <ul className="list-disc text-gray-200 text-xl md:text-2xl font-semibold space-y-6 w-full max-w-3xl mx-auto px-2">
           <li>
             日本語でまとまった「Spring Boot ×
-            React」教材が少ない現状を変えるべく開発。
+            React」教材が少ない現状を変えるべく開発しました。
           </li>
-          <li>最新トレンドや現場経験を取り入れた、実践的な技術ガイド。</li>
-          <li>技術の「かっこよさ」「楽しさ」を直感的に感じられるUI設計。</li>
+          <li>
+            最新トレンドや現場経験を取り入れた、実践的な技術ガイドを作ることを目的としています。
+          </li>
+          <li>
+            技術の「かっこよさ」「楽しさ」を直感的に感じられるUI設計を意識しました。
+          </li>
         </ul>
         {/* ↓追記：ユーザー層ごとへのメッセージ */}
         <div className="bg-gray-800/70 rounded-xl p-8 mt-4 shadow-lg max-w-3xl mx-auto w-full text-base md:text-lg text-gray-200 leading-relaxed">
           <p className="mb-2">
             <span className="font-bold text-blue-500">初級者の方へ：</span>
-            記事を読んで写経し、Q&amp;A機能を使って実装にチャレンジしてみてください。
+            開発手順記事を読んで写経し、Q&amp;A機能を使って実装にチャレンジしてみてください。
           </p>
           <p className="mb-2">
             <span className="font-bold text-blue-500">中級者の方へ：</span>
