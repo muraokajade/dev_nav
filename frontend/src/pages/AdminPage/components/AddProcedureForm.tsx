@@ -1,6 +1,6 @@
 import { apiHelper } from "../../../libs/apiHelper";
 import { useAuth } from "../../../context/useAuthContext";
-import { useRef, useState, useMemo } from "react";
+import { useMemo, useState, useEffect } from "react";
 import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
@@ -13,32 +13,43 @@ export const AddProcedureForm = () => {
   const [category, setCategory] = useState("");
   const [content, setContent] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
-  const [isPreviewOpen, setIsPreviewOpen] = useState(false);
 
-  // - UX用: 送信状態/エラー/成功
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
 
-  const textareaRef = useRef<HTMLTextAreaElement>(null);
+  // 追加: 分割/全画面
+  const [isWritingMode, setIsWritingMode] = useState(false);
+  const [isSplit, setIsSplit] = useState(true);
+  const [imagePreview, setImagePreview] = useState<string | null>(null);
+
   const categories = [
     "Spring",
     "React",
+    "TypeScript",
+    "Java",
     "Vue",
     "Firebase",
     "Tailwind",
     "Other",
   ];
-
   const { idToken, loading } = useAuth();
-
-  // - 認証ヘッダ共通化
   const headers = useMemo(
     () => (idToken ? { Authorization: `Bearer ${idToken}` } : undefined),
     [idToken]
   );
 
-  // - フォーマット補助: 半角化＆ 5-9 → 5-09 等の正規化
+  useEffect(() => {
+    if (!imageFile) {
+      if (imagePreview) URL.revokeObjectURL(imagePreview);
+      setImagePreview(null);
+      return;
+    }
+    const url = URL.createObjectURL(imageFile);
+    setImagePreview(url);
+    return () => URL.revokeObjectURL(url);
+  }, [imageFile]);
+
   const normalizeStepNumber = (raw: string) => {
     const half = (raw || "").replace(/[０-９]/g, (c) =>
       String.fromCharCode(c.charCodeAt(0) - 0xfee0)
@@ -48,8 +59,6 @@ export const AddProcedureForm = () => {
     if (!m) return t;
     return `${parseInt(m[1], 10)}-${m[2].padStart(2, "0")}`;
   };
-
-  // - slug簡易チェック
   const isValidSlug = (s: string) => /^[a-z0-9-]+$/.test(s);
 
   const resetForm = () => {
@@ -63,46 +72,31 @@ export const AddProcedureForm = () => {
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
-
-    // - 多重送信/未ログイン抑止
     if (loading || submitting) return;
-
     setError(null);
     setDone(false);
 
-    // - 必須バリデーション
-    if (!slug || !title || !category || !content) {
-      setError(
+    if (!slug || !title || !category || !content)
+      return setError(
         "入力項目に不足があります。（slug / title / category / content）"
       );
-      return;
-    }
-    // - slug形式チェック
-    if (!isValidSlug(slug)) {
-      setError("slug は英小文字・数字・ハイフン(-)のみ使用できます。");
-      return;
-    }
+    if (!isValidSlug(slug))
+      return setError("slug は英小文字・数字・ハイフン(-)のみ使用できます。");
 
-    // - stepNumber正規化（空は許容）
     const normalizedStep = stepNumber ? normalizeStepNumber(stepNumber) : "";
-
     const formData = new FormData();
-    formData.append("stepNumber", normalizedStep); // - 正規化して送信
+    formData.append("stepNumber", normalizedStep);
     formData.append("slug", slug);
     formData.append("title", title);
     formData.append("category", category);
     formData.append("content", content);
-    if (imageFile) {
-      formData.append("image", imageFile);
-    }
+    if (imageFile) formData.append("image", imageFile);
 
     try {
       setSubmitting(true);
-      await apiHelper.post("/api/admin/add-procedure", formData, {
-        headers, // - Content-TypeはFormDataで自動
-      });
+      await apiHelper.post("/api/admin/add-procedure", formData, { headers });
       resetForm();
-      setDone(true); // - 成功表示
+      setDone(true);
     } catch (err: any) {
       console.error("❌ 投稿失敗", err);
       setError(
@@ -115,10 +109,41 @@ export const AddProcedureForm = () => {
     }
   };
 
+  const MarkdownView = ({ text }: { text: string }) => (
+    <div className="prose prose-invert max-w-none bg-gray-800 p-4 rounded overflow-y-auto break-words h-full">
+      <ReactMarkdown
+        children={text}
+        components={{
+          code({ className, children, ...props }) {
+            const match = /language-(\w+)/.exec(className || "");
+            const codeString = Array.isArray(children)
+              ? children.join("")
+              : String(children);
+            return match ? (
+              <SyntaxHighlighter
+                style={oneDark}
+                language={match[1]}
+                PreTag="div"
+                className="not-prose"
+                {...props}
+              >
+                {codeString.replace(/\n$/, "")}
+              </SyntaxHighlighter>
+            ) : (
+              <code className={className} {...props}>
+                {children}
+              </code>
+            );
+          },
+          pre: ({ children }) => <>{children}</>,
+        }}
+      />
+    </div>
+  );
+
   return (
     <div className="min-h-screen bg-gray-900">
-      <div className="p-8 max-w-3xl mx-auto">
-        {/* - 成功/エラー表示 */}
+      <div className="p-8 max-w-5xl mx-auto">
         {done && (
           <div className="mb-4 rounded bg-green-900/30 text-green-200 px-3 py-2">
             送信が完了しました。
@@ -130,13 +155,22 @@ export const AddProcedureForm = () => {
           </div>
         )}
 
-        <button
-          type="button"
-          className="mb-4 px-4 py-2 bg-gray-600 rounded text-white"
-          onClick={() => setIsPreviewOpen(true)}
-        >
-          プレビューを見る
-        </button>
+        <div className="mb-4 flex flex-wrap gap-2">
+          <button
+            type="button"
+            className="px-3 py-2 bg-gray-700 rounded text-white"
+            onClick={() => setIsWritingMode(true)}
+          >
+            書きながら見る（全画面）
+          </button>
+          <button
+            type="button"
+            className="px-3 py-2 bg-gray-700 rounded text-white"
+            onClick={() => setIsSplit((v) => !v)}
+          >
+            {isSplit ? "入力のみ" : "分割表示"}
+          </button>
+        </div>
 
         <form onSubmit={handleSubmit} className="mb-6 space-y-4" noValidate>
           <input
@@ -150,20 +184,20 @@ export const AddProcedureForm = () => {
             value={slug}
             onChange={(e) => setSlug(e.target.value)}
             placeholder="スラッグ（URL識別子: react-setup）"
-            required /* - UX表示用 */
+            required
           />
           <input
             className="w-full text-black border p-2"
             value={title}
             onChange={(e) => setTitle(e.target.value)}
             placeholder="タイトル"
-            required /* - UX表示用 */
+            required
           />
           <select
             className="w-full text-black border p-2"
             value={category}
             onChange={(e) => setCategory(e.target.value)}
-            required /* - UX表示用 */
+            required
           >
             <option value="">カテゴリを選択</option>
             {categories.map((cat, i) => (
@@ -173,76 +207,98 @@ export const AddProcedureForm = () => {
             ))}
           </select>
 
-          <MarkdownTextarea
-            value={content}
-            onChange={setContent}
-            rows={30}
-            placeholder="内容（Markdown可）"
-          />
+          {/* ← ここが MarkdownTextarea 適用箇所 */}
+          <div
+            className={`grid gap-4 ${
+              isSplit ? "md:grid-cols-2" : "grid-cols-1"
+            }`}
+          >
+            <MarkdownTextarea
+              value={content}
+              onChange={setContent}
+              rows={28}
+              placeholder="内容（Markdown可）"
+            />
+            {isSplit && <MarkdownView text={content} />}
+          </div>
 
-          <input
-            type="file"
-            accept="image/*"
-            className="w-full"
-            onChange={(e) => {
-              if (e.target.files?.[0]) {
-                setImageFile(e.target.files[0]);
-              }
-            }}
-          />
+          <div className="space-y-2">
+            <input
+              type="file"
+              accept="image/*"
+              className="w-full"
+              onChange={(e) => {
+                if (e.target.files?.[0]) setImageFile(e.target.files[0]);
+              }}
+            />
+            {imagePreview && (
+              <div className="bg-black/30 p-2 rounded">
+                <div className="text-white/70 text-sm mb-2">画像プレビュー</div>
+                <img
+                  src={imagePreview}
+                  alt="preview"
+                  className="max-h-48 rounded object-contain"
+                />
+              </div>
+            )}
+          </div>
+
           <button
             type="submit"
             className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
-            disabled={loading || submitting} // - 送信中は無効
+            disabled={loading || submitting}
           >
             {submitting ? "投稿中..." : "投稿"}
           </button>
         </form>
+      </div>
 
-        {/* プレビューモーダル */}
-        {isPreviewOpen && (
-          <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70">
-            <div className="bg-gray-900 rounded-xl shadow-lg p-6 max-w-2xl w-full relative max-h-[80vh] flex flex-col">
-              <button
-                className="absolute top-2 right-3 text-xl text-white"
-                onClick={() => setIsPreviewOpen(false)}
-              >
-                ×
-              </button>
-              <div className="font-bold mb-3 text-white">プレビュー</div>
-              <div className="prose prose-invert max-w-none bg-gray-800 p-4 rounded flex-1 overflow-y-auto break-words">
-                <ReactMarkdown
-                  children={content}
-                  components={{
-                    code({ className, children, ...props }) {
-                      const match = /language-(\w+)/.exec(className || "");
-                      const codeString = Array.isArray(children)
-                        ? children.join("")
-                        : String(children);
-                      return match ? (
-                        <SyntaxHighlighter
-                          style={oneDark}
-                          language={match[1]}
-                          PreTag="div"
-                          className="not-prose"
-                          {...props}
-                        >
-                          {codeString.replace(/\n$/, "")}
-                        </SyntaxHighlighter>
-                      ) : (
-                        <code className={className} {...props}>
-                          {children}
-                        </code>
-                      );
-                    },
-                    pre: ({ children }) => <>{children}</>,
-                  }}
-                />
+      {/* 全画面ライティングモード */}
+      {isWritingMode && (
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm">
+          <div className="absolute inset-3 bg-gray-900 rounded-2xl shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between p-3 border-b border-white/10">
+              <div className="text-white/90 font-semibold">
+                ライティングモード（Procedure）
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  className="px-3 py-1.5 bg-gray-700 rounded text-white"
+                  onClick={() => setIsSplit((v) => !v)}
+                >
+                  {isSplit ? "入力のみ" : "分割表示"}
+                </button>
+                <button
+                  className="px-3 py-1.5 bg-blue-600 rounded text-white disabled:opacity-50"
+                  disabled={loading || submitting}
+                  onClick={handleSubmit as any}
+                >
+                  {submitting ? "投稿中..." : "この内容で投稿"}
+                </button>
+                <button
+                  className="px-3 py-1.5 bg-gray-600 rounded text-white"
+                  onClick={() => setIsWritingMode(false)}
+                >
+                  閉じる
+                </button>
               </div>
             </div>
+            <div
+              className={`flex-1 grid gap-3 p-3 ${
+                isSplit ? "md:grid-cols-2" : "grid-cols-1"
+              }`}
+            >
+              <MarkdownTextarea
+                value={content}
+                onChange={setContent}
+                rows={40}
+                placeholder="内容（Markdown）を入力…"
+              />
+              {isSplit && <MarkdownView text={content} />}
+            </div>
           </div>
-        )}
-      </div>
+        </div>
+      )}
     </div>
   );
 };
