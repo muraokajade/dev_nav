@@ -7,6 +7,11 @@ import { usePagination } from "../../../hooks/usePagination";
 import { Pagination } from "../../../utils/Pagination";
 import { Link } from "react-router-dom";
 
+import ReactMarkdown from "react-markdown";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { MarkdownTextarea } from "../../../utils/MarkdownTextarea";
+
 /** Markdown/コードをざっくり除去 */
 const stripMd = (s: string) =>
   (s || "")
@@ -18,12 +23,46 @@ const stripMd = (s: string) =>
     .replace(/\s+/g, " ")
     .trim();
 
+/** 共通: Markdown レンダラ（スクロール可） */
+const MarkdownView = ({ text }: { text: string }) => (
+  <div className="prose prose-invert max-w-none bg-gray-800 p-4 rounded break-words h-full overflow-y-auto min-h-0">
+    <ReactMarkdown
+      children={text}
+      components={{
+        code({ className, children, ...props }) {
+          const match = /language-(\w+)/.exec(className || "");
+          const codeString = Array.isArray(children)
+            ? children.join("")
+            : String(children);
+          return match ? (
+            <SyntaxHighlighter
+              style={oneDark}
+              language={match[1]}
+              PreTag="div"
+              className="not-prose"
+              {...props}
+            >
+              {codeString.replace(/\n$/, "")}
+            </SyntaxHighlighter>
+          ) : (
+            <code className={className} {...props}>
+              {children}
+            </code>
+          );
+        },
+        pre: ({ children }) => <>{children}</>,
+      }}
+    />
+  </div>
+);
+
 export const AdminSyntaxList = () => {
   const [syntaxes, setSyntaxes] = useState<SyntaxModel[]>([]);
   const [syntax, setSyntax] = useState<SyntaxModel | null>(null);
 
   const { loading, idToken } = useAuth();
 
+  // 編集フィールド
   const [slug, setSlug] = useState("");
   const [title, setTitle] = useState("");
   const [category, setCategory] = useState("");
@@ -31,6 +70,9 @@ export const AdminSyntaxList = () => {
   const [content, setContent] = useState("");
 
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+  // ✨ 分割プレビュー & 全画面
+  const [isSplit, setIsSplit] = useState(true);
+  const [isWritingMode, setIsWritingMode] = useState(false);
 
   const { totalPages, pageIndex, displayPage, setTotalPages, setDisplayPage } =
     usePagination();
@@ -136,7 +178,6 @@ export const AdminSyntaxList = () => {
     } catch (e: any) {
       console.error("公開状態切替失敗", e);
       setError(e?.response?.data?.message || "公開状態の更新に失敗しました。");
-      // ロールバック
       setSyntaxes((prev) =>
         prev.map((s) => (s.id === id ? { ...s, published: !s.published } : s))
       );
@@ -161,6 +202,7 @@ export const AdminSyntaxList = () => {
       setContent(s.content ?? "");
       setCategory(s.category ?? "");
       setIsEditModalOpen(true);
+      setIsSplit(true);
     } catch (err: any) {
       console.error("❌ 取得失敗", err);
       setError(err?.response?.data?.message || "記事の取得に失敗しました。");
@@ -285,6 +327,7 @@ export const AdminSyntaxList = () => {
             {error}
           </div>
         )}
+
         {fetching && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -329,7 +372,6 @@ export const AdminSyntaxList = () => {
                   <span className="truncate">Slug: {sx.slug}</span>
                 </div>
 
-                {/* テキストのみプレビュー */}
                 <div className="mt-3 text-sm text-zinc-200 break-words overflow-hidden max-h-24 rounded border border-white/10 p-3 bg-white/5">
                   {stripMd(sx.summary || sx.content || "").slice(0, 220)}
                   {(sx.summary || sx.content || "").length > 220 && " …"}
@@ -385,79 +427,173 @@ export const AdminSyntaxList = () => {
         </div>
       </div>
 
+      {/* 編集モーダル：分割プレビュー */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="bg-gray-900 text-white p-6 rounded-lg w-full max-w-2xl shadow-2xl border border-white/10">
-            <h3 className="text-xl font-semibold mb-4">🛠️ 文法記事の編集</h3>
-
-            <label>slug</label>
-            <input
-              className="w-full text-black border px-3 py-2 rounded mb-2"
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              placeholder="スラッグ（URL識別子）"
-            />
-
-            <label>title</label>
-            <input
-              className="w-full text-black px-3 py-2 rounded mb-2"
-              placeholder="タイトル"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-
-            <label>category</label>
-            <select
-              className="w-full text-black border p-2"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              <option value="">カテゴリを選択</option>
-              {categories.map((cat, i) => (
-                <option key={i} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-
-            <label>summary</label>
-            <textarea
-              className="w-full text-black px-3 py-2 rounded mb-4"
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              placeholder="記事の要約（任意）"
-              rows={6}
-            />
-
-            <label>content</label>
-            <textarea
-              className="w-full text-black px-3 py-2 rounded mb-4"
-              placeholder="本文"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={6}
-            />
-
-            <div className="flex justify-end space-x-2">
-              <button
-                onClick={() => setIsEditModalOpen(false)}
-                className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500"
-                disabled={busy}
-              >
-                キャンセル
-              </button>
-              {syntax && (
+          <div className="bg-gray-900 text-white rounded-2xl w-full max-w-6xl shadow-2xl border border-white/10 max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-white/10">
+              <h3 className="text-lg md:text-xl font-semibold">
+                🛠️ 文法記事の編集
+              </h3>
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => handleUpdate(syntax.id)}
-                  className={`px-4 py-2 rounded ${
-                    busy
-                      ? "bg-blue-900 cursor-wait"
-                      : "bg-blue-500 hover:bg-blue-400"
-                  }`}
+                  className="px-3 py-1.5 rounded bg-gray-700 hover:bg-gray-600"
+                  onClick={() => setIsSplit((v) => !v)}
+                >
+                  {isSplit ? "入力のみ" : "分割表示"}
+                </button>
+                <button
+                  className="px-3 py-1.5 rounded bg-gray-700 hover:bg-gray-600"
+                  onClick={() => setIsWritingMode(true)}
+                >
+                  全画面
+                </button>
+                <button
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-3 py-1.5 rounded bg-gray-600 hover:bg-gray-500"
                   disabled={busy}
                 >
-                  {busy ? "更新中..." : "更新する"}
+                  閉じる
                 </button>
+                {syntax && (
+                  <button
+                    onClick={() => handleUpdate(syntax.id)}
+                    className={`px-4 py-1.5 rounded ${
+                      busy
+                        ? "bg-blue-900 cursor-wait"
+                        : "bg-blue-600 hover:bg-blue-500"
+                    }`}
+                    disabled={busy}
+                  >
+                    {busy ? "更新中..." : "更新する"}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm text-white/80">slug</label>
+                    <input
+                      className="w-full text-black border px-3 py-2 rounded"
+                      value={slug}
+                      onChange={(e) => setSlug(e.target.value)}
+                      placeholder="スラッグ（URL識別子）"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-white/80">title</label>
+                    <input
+                      className="w-full text-black border px-3 py-2 rounded"
+                      placeholder="タイトル"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-white/80">category</label>
+                    <select
+                      className="w-full text-black border p-2 rounded"
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                    >
+                      <option value="">カテゴリを選択</option>
+                      {categories.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm text-white/80">summary</label>
+                    <textarea
+                      className="w-full text-black border px-3 py-2 rounded"
+                      value={summary}
+                      onChange={(e) => setSummary(e.target.value)}
+                      placeholder="記事の要約（任意）"
+                      rows={6}
+                    />
+                  </div>
+                </div>
+
+                <div
+                  className={`grid gap-3 ${
+                    isSplit ? "md:grid-cols-2" : "grid-cols-1"
+                  } min-h-0`}
+                >
+                  <div className="min-h-0">
+                    <MarkdownTextarea
+                      value={content}
+                      onChange={setContent}
+                      rows={22}
+                      placeholder="本文（Markdown）"
+                    />
+                  </div>
+                  {isSplit && (
+                    <div className="min-h-0">
+                      <MarkdownView text={content} />
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 全画面ライティングモード */}
+      {isWritingMode && (
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm">
+          <div className="absolute inset-3 bg-gray-900 rounded-2xl shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between p-3 border-b border-white/10">
+              <div className="text-white/90 font-semibold">
+                ライティングモード（編集）
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  className="px-3 py-1.5 bg-gray-700 rounded text-white"
+                  onClick={() => setIsSplit((v) => !v)}
+                >
+                  {isSplit ? "入力のみ" : "分割表示"}
+                </button>
+                {syntax && (
+                  <button
+                    className="px-3 py-1.5 bg-blue-600 rounded text-white"
+                    onClick={() => handleUpdate(syntax.id)}
+                    disabled={busy}
+                  >
+                    {busy ? "更新中..." : "この内容で更新"}
+                  </button>
+                )}
+                <button
+                  className="px-3 py-1.5 bg-gray-600 rounded text-white"
+                  onClick={() => setIsWritingMode(false)}
+                >
+                  閉じる
+                </button>
+              </div>
+            </div>
+
+            <div
+              className={`flex-1 min-h-0 grid gap-4 p-3 ${
+                isSplit ? "md:grid-cols-2" : "grid-cols-1"
+              }`}
+            >
+              <div className="min-h-0">
+                <MarkdownTextarea
+                  value={content}
+                  onChange={setContent}
+                  rows={28}
+                  placeholder="内容（Markdown）"
+                />
+              </div>
+              {isSplit && (
+                <div className="min-h-0">
+                  <MarkdownView text={content} />
+                </div>
               )}
             </div>
           </div>

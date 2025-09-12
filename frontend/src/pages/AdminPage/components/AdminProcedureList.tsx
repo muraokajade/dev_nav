@@ -13,7 +13,12 @@ import { Pagination } from "../../../utils/Pagination";
 import { Link } from "react-router-dom";
 import { apiHelper } from "../../../libs/apiHelper";
 
-/** ===== helper: shallow array equality to avoid useless renders ===== */
+import ReactMarkdown from "react-markdown";
+import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
+import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
+import { MarkdownTextarea } from "../../../utils/MarkdownTextarea";
+
+/** ===== helper: shallow array equality ===== */
 function shallowEqual(a: any, b: any) {
   if (a === b) return true;
   if (!a || !b) return false;
@@ -24,26 +29,26 @@ function shallowEqual(a: any, b: any) {
       y = b[i];
     if (x === y) continue;
     if (!x || !y) return false;
-    const kx = Object.keys(x);
-    const ky = Object.keys(y);
+    const kx = Object.keys(x),
+      ky = Object.keys(y);
     if (kx.length !== ky.length) return false;
     for (const k of kx) if ((x as any)[k] !== (y as any)[k]) return false;
   }
   return true;
 }
 
-/** ===== helper: Markdown/コードをざっくり除去して短文プレビューに ===== */
+/** ===== helper: Markdown除去 ===== */
 const stripMd = (s: string) =>
   (s || "")
-    .replace(/```[\s\S]*?```/g, "") // コードブロック
-    .replace(/`[^`]*`/g, "") // インラインコード
-    .replace(/!\[[^\]]*\]\([^)]+\)/g, "") // 画像
-    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // リンク→テキスト
-    .replace(/[#>*_~`-]+/g, " ") // 記法
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`[^`]*`/g, "")
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/[#>*_~`-]+/g, " ")
     .replace(/\s+/g, " ")
     .trim();
 
-/** ===== helper: stepNumber の分割・表示・比較（自然順 + 表示は 1-01 形式） ===== */
+/** ===== stepNumber 表示・比較 ===== */
 const splitStepParts = (raw?: string) => {
   const s = (raw ?? "").trim();
   if (!s) return [] as number[];
@@ -57,7 +62,6 @@ const splitStepParts = (raw?: string) => {
   }
   return (s.match(/\d+/g) ?? []).map((n) => parseInt(n, 10));
 };
-
 const formatStepDisplay = (raw?: string) => {
   const p = splitStepParts(raw);
   if (p.length === 0) return raw ?? "";
@@ -67,18 +71,50 @@ const formatStepDisplay = (raw?: string) => {
     ...p.slice(1).map((n) => String(n).padStart(2, "0")),
   ].join("-");
 };
-
 const compareStep = (a?: string, b?: string) => {
-  const A = splitStepParts(a);
-  const B = splitStepParts(b);
+  const A = splitStepParts(a),
+    B = splitStepParts(b);
   const len = Math.max(A.length, B.length);
   for (let i = 0; i < len; i++) {
-    const ai = A[i] ?? -1;
-    const bi = B[i] ?? -1;
+    const ai = A[i] ?? -1,
+      bi = B[i] ?? -1;
     if (ai !== bi) return ai - bi;
   }
   return (a ?? "").localeCompare(b ?? "");
 };
+
+/** プレビュー用 Markdown レンダラ */
+const MarkdownView = ({ text }: { text: string }) => (
+  <div className="prose prose-invert max-w-none bg-gray-800 p-4 rounded break-words h-full overflow-y-auto min-h-0">
+    <ReactMarkdown
+      children={text}
+      components={{
+        code({ className, children, ...props }) {
+          const match = /language-(\w+)/.exec(className || "");
+          const codeString = Array.isArray(children)
+            ? children.join("")
+            : String(children);
+          return match ? (
+            <SyntaxHighlighter
+              style={oneDark}
+              language={match[1]}
+              PreTag="div"
+              className="not-prose"
+              {...props}
+            >
+              {codeString.replace(/\n$/, "")}
+            </SyntaxHighlighter>
+          ) : (
+            <code className={className} {...props}>
+              {children}
+            </code>
+          );
+        },
+        pre: ({ children }) => <>{children}</>,
+      }}
+    />
+  </div>
+);
 
 export const AdminProcedureList = () => {
   const [procedures, setProcedures] = useState<Procedure[]>([]);
@@ -99,6 +135,10 @@ export const AdminProcedureList = () => {
   const [content, setContent] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
   const [isEditModalOpen, setIsEditModalOpen] = useState(false);
+
+  // ✨ 分割・全画面
+  const [isSplit, setIsSplit] = useState(true);
+  const [isWritingMode, setIsWritingMode] = useState(false);
 
   const [busy, setBusy] = useState(false);
   const [fetching, setFetching] = useState(false);
@@ -158,7 +198,7 @@ export const AdminProcedureList = () => {
     return () => ac.abort();
   }, [loading, idToken, pageIndex, fetchProcedure]);
 
-  // 公開切替（idでトグル・楽観更新、順番を維持）
+  // 公開切替
   const togglePublish = async (id: number) => {
     if (busy || !idToken) return;
     setBusy(true);
@@ -200,6 +240,7 @@ export const AdminProcedureList = () => {
       setContent(s.content ?? "");
       setCategory(s.category ?? "");
       setIsEditModalOpen(true);
+      setIsSplit(true);
     } catch (err: any) {
       console.error("❌ 取得失敗", err?.response?.status || err?.message);
       setError(
@@ -272,7 +313,7 @@ export const AdminProcedureList = () => {
 
   const paginate = (pageNumber: number) => setDisplayPage(pageNumber);
 
-  // クライアントサイド絞り込み＆固定順（自然順ステップ + 表示整形）
+  // クライアントサイド絞り込み＆固定順
   const filtered = useMemo(() => {
     let list = [...procedures];
     if (q.trim()) {
@@ -368,6 +409,7 @@ export const AdminProcedureList = () => {
             {error}
           </div>
         )}
+
         {fetching && (
           <div className="grid grid-cols-1 md:grid-cols-2 gap-3 mb-4">
             {Array.from({ length: 4 }).map((_, i) => (
@@ -418,7 +460,6 @@ export const AdminProcedureList = () => {
                     <span className="truncate">Slug: {p.slug}</span>
                   </div>
 
-                  {/* テキストのみプレビュー（高速） */}
                   <div className="mt-3 text-sm text-zinc-200 break-words overflow-hidden max-h-24 rounded border border-white/10 p-3 bg-white/5">
                     {stripMd(p.summary || p.content || "").slice(0, 220)}
                     {(p.summary || p.content || "").length > 220 && " …"}
@@ -475,101 +516,196 @@ export const AdminProcedureList = () => {
         </div>
       </div>
 
+      {/* 編集モーダル：分割プレビュー */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
-          <div className="bg-gray-900 text-white p-6 rounded-lg w-full max-w-2xl shadow-2xl border border-white/10">
-            <h3 className="text-xl font-semibold mb-4">🛠️ 手順の編集</h3>
-
-            <label>stepNumber</label>
-            <input
-              className="w-full text-black border px-3 py-2 rounded mb-2"
-              value={stepNumber}
-              onChange={(e) => setStepNumber(e.target.value)}
-              placeholder="ステップ番号（例: 5-09 または 509）"
-            />
-
-            <label>slug</label>
-            <input
-              className="w-full text-black border px-3 py-2 rounded mb-2"
-              value={slug}
-              onChange={(e) => setSlug(e.target.value)}
-              placeholder="スラッグ（URL識別子）"
-            />
-
-            <label>title</label>
-            <input
-              className="w-full text-black px-3 py-2 rounded mb-2"
-              placeholder="タイトル"
-              value={title}
-              onChange={(e) => setTitle(e.target.value)}
-            />
-
-            <label>category</label>
-            <select
-              className="w-full text-black border p-2 mb-2"
-              value={category}
-              onChange={(e) => setCategory(e.target.value)}
-            >
-              <option value="">カテゴリを選択</option>
-              {categories.map((cat, i) => (
-                <option key={i} value={cat}>
-                  {cat}
-                </option>
-              ))}
-            </select>
-
-            <label>summary</label>
-            <textarea
-              className="w-full text-black px-3 py-2 rounded mb-4"
-              value={summary}
-              onChange={(e) => setSummary(e.target.value)}
-              placeholder="要約（省略可）"
-              rows={4}
-            />
-
-            <label>content</label>
-            <textarea
-              className="w-full text-black px-3 py-2 rounded mb-4"
-              placeholder="本文"
-              value={content}
-              onChange={(e) => setContent(e.target.value)}
-              rows={6}
-            />
-
-            <input
-              type="file"
-              accept="image/*"
-              className="w-full"
-              onChange={(e) => {
-                const f = e.target.files?.[0] ?? null;
-                if (f && f.size > 5 * 1024 * 1024) {
-                  alert("5MB以下の画像を選択してください。");
-                  return;
-                }
-                setImageFile(f);
-              }}
-            />
-
-            <div className="flex justify-end gap-2 mt-4">
-              <button
-                onClick={() => setIsEditModalOpen(false)}
-                className="px-4 py-2 bg-gray-600 rounded hover:bg-gray-500"
-                disabled={busy}
-              >
-                キャンセル
-              </button>
-              {procedure && (
+          <div className="bg-gray-900 text-white rounded-2xl w-full max-w-6xl shadow-2xl border border-white/10 max-h-[85vh] flex flex-col">
+            <div className="flex items-center justify-between gap-2 px-4 py-3 border-b border-white/10">
+              <h3 className="text-lg md:text-xl font-semibold">
+                🛠️ 手順の編集
+              </h3>
+              <div className="flex items-center gap-2">
                 <button
-                  onClick={() => handleUpdate(procedure.id)}
-                  className={`px-4 py-2 rounded ${
-                    busy
-                      ? "bg-blue-900 cursor-wait"
-                      : "bg-blue-600 hover:bg-blue-500"
-                  }`}
+                  className="px-3 py-1.5 rounded bg-gray-700 hover:bg-gray-600"
+                  onClick={() => setIsSplit((v) => !v)}
+                >
+                  {isSplit ? "入力のみ" : "分割表示"}
+                </button>
+                <button
+                  className="px-3 py-1.5 rounded bg-gray-700 hover:bg-gray-600"
+                  onClick={() => setIsWritingMode(true)}
+                >
+                  全画面
+                </button>
+                <button
+                  onClick={() => setIsEditModalOpen(false)}
+                  className="px-3 py-1.5 rounded bg-gray-600 hover:bg-gray-500"
                   disabled={busy}
                 >
-                  {busy ? "更新中..." : "更新する"}
+                  閉じる
                 </button>
+                {procedure && (
+                  <button
+                    onClick={() => handleUpdate(procedure.id)}
+                    className={`px-4 py-1.5 rounded ${
+                      busy
+                        ? "bg-blue-900 cursor-wait"
+                        : "bg-blue-600 hover:bg-blue-500"
+                    }`}
+                    disabled={busy}
+                  >
+                    {busy ? "更新中..." : "更新する"}
+                  </button>
+                )}
+              </div>
+            </div>
+
+            <div className="flex-1 overflow-y-auto p-4">
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 min-h-0">
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-sm text-white/80">stepNumber</label>
+                    <input
+                      className="w-full text-black border px-3 py-2 rounded"
+                      value={stepNumber}
+                      onChange={(e) => setStepNumber(e.target.value)}
+                      placeholder="ステップ番号（例: 5-09 または 509）"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-white/80">slug</label>
+                    <input
+                      className="w-full text-black border px-3 py-2 rounded"
+                      value={slug}
+                      onChange={(e) => setSlug(e.target.value)}
+                      placeholder="スラッグ（URL識別子）"
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-white/80">title</label>
+                    <input
+                      className="w-full text-black px-3 py-2 rounded border"
+                      placeholder="タイトル"
+                      value={title}
+                      onChange={(e) => setTitle(e.target.value)}
+                    />
+                  </div>
+                  <div>
+                    <label className="text-sm text-white/80">category</label>
+                    <select
+                      className="w-full text-black border p-2 rounded"
+                      value={category}
+                      onChange={(e) => setCategory(e.target.value)}
+                    >
+                      <option value="">カテゴリを選択</option>
+                      {categories.map((cat) => (
+                        <option key={cat} value={cat}>
+                          {cat}
+                        </option>
+                      ))}
+                    </select>
+                  </div>
+                  <div>
+                    <label className="text-sm text-white/80">summary</label>
+                    <textarea
+                      className="w-full text-black px-3 py-2 rounded border"
+                      value={summary}
+                      onChange={(e) => setSummary(e.target.value)}
+                      placeholder="要約（省略可）"
+                      rows={4}
+                    />
+                  </div>
+                </div>
+
+                <div
+                  className={`grid gap-3 ${
+                    isSplit ? "md:grid-cols-2" : "grid-cols-1"
+                  } min-h-0`}
+                >
+                  <div className="min-h-0">
+                    <MarkdownTextarea
+                      value={content}
+                      onChange={setContent}
+                      rows={22}
+                      placeholder="本文（Markdown）"
+                    />
+                  </div>
+                  {isSplit && (
+                    <div className="min-h-0">
+                      <MarkdownView text={content} />
+                    </div>
+                  )}
+                </div>
+              </div>
+
+              <input
+                type="file"
+                accept="image/*"
+                className="w-full mt-4"
+                onChange={(e) => {
+                  const f = e.target.files?.[0] ?? null;
+                  if (f && f.size > 5 * 1024 * 1024) {
+                    alert("5MB以下の画像を選択してください。");
+                    return;
+                  }
+                  setImageFile(f);
+                }}
+              />
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* 全画面ライティングモード */}
+      {isWritingMode && (
+        <div className="fixed inset-0 z-[60] bg-black/80 backdrop-blur-sm">
+          <div className="absolute inset-3 bg-gray-900 rounded-2xl shadow-2xl flex flex-col">
+            <div className="flex items-center justify-between p-3 border-b border-white/10">
+              <div className="text-white/90 font-semibold">
+                ライティングモード（編集）
+              </div>
+              <div className="flex items-center gap-2">
+                <button
+                  className="px-3 py-1.5 bg-gray-700 rounded text-white"
+                  onClick={() => setIsSplit((v) => !v)}
+                >
+                  {isSplit ? "入力のみ" : "分割表示"}
+                </button>
+                {procedure && (
+                  <button
+                    className="px-3 py-1.5 bg-blue-600 rounded text-white"
+                    onClick={() => handleUpdate(procedure.id)}
+                    disabled={busy}
+                  >
+                    {busy ? "更新中..." : "この内容で更新"}
+                  </button>
+                )}
+                <button
+                  className="px-3 py-1.5 bg-gray-600 rounded text-white"
+                  onClick={() => setIsWritingMode(false)}
+                >
+                  閉じる
+                </button>
+              </div>
+            </div>
+
+            <div
+              className={`flex-1 min-h-0 grid gap-4 p-3 ${
+                isSplit ? "md:grid-cols-2" : "grid-cols-1"
+              }`}
+            >
+              <div className="min-h-0">
+                <MarkdownTextarea
+                  value={content}
+                  onChange={setContent}
+                  rows={28}
+                  placeholder="内容（Markdown）"
+                />
+              </div>
+              {isSplit && (
+                <div className="min-h-0">
+                  <MarkdownView text={content} />
+                </div>
               )}
             </div>
           </div>

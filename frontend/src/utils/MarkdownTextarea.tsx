@@ -1,7 +1,7 @@
 import React, { useRef } from "react";
-import { MarkdownToolbar } from "./MarkdownToolbar"; 
-import { insertMarkdownAtCursor } from "./insertMarkdownAtCursor"; 
-import { getAutoNumberedListValue } from "./orderedListAutoInsert"; 
+import { MarkdownToolbar } from "./MarkdownToolbar";
+import { insertMarkdownAtCursor } from "./insertMarkdownAtCursor";
+import { getAutoNumberedListValue } from "./orderedListAutoInsert";
 
 type Props = {
   value: string;
@@ -22,12 +22,11 @@ export const MarkdownTextarea: React.FC<Props> = ({
   const handleInsert = (before: string, after = "") => {
     const textarea = textareaRef.current;
     if (!textarea) return;
-    const { text: newText, selectionStart, selectionEnd } = insertMarkdownAtCursor(
-      textarea,
-      value,
-      before,
-      after
-    );
+    const {
+      text: newText,
+      selectionStart,
+      selectionEnd,
+    } = insertMarkdownAtCursor(textarea, value, before, after);
     onChange(newText);
     setTimeout(() => {
       textarea.focus();
@@ -37,7 +36,9 @@ export const MarkdownTextarea: React.FC<Props> = ({
   };
 
   // 番号付きリスト自動補完
-  const handleTextareaKeyDown = (e: React.KeyboardEvent<HTMLTextAreaElement>) => {
+  const handleTextareaKeyDown = (
+    e: React.KeyboardEvent<HTMLTextAreaElement>
+  ) => {
     if (e.key === "Enter") {
       const textarea = textareaRef.current;
       if (!textarea) return;
@@ -58,9 +59,9 @@ export const MarkdownTextarea: React.FC<Props> = ({
       <MarkdownToolbar onInsert={handleInsert} />
       <textarea
         ref={textareaRef}
-        className="w-full border p-2"
+        className="w-full bg-white text-black border p-2 rounded"
         value={value}
-        onChange={e => onChange(e.target.value)}
+        onChange={(e) => onChange(e.target.value)}
         onKeyDown={handleTextareaKeyDown}
         rows={rows}
         placeholder={placeholder}
