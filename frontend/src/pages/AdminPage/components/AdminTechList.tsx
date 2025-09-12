@@ -7,15 +7,23 @@ import React, {
 } from "react";
 import { Link } from "react-router-dom";
 import dayjs from "dayjs";
-import ReactMarkdown from "react-markdown";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 
 import { apiHelper } from "../../../libs/apiHelper";
 import { useAuth } from "../../../context/useAuthContext";
 import { usePagination } from "../../../hooks/usePagination";
 import { Pagination } from "../../../utils/Pagination";
 import { ArticleModel } from "../../../models/ArticleModel";
+
+/** Markdown/コードをざっくり除去 */
+const stripMd = (s: string) =>
+  (s || "")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`[^`]*`/g, "")
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/[#>*_~`-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
 export const AdminTechList = () => {
   const [articles, setArticles] = useState<ArticleModel[]>([]);
@@ -108,7 +116,6 @@ export const AdminTechList = () => {
     setBusy(true);
     setError(null);
 
-    // 楽観更新
     setArticles((prev) =>
       prev.map((a) => (a.id === id ? { ...a, published: !a.published } : a))
     );
@@ -122,7 +129,6 @@ export const AdminTechList = () => {
     } catch (e: any) {
       console.error("公開状態切替失敗", e?.response?.status || e?.message);
       setError(e?.response?.data?.message || "公開状態の更新に失敗しました。");
-      // ロールバック
       setArticles((prev) =>
         prev.map((a) => (a.id === id ? { ...a, published: !a.published } : a))
       );
@@ -251,7 +257,6 @@ export const AdminTechList = () => {
             📚 投稿済み記事
           </h2>
 
-          {/* ツールバー（アイコンなし） */}
           <div className="grid grid-cols-1 md:grid-cols-5 gap-2 w-full md:w-auto">
             <input
               className="md:col-span-2 w-full pl-3 pr-3 py-2 rounded-lg bg-zinc-900/70 border border-white/10 text-zinc-100 placeholder:text-zinc-500"
@@ -356,41 +361,17 @@ export const AdminTechList = () => {
                     <span className="truncate">Slug: {a.slug}</span>
                   </div>
 
-                  <div className="mt-3 prose prose-invert max-w-none text-sm text-zinc-200 break-words overflow-auto max-h-32 rounded border border-white/10 p-3 bg-white/5">
-                    <ReactMarkdown
-                      children={a.summary}
-                      components={{
-                        code({ className, children, ...props }: any) {
-                          const match = /language-(\w+)/.exec(className || "");
-                          const codeString = Array.isArray(children)
-                            ? children.join("")
-                            : String(children);
-                          return match ? (
-                            <SyntaxHighlighter
-                              style={oneDark}
-                              language={match[1]}
-                              PreTag="div"
-                              className="not-prose"
-                              {...props}
-                            >
-                              {codeString.replace(/\n$/, "")}
-                            </SyntaxHighlighter>
-                          ) : (
-                            <code className={className} {...props}>
-                              {children}
-                            </code>
-                          );
-                        },
-                        pre: ({ children }) => <>{children}</>,
-                      }}
-                    />
+                  {/* テキストのみプレビュー */}
+                  <div className="mt-3 text-sm text-zinc-200 break-words overflow-hidden max-h-24 rounded border border-white/10 p-3 bg-white/5">
+                    {stripMd(a.summary || a.content || "").slice(0, 220)}
+                    {(a.summary || a.content || "").length > 220 && " …"}
                   </div>
 
                   <div className="mt-4 flex items-center justify-end gap-2">
                     <button
                       onClick={() => togglePublish(a.id)}
                       disabled={busy}
-                      className={`inline-flex items-center gap-1 rounded-md px-3 py-1.5 text-sm border ${
+                      className={`inline-flex itemsーカー gap-1 rounded-md px-3 py-1.5 text-sm border ${
                         a.published
                           ? "bg-emerald-600 text-white border-emerald-700 hover:bg-emerald-500"
                           : "bg-yellow-500 text-black border-yellow-600 hover:bg-yellow-400"
@@ -437,7 +418,6 @@ export const AdminTechList = () => {
         </div>
       </div>
 
-      {/* 編集モーダル */}
       {isEditModalOpen && (
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/60">
           <div className="bg-gray-900 text-white p-6 rounded-lg w-full max-w-2xl shadow-2xl border border-white/10">
@@ -461,7 +441,7 @@ export const AdminTechList = () => {
 
             <label>category</label>
             <select
-              className="w-full text-black border p-2 rounded mb-2"
+              className="w-full text黒 border p-2 rounded mb-2"
               value={category}
               onChange={(e) => setCategory(e.target.value)}
             >

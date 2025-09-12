@@ -1,4 +1,3 @@
-// src/pages/admin/AdminProcedureList.tsx
 import React, {
   useCallback,
   useEffect,
@@ -11,9 +10,6 @@ import dayjs from "dayjs";
 import { usePagination } from "../../../hooks/usePagination";
 import { Procedure } from "../../../models/Procedure";
 import { Pagination } from "../../../utils/Pagination";
-import ReactMarkdown from "react-markdown";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { Link } from "react-router-dom";
 import { apiHelper } from "../../../libs/apiHelper";
 
@@ -36,22 +32,29 @@ function shallowEqual(a: any, b: any) {
   return true;
 }
 
+/** ===== helper: Markdown/コードをざっくり除去して短文プレビューに ===== */
+const stripMd = (s: string) =>
+  (s || "")
+    .replace(/```[\s\S]*?```/g, "") // コードブロック
+    .replace(/`[^`]*`/g, "") // インラインコード
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, "") // 画像
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1") // リンク→テキスト
+    .replace(/[#>*_~`-]+/g, " ") // 記法
+    .replace(/\s+/g, " ")
+    .trim();
+
 /** ===== helper: stepNumber の分割・表示・比較（自然順 + 表示は 1-01 形式） ===== */
 const splitStepParts = (raw?: string) => {
   const s = (raw ?? "").trim();
   if (!s) return [] as number[];
-  // 区切りがあればそのまま数値配列化（1-02 / 1.2 / 1_02 など）
-  if (/[-._]/.test(s)) {
+  if (/[-._]/.test(s))
     return (s.match(/\d+/g) ?? []).map((n) => parseInt(n, 10));
-  }
-  // 純数字のみなら末尾2桁を "minor" として切る（101 -> [1,1], 200 -> [2,0]）
   if (/^\d+$/.test(s)) {
     if (s.length <= 2) return [parseInt(s, 10)];
     const major = parseInt(s.slice(0, -2), 10);
     const minor = parseInt(s.slice(-2), 10);
     return [major, minor];
   }
-  // 保険：見つかった数字を順に
   return (s.match(/\d+/g) ?? []).map((n) => parseInt(n, 10));
 };
 
@@ -59,7 +62,6 @@ const formatStepDisplay = (raw?: string) => {
   const p = splitStepParts(raw);
   if (p.length === 0) return raw ?? "";
   if (p.length === 1) return String(p[0]);
-  // 先頭以外は 2 桁ゼロ埋めで連結
   return [
     String(p[0]),
     ...p.slice(1).map((n) => String(n).padStart(2, "0")),
@@ -73,9 +75,8 @@ const compareStep = (a?: string, b?: string) => {
   for (let i = 0; i < len; i++) {
     const ai = A[i] ?? -1;
     const bi = B[i] ?? -1;
-    if (ai !== bi) return ai - bi; // 数値で決着
+    if (ai !== bi) return ai - bi;
   }
-  // 完全同点なら元文字列で安定化
   return (a ?? "").localeCompare(b ?? "");
 };
 
@@ -110,8 +111,8 @@ export const AdminProcedureList = () => {
   const [q, setQ] = useState("");
   const [catFilter, setCatFilter] = useState("");
   const [pubFilter, setPubFilter] = useState<"all" | "pub" | "draft">("all");
-  const [sortKey, setSortKey] = useState<"date" | "title" | "step">("step"); // 初期を step に
-  const [sortDir, setSortDir] = useState<"desc" | "asc">("asc"); // 初期を昇順に
+  const [sortKey, setSortKey] = useState<"date" | "title" | "step">("step");
+  const [sortDir, setSortDir] = useState<"desc" | "asc">("asc");
 
   const categories = useMemo(
     () => ["Spring", "React", "Vue", "Firebase", "Tailwind", "Other"],
@@ -169,13 +170,11 @@ export const AdminProcedureList = () => {
       await apiHelper.put(`/api/admin/procedure/toggle/${id}`, null, {
         headers: authHeader,
       });
-      // 再取得しない（順序保持）
     } catch (e: any) {
       console.error("公開状態切替失敗", e?.response?.status || e?.message);
       setError(
         e?.response?.data?.message || "公開状態の切り替えに失敗しました。"
       );
-      // 失敗ロールバック
       setProcedures((prev) =>
         prev.map((p) => (p.id === id ? { ...p, published: !p.published } : p))
       );
@@ -242,7 +241,6 @@ export const AdminProcedureList = () => {
         headers: authHeader,
       });
       setIsEditModalOpen(false);
-      // 一致性のため再取得（※順序は client 側の sort で固定）
       const ac = new AbortController();
       await fetchProcedure(ac.signal);
     } catch (e: any) {
@@ -301,7 +299,6 @@ export const AdminProcedureList = () => {
         const t = a.title.localeCompare(b.title);
         return sortDir === "desc" ? t * -1 : t;
       }
-      // date
       const da = +new Date(a.createdAt);
       const db = +new Date(b.createdAt);
       return sortDir === "desc" ? db - da : da - db;
@@ -421,34 +418,10 @@ export const AdminProcedureList = () => {
                     <span className="truncate">Slug: {p.slug}</span>
                   </div>
 
-                  <div className="mt-3 prose prose-invert max-w-none text-sm text-zinc-200 break-words overflow-auto max-h-32 rounded border border-white/10 p-3 bg-white/5">
-                    <ReactMarkdown
-                      children={(p.summary || p.content || "").slice(0, 300)}
-                      components={{
-                        code({ className, children, ...props }: any) {
-                          const match = /language-(\w+)/.exec(className || "");
-                          const codeString = Array.isArray(children)
-                            ? children.join("")
-                            : String(children);
-                          return match ? (
-                            <SyntaxHighlighter
-                              style={oneDark}
-                              language={match[1]}
-                              PreTag="div"
-                              className="not-prose"
-                              {...props}
-                            >
-                              {codeString.replace(/\n$/, "")}
-                            </SyntaxHighlighter>
-                          ) : (
-                            <code className={className} {...props}>
-                              {children}
-                            </code>
-                          );
-                        },
-                        pre: ({ children }) => <>{children}</>,
-                      }}
-                    />
+                  {/* テキストのみプレビュー（高速） */}
+                  <div className="mt-3 text-sm text-zinc-200 break-words overflow-hidden max-h-24 rounded border border-white/10 p-3 bg-white/5">
+                    {stripMd(p.summary || p.content || "").slice(0, 220)}
+                    {(p.summary || p.content || "").length > 220 && " …"}
                   </div>
 
                   <div className="mt-4 flex items-center justify-end gap-2">

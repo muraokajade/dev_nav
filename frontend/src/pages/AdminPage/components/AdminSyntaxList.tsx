@@ -2,13 +2,21 @@ import { useCallback, useEffect, useState, useMemo, useRef } from "react";
 import { apiHelper } from "../../../libs/apiHelper";
 import { SyntaxModel } from "../../../models/SyntaxModel";
 import { useAuth } from "../../../context/useAuthContext";
-import ReactMarkdown from "react-markdown";
-import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
-import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import dayjs from "dayjs";
 import { usePagination } from "../../../hooks/usePagination";
 import { Pagination } from "../../../utils/Pagination";
 import { Link } from "react-router-dom";
+
+/** Markdown/コードをざっくり除去 */
+const stripMd = (s: string) =>
+  (s || "")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`[^`]*`/g, "")
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/[#>*_~`-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
 
 export const AdminSyntaxList = () => {
   const [syntaxes, setSyntaxes] = useState<SyntaxModel[]>([]);
@@ -97,7 +105,6 @@ export const AdminSyntaxList = () => {
 
   useEffect(() => {
     if (loading || !idToken) return;
-
     if (acRef.current) acRef.current.abort();
     const ac = new AbortController();
     acRef.current = ac;
@@ -118,7 +125,7 @@ export const AdminSyntaxList = () => {
     setError(null);
 
     setSyntaxes((prev) =>
-      prev.map((s) => (s.slug === slug ? { ...s, published: !s.published } : s))
+      prev.map((s) => (s.id === id ? { ...s, published: !s.published } : s))
     );
 
     try {
@@ -131,9 +138,7 @@ export const AdminSyntaxList = () => {
       setError(e?.response?.data?.message || "公開状態の更新に失敗しました。");
       // ロールバック
       setSyntaxes((prev) =>
-        prev.map((s) =>
-          s.slug === slug ? { ...s, published: !s.published } : s
-        )
+        prev.map((s) => (s.id === id ? { ...s, published: !s.published } : s))
       );
     } finally {
       setBusy(false);
@@ -150,13 +155,11 @@ export const AdminSyntaxList = () => {
       });
       const s = res.data as SyntaxModel;
       setSyntax(s);
-
       setSlug(s.slug ?? "");
       setTitle(s.title ?? "");
       setSummary(s.summary ?? "");
       setContent(s.content ?? "");
       setCategory(s.category ?? "");
-
       setIsEditModalOpen(true);
     } catch (err: any) {
       console.error("❌ 取得失敗", err);
@@ -188,7 +191,6 @@ export const AdminSyntaxList = () => {
         },
         { headers: authHeader }
       );
-
       setIsEditModalOpen(false);
       await fetchAllSyntax();
     } catch (e: any) {
@@ -247,7 +249,6 @@ export const AdminSyntaxList = () => {
             📚 投稿済み文法
           </h2>
 
-          {/* ツールバー（アイコンなし） */}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-2 w-full md:w-auto">
             <input
               className="md:col-span-2 w-full pl-3 pr-3 py-2 rounded-lg bg-zinc-900/70 border border-white/10 text-zinc-100 placeholder:text-zinc-500"
@@ -298,7 +299,7 @@ export const AdminSyntaxList = () => {
         <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
           {filtered.map((sx) => (
             <div
-              key={sx.slug}
+              key={sx.id}
               className="group rounded-xl bg-zinc-900/60 border border-white/10 hover:border-white/20 transition overflow-hidden"
             >
               <div className="p-4">
@@ -328,34 +329,10 @@ export const AdminSyntaxList = () => {
                   <span className="truncate">Slug: {sx.slug}</span>
                 </div>
 
-                <div className="mt-3 prose prose-invert max-w-none text-sm text-zinc-200 break-words overflow-auto max-h-32 rounded border border-white/10 p-3 bg-white/5">
-                  <ReactMarkdown
-                    children={sx.summary}
-                    components={{
-                      code({ className, children, ...props }: any) {
-                        const match = /language-(\w+)/.exec(className || "");
-                        const codeString = Array.isArray(children)
-                          ? children.join("")
-                          : String(children);
-                        return match ? (
-                          <SyntaxHighlighter
-                            style={oneDark}
-                            language={match[1]}
-                            PreTag="div"
-                            className="not-prose"
-                            {...props}
-                          >
-                            {codeString.replace(/\n$/, "")}
-                          </SyntaxHighlighter>
-                        ) : (
-                          <code className={className} {...props}>
-                            {children}
-                          </code>
-                        );
-                      },
-                      pre: ({ children }) => <>{children}</>,
-                    }}
-                  />
+                {/* テキストのみプレビュー */}
+                <div className="mt-3 text-sm text-zinc-200 break-words overflow-hidden max-h-24 rounded border border-white/10 p-3 bg-white/5">
+                  {stripMd(sx.summary || sx.content || "").slice(0, 220)}
+                  {(sx.summary || sx.content || "").length > 220 && " …"}
                 </div>
 
                 <div className="mt-4 flex items-center justify-end gap-2">
