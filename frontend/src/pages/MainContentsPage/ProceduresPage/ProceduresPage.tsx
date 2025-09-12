@@ -1,4 +1,3 @@
-// src/pages/ProceduresPage.tsx
 import React, { useEffect, useMemo, useRef, useState } from "react";
 import { Link, useLocation } from "react-router-dom";
 import { apiHelper } from "../../../libs/apiHelper";
@@ -8,7 +7,7 @@ import { Pagination } from "../../../utils/Pagination";
 import { useReadStatus, ReadTarget } from "../../../hooks/useReadStatus";
 
 /* ================== 設定 ================== */
-const CACHE_KEY = "procedures_normalized_v1";
+const CACHE_KEY = "procedures_normalized_v2"; // v2: 軽量格納化
 const CACHE_TTL_MS = 10 * 60 * 1000; // 10分
 const PAGE_SIZE = 10;
 
@@ -76,14 +75,21 @@ const parseStep = (raw: string): [number, number] => {
     : [999, 999];
 };
 
-type Row = Procedure & { major: number; minor: number; stepNumber: string };
+/** 一覧に必要な最小shapeだけを保持してメモリ/キャッシュを軽量化 */
+type Row = {
+  id: number;
+  slug: string;
+  title: string;
+  stepNumber: string; // 正規化済み
+  major: number;
+  minor: number;
+};
 
 type CacheShape = {
   at: number;
   rows: Row[];
 };
 
-/* ================== 本体 ================== */
 export const ProceduresPage = () => {
   const [rows, setRows] = useState<Row[]>([]);
   const [loading, setLoading] = useState(true);
@@ -113,21 +119,30 @@ export const ProceduresPage = () => {
           setRows(cached.rows);
           setTotalPages(Math.ceil(cached.rows.length / PAGE_SIZE));
           setLoading(false);
+          // SWRしたい場合は、このまま続けて更新リクエストを投げてもOK
           return;
+        } else if (Array.isArray(cached.rows)) {
+          // 期限切れでもまず即表示 → 背景更新（体感スピード重視）
+          setRows(cached.rows);
+          setTotalPages(Math.ceil(cached.rows.length / PAGE_SIZE));
+          setLoading(false);
         }
       } catch {
         /* ignore */
       }
     }
 
-    // 2) 未命中なら取得
+    // 2) 取得（キャッシュが期限切れの場合は“背景更新”扱い）
     abortRef.current?.abort();
     const ac = new AbortController();
     abortRef.current = ac;
 
     (async () => {
-      setLoading(true);
       setError(null);
+      // cacheが全くない場合だけスピナーを出す
+      const hasAnyCache = !!sessionStorage.getItem(CACHE_KEY);
+      if (!hasAnyCache) setLoading(true);
+
       try {
         // まず1ページ取得して total を知る
         const first = await apiHelper.get(`/api/procedures`, {
@@ -153,11 +168,18 @@ export const ProceduresPage = () => {
           ...rest.flatMap((r) => r.data?.content ?? []),
         ];
 
-        // 正規化 + ソート
+        // 正規化 + ソート（必要フィールドのみに絞る）
         const normalized: Row[] = content.map((p) => {
           const step = normalizeStep(p.stepNumber);
           const [major, minor] = parseStep(step);
-          return { ...p, stepNumber: step, major, minor };
+          return {
+            id: p.id,
+            slug: p.slug,
+            title: p.title,
+            stepNumber: step,
+            major,
+            minor,
+          };
         });
         normalized.sort((a, b) =>
           a.major !== b.major ? a.major - b.major : a.minor - b.minor
@@ -167,16 +189,16 @@ export const ProceduresPage = () => {
         const totalP = Math.ceil(normalized.length / PAGE_SIZE);
         setTotalPages(totalP);
 
-        // キャッシュ保存
+        // キャッシュ保存（軽量shapeを格納）
         const payload: CacheShape = { at: Date.now(), rows: normalized };
         sessionStorage.setItem(CACHE_KEY, JSON.stringify(payload));
       } catch (e: any) {
         if (e?.name !== "CanceledError") {
           console.error("手順一覧取得失敗", e);
           setError("手順一覧の取得に失敗しました");
+          setRows([]);
+          setTotalPages(0);
         }
-        setRows([]);
-        setTotalPages(0);
       } finally {
         setLoading(false);
       }

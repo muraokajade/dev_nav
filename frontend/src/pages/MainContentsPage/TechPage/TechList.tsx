@@ -1,4 +1,3 @@
-// src/pages/MainContentsPage/TechPage/TechList.tsx
 import {
   useEffect,
   useState,
@@ -27,6 +26,24 @@ const CATEGORIES = [
 ] as const;
 const PAGE_SIZE = 10;
 
+/** 一覧プレビュー用：Markdownざっくり除去＆短文化 */
+const stripMd = (s: string) =>
+  (s || "")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`[^`]*`/g, "")
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/[#>*_~`-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
+/** ページキャッシュ（同一セッション内で再取得を極力避ける） */
+type PageCacheEntry = { items: ArticleModel[]; totalPages: number; ts: number };
+const usePageCache = () => {
+  const ref = useRef<Map<number, PageCacheEntry>>(new Map());
+  return ref.current;
+};
+
 export const TechList = () => {
   const [search, setSearch] = useState("");
   const deferredSearch = useDeferredValue(search); // 入力中はレンダ負荷を下げる
@@ -45,6 +62,8 @@ export const TechList = () => {
     usePagination();
   const { idToken } = useAuth();
 
+  const cache = usePageCache();
+
   /** 既読IDの取得（失敗しても一覧表示は継続） */
   useEffect(() => {
     if (!idToken) {
@@ -62,10 +81,17 @@ export const TechList = () => {
           headers: { Authorization: `Bearer ${idToken}` },
           signal: ac.signal as AbortSignal,
         });
-        setReadArticleIds(res.data?.content ?? []);
+        // APIが配列を返す想定 / contentのときも許容
+        const data = Array.isArray(res.data)
+          ? res.data
+          : Array.isArray(res.data?.content)
+          ? res.data.content
+          : [];
+        setReadArticleIds(data);
       } catch (e: any) {
-        if (e?.name === "CanceledError") return;
-        console.error("既読取得失敗", e);
+        if (e?.name !== "CanceledError") {
+          console.error("既読取得失敗", e);
+        }
         setReadArticleIds([]);
       }
     })();
@@ -73,13 +99,27 @@ export const TechList = () => {
     return () => ac.abort();
   }, [idToken, pageIndex]);
 
-  /** 公開記事の取得 */
+  /** 公開記事の取得（キャッシュ即描画 → 背景更新） */
   useEffect(() => {
+    // 1) キャッシュがあれば即描画
+    const cached = cache.get(pageIndex);
+    if (cached) {
+      setArticles(cached.items);
+      setTotalPages(cached.totalPages);
+      setLoadingArticles(false);
+    } else {
+      setLoadingArticles(true);
+    }
+
+    // 2) 背景更新（10分TTL）
+    const FRESH_MS = 10 * 60 * 1000;
+    const now = Date.now();
+    if (cached && now - cached.ts < FRESH_MS) return;
+
     abortArticlesRef.current?.abort();
     const ac = new AbortController();
     abortArticlesRef.current = ac;
 
-    setLoadingArticles(true);
     setError(null);
 
     (async () => {
@@ -88,27 +128,44 @@ export const TechList = () => {
           params: { page: pageIndex, size: PAGE_SIZE },
           signal: ac.signal as AbortSignal,
         });
-        const published: ArticleModel[] = res.data?.content ?? [];
-        setArticles(published);
-        setTotalPages(res.data?.totalPages ?? 0);
+        const list: ArticleModel[] = res.data?.content ?? [];
+        const pages: number = res.data?.totalPages ?? 0;
+
+        // 一覧用にはheavyなcontentを保持しない
+        const light = list.map((it) => ({
+          id: it.id,
+          slug: it.slug,
+          title: it.title,
+          summary: it.summary ?? "",
+          category: it.category,
+          imageUrl: it.imageUrl,
+          createdAt: it.createdAt,
+          published: it.published,
+        })) as unknown as ArticleModel[];
+
+        cache.set(pageIndex, { items: light, totalPages: pages, ts: now });
+        setArticles(light);
+        setTotalPages(pages);
       } catch (e: any) {
-        if (e?.name === "CanceledError") return;
-        console.error("記事取得失敗", e);
-        setError("記事の取得に失敗しました。時間をおいて再度お試しください。");
-        setArticles([]);
-        setTotalPages(0);
+        if (e?.name !== "CanceledError") {
+          console.error("記事取得失敗", e);
+          setError(
+            "記事の取得に失敗しました。時間をおいて再度お試しください。"
+          );
+          setArticles([]);
+          setTotalPages(0);
+        }
       } finally {
         setLoadingArticles(false);
       }
     })();
 
     return () => ac.abort();
-  }, [pageIndex, setTotalPages]);
+  }, [pageIndex, setTotalPages, cache]);
 
-  /** フィルタリングは重いので useMemo + 入力を deferred に */
+  /** フィルタリングは重いので useMemo + 入力を deferred に（title/summary のみ対象） */
   const filteredArticles = useMemo(() => {
     if (!articles.length) return [] as ArticleModel[];
-
     const q = deferredSearch.trim().toLowerCase();
     const byCategory = selectedCategory
       ? (a: ArticleModel) => a.category === selectedCategory
@@ -118,10 +175,9 @@ export const TechList = () => {
 
     return articles.filter((item) => {
       if (!byCategory(item)) return false;
-      // タイトル優先、本文は存在時のみ
       const t = item.title?.toLowerCase() ?? "";
-      const c = item.content?.toLowerCase() ?? "";
-      return t.includes(q) || c.includes(q);
+      const s = (item.summary ?? "").toLowerCase();
+      return t.includes(q) || s.includes(q);
     });
   }, [articles, selectedCategory, deferredSearch]);
 
@@ -157,7 +213,7 @@ export const TechList = () => {
             <div className="relative p-3">
               <div className="flex flex-col sm:flex-row gap-3">
                 <input
-                  placeholder="検索ワードを入力"
+                  placeholder="検索ワードを入力（タイトル/要約）"
                   className="min-w-0 flex-1 rounded-lg bg-white/5 ring-1 ring-white/10 px-4 py-2 outline-none focus:ring-2 focus:ring-sky-400"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -183,7 +239,7 @@ export const TechList = () => {
             <div className="text-red-300 bg-red-900/30 rounded px-3 py-2">
               {error}
             </div>
-          ) : loadingArticles ? (
+          ) : loadingArticles && !cache.get(pageIndex) ? (
             <div className="flex justify-center py-12">
               <SpinnerLoading size={36} visibleLabel="読み込み中…" />
             </div>
@@ -200,6 +256,7 @@ export const TechList = () => {
                     )}
                     {articles.map((item) => {
                       const isRead = readArticleIds.includes(item.id);
+                      const preview = stripMd(item.summary ?? "").slice(0, 180);
                       return (
                         <li key={item.id}>
                           <Link
@@ -235,18 +292,7 @@ export const TechList = () => {
                                   </span>
                                 </div>
                                 <p className="mt-2 text-sm text-white/70 line-clamp-3 break-words">
-                                  {(item.summary ?? item.content ?? "")
-                                    .replace(/#### |### /g, "")
-                                    .replace(/[#>*`-]+/g, "")
-                                    .replace("想定読者", "【想定読者】")
-                                    .replace(
-                                      "注意ポイントまとめ",
-                                      "【注意ポイントまとめ】"
-                                    )
-                                    .replace(
-                                      "対応例（Java）",
-                                      "【対応例（Java）】"
-                                    )}
+                                  {preview || "（要約なし）"}
                                 </p>
                               </div>
                             </div>

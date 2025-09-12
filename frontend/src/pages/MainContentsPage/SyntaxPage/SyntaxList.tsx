@@ -1,4 +1,3 @@
-// src/pages/MainContentsPage/SyntaxPage/SyntaxList.tsx
 import {
   useEffect,
   useState,
@@ -14,6 +13,17 @@ import { usePagination } from "../../../hooks/usePagination";
 import { Pagination } from "../../../utils/Pagination";
 import { apiHelper } from "../../../libs/apiHelper";
 
+/** 軽量プレビュー用：Markdownざっくり除去 */
+const stripMd = (s: string) =>
+  (s || "")
+    .replace(/```[\s\S]*?```/g, "")
+    .replace(/`[^`]*`/g, "")
+    .replace(/!\[[^\]]*\]\([^)]+\)/g, "")
+    .replace(/\[([^\]]+)\]\([^)]+\)/g, "$1")
+    .replace(/[#>*_~`-]+/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+
 const CATEGORIES = [
   "Spring",
   "React",
@@ -25,9 +35,16 @@ const CATEGORIES = [
 ] as const;
 const PAGE_SIZE = 10;
 
+/** ページキャッシュ（同一セッション内で再取得を極力避ける） */
+type PageCacheEntry = { items: ArticleModel[]; totalPages: number; ts: number };
+const usePageCache = () => {
+  const ref = useRef<Map<number, PageCacheEntry>>(new Map());
+  return ref.current;
+};
+
 export const SyntaxList = () => {
   const [search, setSearch] = useState("");
-  const deferredSearch = useDeferredValue(search);
+  const deferredSearch = useDeferredValue(search); // タイプ中のカクつき防止
   const [selectedCategory, setSelectedCategory] = useState("");
   const [syntaxes, setSyntaxes] = useState<ArticleModel[]>([]);
   const [readArticleIds, setReadArticleIds] = useState<number[]>([]);
@@ -38,11 +55,12 @@ export const SyntaxList = () => {
     usePagination();
   const { idToken } = useAuth();
 
-  // レース対策（必要なら）
   const abortReadRef = useRef<AbortController | null>(null);
   const abortListRef = useRef<AbortController | null>(null);
 
-  /** 既読ID */
+  const cache = usePageCache();
+
+  /** 既読ID：一覧取得とは独立に“並行で”更新（遅れてもUIは出す） */
   useEffect(() => {
     if (!idToken) {
       setReadArticleIds([]);
@@ -51,7 +69,6 @@ export const SyntaxList = () => {
     abortReadRef.current?.abort();
     const ac = new AbortController();
     abortReadRef.current = ac;
-
     (async () => {
       try {
         const res = await apiHelper.get(`/api/syntaxes/read/all`, {
@@ -61,20 +78,31 @@ export const SyntaxList = () => {
         setReadArticleIds(Array.isArray(res.data) ? res.data : []);
       } catch (e: any) {
         if (e?.name !== "CanceledError") console.error("既読取得失敗", e);
-        setReadArticleIds([]);
       }
     })();
-
     return () => ac.abort();
   }, [idToken]);
 
-  /** 一覧 */
+  /** 一覧：キャッシュ→（なければ）取得。通信完了を“待たず”まずキャッシュ描画 */
   useEffect(() => {
+    // 1) キャッシュがあれば即時描画（通信中でもスピナー出さない）
+    const cached = cache.get(pageIndex);
+    if (cached) {
+      setSyntaxes(cached.items);
+      setTotalPages(cached.totalPages);
+      setLoading(false);
+    } else {
+      setLoading(true);
+    }
+
+    // 2) ネットワーク取得（キャッシュ鮮度が10分超なら更新）
+    const FRESH_MS = 10 * 60 * 1000;
+    const now = Date.now();
+    if (cached && now - cached.ts < FRESH_MS) return; // 充分新鮮
+
     abortListRef.current?.abort();
     const ac = new AbortController();
     abortListRef.current = ac;
-
-    setLoading(true);
     setError(null);
 
     (async () => {
@@ -84,29 +112,37 @@ export const SyntaxList = () => {
           signal: ac.signal as AbortSignal,
         });
         const list: ArticleModel[] = res.data?.content ?? [];
-        setSyntaxes(list);
-        setTotalPages(res.data?.totalPages ?? 0);
+        const pages: number = res.data?.totalPages ?? 0;
+
+        // 大きいcontentを一覧用に持たない（検索もcontentは使わない）
+        const light = list.map((it) => ({
+          ...it,
+          content: undefined as unknown as string, // 破棄してGCしやすく
+        }));
+
+        cache.set(pageIndex, { items: light, totalPages: pages, ts: now });
+        setSyntaxes(light);
+        setTotalPages(pages);
       } catch (e: any) {
         if (e?.name !== "CanceledError") {
           console.error("文法記事取得失敗", e);
           setError(
             "文法記事の取得に失敗しました。時間をおいて再度お試しください。"
           );
+          setSyntaxes([]);
+          setTotalPages(0);
         }
-        setSyntaxes([]);
-        setTotalPages(0);
       } finally {
         setLoading(false);
       }
     })();
 
     return () => ac.abort();
-  }, [pageIndex, setTotalPages]);
+  }, [pageIndex, setTotalPages, cache]);
 
-  /** 重いフィルタはメモ化 + 入力はdeferred */
+  /** 検索：title/summary のみ対象（content全文検索は重いので禁止） */
   const filtered = useMemo(() => {
     if (!syntaxes.length) return [] as ArticleModel[];
-
     const q = deferredSearch.trim().toLowerCase();
     const byCategory = selectedCategory
       ? (a: ArticleModel) => a.category === selectedCategory
@@ -117,12 +153,12 @@ export const SyntaxList = () => {
     return syntaxes.filter((item) => {
       if (!byCategory(item)) return false;
       const t = item.title?.toLowerCase() ?? "";
-      const c = item.content?.toLowerCase() ?? "";
-      return t.includes(q) || c.includes(q);
+      const s = item.summary?.toLowerCase() ?? "";
+      return t.includes(q) || s.includes(q);
     });
   }, [syntaxes, selectedCategory, deferredSearch]);
 
-  /** 1パスでカテゴリ分割（表示順は固定） */
+  /** 1パスでカテゴリ分割（表示順固定） */
   const syntaxesByCategory = useMemo(() => {
     const map = new Map<string, ArticleModel[]>();
     for (const cat of CATEGORIES) map.set(cat, []);
@@ -153,7 +189,7 @@ export const SyntaxList = () => {
             <div className="relative p-3">
               <div className="flex flex-col sm:flex-row gap-3">
                 <input
-                  placeholder="検索ワードを入力"
+                  placeholder="検索ワードを入力（タイトル/要約）"
                   className="min-w-0 flex-1 rounded-lg bg-white/5 ring-1 ring-white/10 px-4 py-2 outline-none focus:ring-2 focus:ring-sky-400"
                   value={search}
                   onChange={(e) => setSearch(e.target.value)}
@@ -180,11 +216,12 @@ export const SyntaxList = () => {
               {error}
             </div>
           )}
-          {loading && !error && (
+          {loading && !error && !cache.get(pageIndex) && (
             <div className="text-gray-300 py-6">通信中...</div>
           )}
 
-          {!loading && !error && (
+          {/* 本文 */}
+          {!error && (
             <div>
               {syntaxesByCategory.map(({ category, syntaxes }) => (
                 <section key={category} className="mb-8">
@@ -197,6 +234,7 @@ export const SyntaxList = () => {
                     )}
                     {syntaxes.map((item) => {
                       const isRead = readArticleIds.includes(item.id);
+                      const preview = stripMd(item.summary ?? "").slice(0, 180);
                       return (
                         <li key={item.id}>
                           <Link
@@ -232,18 +270,7 @@ export const SyntaxList = () => {
                                   </span>
                                 </div>
                                 <p className="mt-2 text-sm text-white/70 line-clamp-3 break-words">
-                                  {(item.summary ?? item.content ?? "")
-                                    .replace(/#### |### /g, "")
-                                    .replace(/[#>*`-]+/g, "")
-                                    .replace("想定読者", "【想定読者】")
-                                    .replace(
-                                      "注意ポイントまとめ",
-                                      "【注意ポイントまとめ】"
-                                    )
-                                    .replace(
-                                      "対応例（Java）",
-                                      "【対応例（Java）】"
-                                    )}
+                                  {preview || "（要約なし）"}
                                 </p>
                               </div>
                             </div>
@@ -258,7 +285,7 @@ export const SyntaxList = () => {
           )}
         </div>
 
-        {totalPages > 0 && !loading && (
+        {totalPages > 0 && (
           <Pagination
             displayPage={displayPage}
             totalPages={totalPages}
