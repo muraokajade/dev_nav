@@ -2,8 +2,12 @@ import React from "react";
 import { MiniCanvas3D } from "./MiniCanvas3D";
 import { MarkdownWithPrism } from "./CodeBlock";
 import { Bullets, GlassCard, MediaFrame } from "./ui";
-import { MarkdownArticle } from "./MarkdownArticle";
-
+// import  MarkdownArticle  from "./MarkdownArticle";
+import { lazy, Suspense } from "react";
+const MarkdownArticle = lazy(() => import("./MarkdownArticle"));
+const CodeSkeleton = () => (
+  <div className="h-[180px] w-full rounded-xl border border-white/10 bg-white/5 animate-pulse" />
+);
 export type SectionItem = {
   key: string;
   title: React.ReactNode;
@@ -136,8 +140,10 @@ export const sections: SectionItem[] = [
           />
         </div>
         <div className="min-w-0">
-          <MediaFrame className="overflow-x-auto">
-            <MarkdownArticle md={demo2} />
+          <MediaFrame className="overflow-x-auto text-white">
+            <Suspense fallback={<CodeSkeleton />}>
+              <MarkdownArticle md={demo2} />
+            </Suspense>
           </MediaFrame>
         </div>
       </div>

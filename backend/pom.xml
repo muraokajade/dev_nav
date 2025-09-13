@@ -94,6 +94,16 @@
             <artifactId>firebase-admin</artifactId>
             <version>9.2.0</version>
         </dependency>
+        <!-- キャッシュ -->
+        <dependency>
+            <groupId>org.springframework.boot</groupId>
+            <artifactId>spring-boot-starter-cache</artifactId>
+        </dependency>
+        <!-- Caffeine -->
+        <dependency>
+            <groupId>com.github.ben-manes.caffeine</groupId>
+            <artifactId>caffeine</artifactId>
+        </dependency>
 
         <!-- Devtools（ローカルのみ有効） -->
         <dependency>

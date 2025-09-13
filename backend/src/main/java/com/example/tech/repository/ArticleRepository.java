@@ -1,5 +1,6 @@
 package com.example.tech.repository;
 
+import com.example.tech.dto.ArticleListItemDto;
 import com.example.tech.projection.ContentBrief;
 import com.example.tech.dto.ArticleDTO;
 import com.example.tech.entity.ArticleEntity;
@@ -15,6 +16,30 @@ import java.util.List;
 
 @Repository
 public interface ArticleRepository extends JpaRepository<ArticleEntity,Long> {
+
+    // 一覧（公開・新着）
+    @Query("""
+    SELECT new com.example.tech.dto.ArticleListItemDto(
+      a.id, a.slug, a.title, a.user.displayName, a.createdAt, a.summary, a.imageUrl
+    )
+    FROM ArticleEntity a
+    WHERE a.published = true
+    ORDER BY a.createdAt DESC
+  """)
+    Page<ArticleListItemDto> findPublishedList(Pageable pageable);
+
+    // いいね一覧（公開のみ）
+    @Query("""
+    SELECT new com.example.tech.dto.ArticleListItemDto(
+      a.id, a.slug, a.title, a.user.displayName, a.createdAt, a.summary, a.imageUrl
+    )
+    FROM LikeEntity l JOIN l.article a
+    WHERE l.user.id = :userId AND a.published = true
+    ORDER BY a.createdAt DESC
+  """)
+    List<ArticleListItemDto> findLikedList(@Param("userId") Long userId);
+
+
     Page<ArticleEntity> findByPublishedTrue(Pageable pageable);
 
     int countByUserId(Long userId);

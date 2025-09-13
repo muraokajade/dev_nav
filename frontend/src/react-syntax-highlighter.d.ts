@@ -53,7 +53,7 @@ declare module "react-syntax-highlighter/dist/esm/languages/prism/*" {
   const grammar: any;
   export default grammar;
 }
-
+declare module "react-syntax-highlighter/dist/esm/prism-light";
 // ==========（必要なら）CJS ビルドにも対応したい場合だけ有効化 ==========
 /*
 declare module "react-syntax-highlighter/dist/cjs/languages/prism/*" {
