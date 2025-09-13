@@ -142,114 +142,116 @@ export default function App() {
     <BrowserRouter>
       <div className="min-h-screen bg-gray-900">
         <Navbar />
-        <Routes>
-          {/* Public（即描画） */}
-          <Route path="/" element={<Home />} />
-          <Route path="/start" element={<StartPage />} />
+        <Suspense fallback={null}>
+          <Routes>
+            {/* Public（即描画） */}
+            <Route path="/" element={<Home />} />
+            <Route path="/start" element={<StartPage />} />
 
-          {/* Articles */}
-          <Route path="/articles" element={<TechList />} />
-          <Route path="/articles/:idAndSlug" element={<TechDetailPage />} />
+            {/* Articles */}
+            <Route path="/articles" element={<TechList />} />
+            <Route path="/articles/:idAndSlug" element={<TechDetailPage />} />
 
-          {/* Syntaxes */}
-          <Route path="/syntaxes" element={<SyntaxList />} />
-          <Route path="/syntaxes/:idAndSlug" element={<SyntaxDetailPage />} />
+            {/* Syntaxes */}
+            <Route path="/syntaxes" element={<SyntaxList />} />
+            <Route path="/syntaxes/:idAndSlug" element={<SyntaxDetailPage />} />
 
-          {/* Procedures */}
-          <Route path="/procedures" element={<ProceduresPage />} />
-          <Route
-            path="/procedures/:idAndSlug"
-            element={<ProcedureDetailPage />}
-          />
+            {/* Procedures */}
+            <Route path="/procedures" element={<ProceduresPage />} />
+            <Route
+              path="/procedures/:idAndSlug"
+              element={<ProcedureDetailPage />}
+            />
 
-          {/* Auth */}
-          <Route path="/login" element={<Login />} />
-          <Route path="/register" element={<Register />} />
+            {/* Auth */}
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
 
-          {/* My Page */}
-          <Route
-            path="/mypage"
-            element={
-              <MypageRoute>
-                <MyPage />
-              </MypageRoute>
-            }
-          />
+            {/* My Page */}
+            <Route
+              path="/mypage"
+              element={
+                <MypageRoute>
+                  <MyPage />
+                </MypageRoute>
+              }
+            />
 
-          {/* Admin */}
-          <Route
-            path="/admin"
-            element={
-              <AdminRoute>
-                <AdminPage />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/add-article"
-            element={
-              <AdminRoute>
-                <AddTechForm />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/add-syntax"
-            element={
-              <AdminRoute>
-                <AddSyntaxForm />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/add-procedure"
-            element={
-              <AdminRoute>
-                <AddProcedureForm />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/articles"
-            element={
-              <AdminRoute>
-                <AdminTechList />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/syntaxes"
-            element={
-              <AdminRoute>
-                <AdminSyntaxList />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/procedures"
-            element={
-              <AdminRoute>
-                <AdminProcedureList />
-              </AdminRoute>
-            }
-          />
-          <Route
-            path="/admin/qa"
-            element={
-              <AdminRoute>
-                <AdminQAPage />
-              </AdminRoute>
-            }
-          />
+            {/* Admin */}
+            <Route
+              path="/admin"
+              element={
+                <AdminRoute>
+                  <AdminPage />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/add-article"
+              element={
+                <AdminRoute>
+                  <AddTechForm />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/add-syntax"
+              element={
+                <AdminRoute>
+                  <AddSyntaxForm />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/add-procedure"
+              element={
+                <AdminRoute>
+                  <AddProcedureForm />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/articles"
+              element={
+                <AdminRoute>
+                  <AdminTechList />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/syntaxes"
+              element={
+                <AdminRoute>
+                  <AdminSyntaxList />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/procedures"
+              element={
+                <AdminRoute>
+                  <AdminProcedureList />
+                </AdminRoute>
+              }
+            />
+            <Route
+              path="/admin/qa"
+              element={
+                <AdminRoute>
+                  <AdminQAPage />
+                </AdminRoute>
+              }
+            />
 
-          {/* Static */}
-          <Route path="/about" element={<About />} />
-          <Route path="/policy" element={<PrivacyPolicy />} />
-          <Route path="/contact" element={<ContactForm />} />
+            {/* Static */}
+            <Route path="/about" element={<About />} />
+            <Route path="/policy" element={<PrivacyPolicy />} />
+            <Route path="/contact" element={<ContactForm />} />
 
-          {/* 404 */}
-          <Route path="*" element={<NotFound />} />
-        </Routes>
+            {/* 404 */}
+            <Route path="*" element={<NotFound />} />
+          </Routes>
+        </Suspense>
         <Footer />
       </div>
     </BrowserRouter>
