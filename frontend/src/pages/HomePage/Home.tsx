@@ -60,8 +60,8 @@ export const Home = () => {
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-start max-w-6xl w-full mx-auto px-6 md:px-8 pt-16 md:pt-24 pb-12">
         {/* タイトル */}
         <motion.h1
-          initial={{ opacity: 0, y: 40 }}
-          animate={{ opacity: 1, y: 0 }}
+          initial={{ opacity: 0 }}
+          animate={{ opacity: 1 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="text-4xl md:text-6xl font-extrabold text-center tracking-tight drop-shadow"
         >

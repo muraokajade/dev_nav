@@ -6,6 +6,7 @@ import { apiHelper } from "../../../libs/apiHelper";
 import { useAuth } from "../../../context/useAuthContext";
 import { usePagination } from "../../../hooks/usePagination";
 import { Pagination } from "../../../utils/Pagination";
+import { SpinnerLoading } from "../../../utils/SpinnerLoading";
 
 /** 管理UI向けに補完したメッセージ型（子で link を使えるようにする） */
 type EnrichedMessage = MessageResponse & {
@@ -167,7 +168,11 @@ export const AdminQAPage = () => {
             {error}
           </div>
         )}
-        {loading && <div className="text-zinc-300">読み込み中...</div>}
+        {loading && (
+          <div className="flex justify-center py-12">
+            <SpinnerLoading size={36} visibleLabel="読み込み中…" />
+          </div>
+        )}
       </div>
 
       <div className="max-w-2xl mx-auto flex flex-col gap-6">
