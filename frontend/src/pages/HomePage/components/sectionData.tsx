@@ -99,10 +99,10 @@ export const sections: SectionItem[] = [
 
           <div className="grid grid-cols-3 gap-3 text-center text-sm text-gray-300">
             <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-              <div className="text-xl font-bold text-white">60+</div>記事
+              <div className="text-xl font-bold text-white">100+</div>記事
             </div>
             <div className="bg-white/5 border border-white/10 rounded-xl p-3">
-              <div className="text-xl font-bold text-white">20</div>API手順
+              <div className="text-xl font-bold text-white">40+</div>API手順
             </div>
             <div className="bg-white/5 border border-white/10 rounded-xl p-3">
               <div className="text-xl font-bold text-white">0円</div>無料で閲覧
@@ -131,7 +131,7 @@ export const sections: SectionItem[] = [
             items={[
               "Spring Boot／React の記事・コードを体系的に横断参照",
               "検索・タグで素早く到達できる設計",
-              "Prism 表示・行番号・コピー対応",
+              "コードブロックはハイライト表示・行番号・コピー対応",
             ]}
           />
         </div>
@@ -153,6 +153,7 @@ export const sections: SectionItem[] = [
         <div className="min-w-0">
           <Bullets
             items={[
+              "いいね機能:「いいね」、「いいね取り消し」を切替",
               "記事読了機能：読了 ↔ 未読を切替",
               "レビュー機能：記事に評価を付与",
               "コメント機能：記事にコメントを投稿",
@@ -182,8 +183,11 @@ export const sections: SectionItem[] = [
         <div className="min-w-0">
           <Bullets
             items={[
-              "学習記録・アクション履歴を可視化",
-              "カレンダー・レベルバーで進捗管理",
+              "学習記録を管理",
+              "ユーザーのアクション履歴を可視化",
+              "カレンダー：日々の学習量を色で判定",
+              "レベルバー：学習(アクション)が多いとレベルアップ",
+              "いいね記事の履歴保存機能",
             ]}
           />
         </div>
