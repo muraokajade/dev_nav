@@ -42,10 +42,10 @@ export const AuthProvider = ({ children }: { children: React.ReactNode }) => {
 export const demo2 = String.raw`
 ### Java JPQLについて（抜粋）
 
-#### 問題の背景
+## 問題の背景
 - Spring Boot + JPA において、フロントエンドで表示するための軽量な DTO（データ転送オブジェクト）を定義することは一般的です。
 - 以下のように @Query で必要な項目だけを DTO に直接投影するケースがあります：
-
+---
 ~~~java
 @Query("SELECT new com.example.tech.dto.ArticleDTO(a.id, a.title, a.userEmail, a.user.displayName) FROM LikeEntity l JOIN l.article a WHERE l.user.id = :userId")
 List<ArticleDTO> findLikedArticlesByUserId(Long userId);
@@ -53,8 +53,8 @@ List<ArticleDTO> findLikedArticlesByUserId(Long userId);
 
 このとき、一見正しく見えてもビルドエラーや Bean 作成エラーになることがあります。
 
-#### 発生したエラー
-~~~text
+## 発生したエラー
+~~~java
 org.hibernate.query.SemanticException:
 Missing constructor for type 'ArticleDTO'
 ~~~
