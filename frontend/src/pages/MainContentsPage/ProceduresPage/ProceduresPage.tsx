@@ -5,6 +5,7 @@ import { usePagination } from "../../../hooks/usePagination";
 import { Procedure } from "../../../models/Procedure";
 import { Pagination } from "../../../utils/Pagination";
 import { useReadStatus, ReadTarget } from "../../../hooks/useReadStatus";
+import { SpinnerLoading } from "../../../utils/SpinnerLoading";
 
 /* ================== 設定 ================== */
 const CACHE_KEY = "procedures_normalized_v2"; // v2: 軽量格納化
@@ -218,7 +219,11 @@ export const ProceduresPage = () => {
     <div className="text-white p-8 max-w-5xl mx-auto">
       <h1 className="text-3xl font-bold mb-8">開発手順 一覧</h1>
 
-      {loading && <div className="mb-6 text-white/80">通信中...</div>}
+      {loading && (
+        <div className="flex justify-center py-12">
+          <SpinnerLoading size={36} visibleLabel="読み込み中…" />
+        </div>
+      )}
       {!loading && error && (
         <div className="mb-6 text-red-300 bg-red-900/30 p-3 rounded">
           {error}

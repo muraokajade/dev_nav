@@ -20,8 +20,16 @@ export const SectionScrollMotion: React.FC<Props> = ({ section, mt = "" }) => {
     <motion.section
       ref={ref}
       style={{ scale, opacity }}
-      className={`w-full ${mt} mb-16 min-h-[28rem] md:min-h-[36rem]`}
+      className={`relative w-full py-12 md:py-16 mb-12`}
     >
+      <div className="pointer-events-none absolute inset-0">
+        <div className="absolute inset-0 bg-[linear-gradient(180deg,rgba(2,6,23,0)_0%,rgba(56,189,248,0.06)_40%,rgba(2,6,23,0)_100%)]" />
+        <div
+          className="absolute left-1/2 -translate-x-1/2 top-8 w-[80vw] h-[40vh]
+      bg-[radial-gradient(ellipse_at_center,rgba(56,189,248,0.10),transparent_60%)] blur-2xl"
+        />
+      </div>
+
       <h2 className="text-2xl md:text-3xl font-semibold mb-4 text-white flex items-center gap-3">
         {section.title}
       </h2>

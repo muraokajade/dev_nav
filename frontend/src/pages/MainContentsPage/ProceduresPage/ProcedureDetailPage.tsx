@@ -26,6 +26,7 @@ import sql from "react-syntax-highlighter/dist/esm/languages/prism/sql";
 import python from "react-syntax-highlighter/dist/esm/languages/prism/python";
 import css from "react-syntax-highlighter/dist/esm/languages/prism/css";
 import markup from "react-syntax-highlighter/dist/esm/languages/prism/markup";
+import { SpinnerLoading } from "../../../utils/SpinnerLoading";
 
 SyntaxHighlighter.registerLanguage("tsx", tsx);
 SyntaxHighlighter.registerLanguage("typescript", typescript);
@@ -271,7 +272,11 @@ export const ProcedureDetailPage = () => {
   return (
     <div className="min-h-screen bg-gray-900">
       {toast && <Toast message={toast.msg} kind={toast.kind} />}
-      {loading && <div className="text-gray-300 p-4">読み込み中...</div>}
+      {loading && (
+        <div className="flex justify-center py-12">
+          <SpinnerLoading size={36} visibleLabel="読み込み中…" />
+        </div>
+      )}
       {!loading && errorMsg && <Fallback msg={errorMsg} />}
 
       <div className="prose prose-invert whitespace-normal text-white max-w-4xl mx-auto py-10 bg-zinc-900 rounded-2xl shadow-2xl mb-8">

@@ -17,6 +17,7 @@ import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { MarkdownTextarea } from "../../../utils/MarkdownTextarea";
+import { SpinnerLoading } from "../../../utils/SpinnerLoading";
 
 /** ===== helper: shallow array equality ===== */
 function shallowEqual(a: any, b: any) {
@@ -355,7 +356,11 @@ export const AdminProcedureList = () => {
           <h2 className="text-xl md:text-2xl text-white font-bold">
             📚 投稿済み手順
           </h2>
-
+          {loading && (
+            <div className="flex justify-center py-12">
+              <SpinnerLoading size={36} visibleLabel="読み込み中…" />
+            </div>
+          )}
           {/* ツールバー */}
           <div className="grid grid-cols-1 md:grid-cols-6 gap-2 w-full md:w-auto">
             <input
@@ -633,7 +638,7 @@ export const AdminProcedureList = () => {
                   {isSplit && (
                     <div className="h-full min-h-0 flex flex-col overflow-hidden">
                       {/* ← ツールバー分のダミー余白（同じ高さ） */}
-                      <div className="sticky top-0 h-12 bg-gray-900" />
+                      <div className="sticky top-0 h-12" />
                       {/* 実コンテンツは残り高でスクロール */}
                       <div className="flex-1 min-h-0">
                         <MarkdownView text={content} />

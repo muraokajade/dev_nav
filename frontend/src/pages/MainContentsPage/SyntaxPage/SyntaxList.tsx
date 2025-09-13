@@ -12,6 +12,7 @@ import { useAuth } from "../../../context/useAuthContext";
 import { usePagination } from "../../../hooks/usePagination";
 import { Pagination } from "../../../utils/Pagination";
 import { apiHelper } from "../../../libs/apiHelper";
+import { SpinnerLoading } from "../../../utils/SpinnerLoading";
 
 /** 軽量プレビュー用：Markdownざっくり除去 */
 const stripMd = (s: string) =>
@@ -217,7 +218,9 @@ export const SyntaxList = () => {
             </div>
           )}
           {loading && !error && !cache.get(pageIndex) && (
-            <div className="text-gray-300 py-6">通信中...</div>
+            <div className="flex justify-center py-12">
+              <SpinnerLoading size={36} visibleLabel="読み込み中…" />
+            </div>
           )}
 
           {/* 本文 */}

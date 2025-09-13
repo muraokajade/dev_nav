@@ -11,6 +11,7 @@ import ReactMarkdown from "react-markdown";
 import { Prism as SyntaxHighlighter } from "react-syntax-highlighter";
 import { oneDark } from "react-syntax-highlighter/dist/esm/styles/prism";
 import { MarkdownTextarea } from "../../../utils/MarkdownTextarea";
+import { SpinnerLoading } from "../../../utils/SpinnerLoading";
 
 /** Markdown/コードをざっくり除去 */
 const stripMd = (s: string) =>
@@ -290,7 +291,11 @@ export const AdminSyntaxList = () => {
           <h2 className="text-xl md:text-2xl text-white font-bold">
             📚 投稿済み文法
           </h2>
-
+          {loading && (
+            <div className="flex justify-center py-12">
+              <SpinnerLoading size={36} visibleLabel="読み込み中…" />
+            </div>
+          )}
           <div className="grid grid-cols-1 md:grid-cols-4 gap-2 w-full md:w-auto">
             <input
               className="md:col-span-2 w-full pl-3 pr-3 py-2 rounded-lg bg-zinc-900/70 border border-white/10 text-zinc-100 placeholder:text-zinc-500"
@@ -598,7 +603,7 @@ export const AdminSyntaxList = () => {
               {isSplit && (
                 <div className="h-full min-h-0 flex flex-col overflow-hidden">
                   {/* ← ツールバー分のダミー余白（同じ高さ） */}
-                  <div className="sticky top-0 h-12 bg-gray-900" />
+                  <div className="sticky top-0 h-12" />
                   {/* 実コンテンツは残り高でスクロール */}
                   <div className="flex-1 min-h-0">
                     <MarkdownView text={content} />
