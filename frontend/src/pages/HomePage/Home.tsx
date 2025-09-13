@@ -62,7 +62,7 @@ export const Home = () => {
       <div className="relative z-10 min-h-screen flex flex-col items-center justify-start max-w-6xl w-full mx-auto px-6 md:px-8 pt-16 md:pt-24 pb-12">
         {/* タイトル */}
         <motion.h1
-          initial={{ opacity: 0 }}
+          initial={{ opacity: 1 }}
           animate={mounted ? { opacity: 1 } : { opacity: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
           className="text-4xl md:text-6xl font-extrabold text-center tracking-tight leading-tight drop-shadow"
@@ -77,7 +77,7 @@ export const Home = () => {
 
         {/* サブ説明 */}
         <motion.p
-          initial={{ opacity: 0 }}
+          initial={{ opacity: 1 }}
           animate={mounted ? { opacity: 1 } : { opacity: 0 }}
           transition={{ delay: 0.05, duration: 0.45, ease: "easeOut" }}
           className="mt-4 text-base md:text-lg leading-snug text-gray-300 text-center max-w-3xl will-change-transform"
@@ -88,7 +88,7 @@ export const Home = () => {
 
         {/* CTA */}
         <motion.div
-          initial={{ opacity: 0 }}
+          initial={{ opacity: 1 }}
           animate={mounted ? { opacity: 1 } : { opacity: 0 }}
           transition={{ delay: 0.1, duration: 0.45, ease: "easeOut" }}
           className="mt-8 flex flex-wrap items-center justify-center gap-3 will-change-transform"
