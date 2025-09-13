@@ -3,14 +3,17 @@ package com.example.tech.config;
 import com.example.tech.security.FirebaseTokenFilter;
 import jakarta.servlet.http.HttpServletResponse;
 import lombok.RequiredArgsConstructor;
+import org.springframework.boot.web.servlet.FilterRegistrationBean;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
+import org.springframework.core.Ordered;
 import org.springframework.http.HttpMethod;
 import org.springframework.security.config.annotation.web.builders.HttpSecurity;
 import org.springframework.security.config.http.SessionCreationPolicy;
 import org.springframework.security.web.SecurityFilterChain;
 import org.springframework.security.web.authentication.UsernamePasswordAuthenticationFilter;
 import org.springframework.web.cors.CorsConfigurationSource;
+import org.springframework.web.filter.CorsFilter;
 
 @Configuration
 @RequiredArgsConstructor
@@ -26,9 +29,18 @@ public class SecurityConfig {
                 .sessionManagement(sm -> sm.sessionCreationPolicy(SessionCreationPolicy.STATELESS))
                 // ここで CorsConfig の設定を使う（これ以外で CORS 定義しない）
                 .cors(c -> c.configurationSource(corsConfigurationSource))
+                // ←← ここに “例外をJSONで返す” を差し込みます
                 .exceptionHandling(ex -> ex
-                        .authenticationEntryPoint((req, res, e) -> res.sendError(HttpServletResponse.SC_UNAUTHORIZED))
-                        .accessDeniedHandler((req, res, e) -> res.sendError(HttpServletResponse.SC_FORBIDDEN))
+                        .authenticationEntryPoint((req, res, e) -> {
+                            res.setStatus(HttpServletResponse.SC_UNAUTHORIZED);
+                            res.setContentType("application/json");
+                            res.getWriter().write("{\"error\":\"unauthorized\"}");
+                        })
+                        .accessDeniedHandler((req, res, e) -> {
+                            res.setStatus(HttpServletResponse.SC_FORBIDDEN);
+                            res.setContentType("application/json");
+                            res.getWriter().write("{\"error\":\"forbidden\"}");
+                        })
                 )
                 .authorizeHttpRequests(auth -> auth
                         // プリフライト/HEAD は常に許可
@@ -62,5 +74,11 @@ public class SecurityConfig {
                 .addFilterBefore(firebaseTokenFilter, UsernamePasswordAuthenticationFilter.class);
 
         return http.build();
+    }
+    @Bean
+    FilterRegistrationBean<CorsFilter> corsFilter(CorsConfigurationSource src) {
+        var bean = new FilterRegistrationBean<>(new CorsFilter(src));
+        bean.setOrder(Ordered.HIGHEST_PRECEDENCE); // 例外/401/403/302 でも必ずCORS付与
+        return bean;
     }
 }

@@ -29,6 +29,8 @@ export const AddSyntaxForm = () => {
     "Vue",
     "Firebase",
     "Tailwind",
+    "認証",
+    "環境構築",
     "Other",
   ];
   const { idToken, loading } = useAuth();

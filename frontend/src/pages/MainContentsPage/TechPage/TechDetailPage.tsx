@@ -8,6 +8,7 @@ import dayjs from "dayjs";
 import { useAuth } from "../../../context/useAuthContext";
 import { apiHelper } from "../../../libs/apiHelper";
 import { LikeButton } from "../../../utils/LikeButton";
+import { ReviewScore } from "../../../utils/ReviewScore";
 import { ThreadComments } from "../../../components/ThreadComments";
 
 // ★ PrismLight + 必要言語だけ登録
@@ -125,7 +126,7 @@ const Toast = ({
 export const TechDetailPage = () => {
   const { idAndSlug } = useParams();
   const id = idAndSlug?.match(/^\d+/)?.[0] ?? null;
-  const { idToken } = useAuth();
+  const { idToken, isAuthenticated } = useAuth();
 
   useEffect(() => {
     if (idToken)
@@ -150,7 +151,7 @@ export const TechDetailPage = () => {
   const [isRead, setIsRead] = useState(false);
   const [myUserId, setMyUserId] = useState<number | null>(null);
   const [myEmail, setMyEmail] = useState<string | null>(null);
-  const [tab, setTab] = useState<"comment" | "qa">("comment");
+  const [tab, setTab] = useState<"review" | "comment" | "qa">("review");
 
   const [errorMsg, setErrorMsg] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
@@ -284,9 +285,11 @@ export const TechDetailPage = () => {
       {loading && <div className="text-gray-300 p-4">読み込み中...</div>}
       {!loading && errorMsg && <Fallback msg={errorMsg} />}
 
-      <div className="max-w-4xl mx-auto pt-6">
-        <LikeButton liked={liked} count={likeCount} onClick={handleLike} />
-      </div>
+      {isAuthenticated && (
+        <div className="max-w-4xl mx-auto pt-6">
+          <LikeButton liked={liked} count={likeCount} onClick={handleLike} />
+        </div>
+      )}
 
       <div className="prose prose-invert whitespace-normal text-white max-w-4xl mx-auto py-6 bg-zinc-900 rounded-2xl shadow-2xl mb-6">
         {imageUrl && (
@@ -424,6 +427,14 @@ export const TechDetailPage = () => {
       <div className="max-w-4xl mx-auto mt-8 rounded-2xl bg-zinc-900 text-white shadow-2xl p-4">
         <div className="flex gap-2 mb-4">
           <button
+            onClick={() => setTab("review")}
+            className={`px-3 py-1 rounded ${
+              tab === "review"
+                ? "bg-blue-600 text-white"
+                : "bg-zinc-700 text-zinc-200"
+            }`}
+          ></button>
+          <button
             onClick={() => setTab("comment")}
             className={`px-3 py-1 rounded ${
               tab === "comment"
@@ -444,6 +455,15 @@ export const TechDetailPage = () => {
             Q&A
           </button>
         </div>
+
+        {articleId && tab === "review" && (
+          <ReviewScore
+            targetType="ARTICLE"
+            refId={articleId}
+            myUserId={isLoggedIn ? myUserId ?? null : null}
+            readonly={!isLoggedIn}
+          />
+        )}
 
         {articleId && tab === "comment" && (
           <ThreadComments

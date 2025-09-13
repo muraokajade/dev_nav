@@ -135,7 +135,7 @@ const Toast = ({
 export const SyntaxDetailPage = () => {
   const { idAndSlug } = useParams();
   const id = idAndSlug?.match(/^\d+/)?.[0] ?? idAndSlug?.split("-")[0] ?? null;
-  const { idToken } = useAuth();
+  const { idToken, isAuthenticated } = useAuth();
 
   useEffect(() => {
     if (idToken) {
@@ -320,9 +320,11 @@ export const SyntaxDetailPage = () => {
     <div className="min-h-screen bg-gray-900">
       {toast && <Toast message={toast.msg} kind={toast.kind} />}
 
-      <div className="max-w-4xl mx-auto pt-6">
-        <LikeButton liked={liked} count={likeCount} onClick={handleLike} />
-      </div>
+      {isAuthenticated && (
+        <div className="max-w-4xl mx-auto pt-6">
+          <LikeButton liked={liked} count={likeCount} onClick={handleLike} />
+        </div>
+      )}
 
       <div className="max-w-4xl mx-auto py-6">
         <div className="prose prose-invert max-w-none whitespace-normal text-white bg-zinc-900 rounded-2xl shadow-2xl p-6">
