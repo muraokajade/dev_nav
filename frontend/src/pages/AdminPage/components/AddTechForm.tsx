@@ -14,16 +14,14 @@ export const AddTechForm = () => {
   const [content, setContent] = useState("");
   const [imageFile, setImageFile] = useState<File | null>(null);
 
-  // 既存のモーダルプレビューは不要になるが、必要なら残してもOK
-  // const [isPreviewOpen, setIsPreviewOpen] = useState(false);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [done, setDone] = useState(false);
   const [imagePreview, setImagePreview] = useState<string | null>(null);
 
-  // 🔥 追加: ライティングモード（全画面）と表示切替
-  const [isWritingMode, setIsWritingMode] = useState(false); // 画面いっぱいで編集
-  const [isSplit, setIsSplit] = useState(true); // 左:入力 / 右:プレビュー
+  // モード
+  const [isWritingMode, setIsWritingMode] = useState(false);
+  const [isSplit, setIsSplit] = useState(true);
 
   const categories = [
     "Spring",
@@ -63,14 +61,12 @@ export const AddTechForm = () => {
     setSummary("");
     setContent("");
     setImageFile(null);
-    // setIsPreviewOpen(false);
   };
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
+  const handleSubmit = async (e?: React.FormEvent) => {
+    e?.preventDefault();
     setError(null);
     setDone(false);
-
     if (loading || submitting) return;
     if (!slug || !title || !category || !content) {
       setError(
@@ -108,7 +104,7 @@ export const AddTechForm = () => {
     }
   };
 
-  // 共通のMarkdownレンダラ
+  // Markdownレンダラ（中身は縦スクロール）
   const MarkdownView = ({ text }: { text: string }) => (
     <div className="prose prose-invert max-w-none bg-gray-800 p-4 rounded overflow-y-auto break-words h-full">
       <ReactMarkdown
@@ -141,10 +137,17 @@ export const AddTechForm = () => {
     </div>
   );
 
+  /** ===== レイアウト重要ポイント =====
+   * ・ページ全体: flex縦 + 残り高にフォーム本体をはめる（min-h-0）
+   * ・エディタ領域: flex-1 min-h-0（左右ペインは同じ高さ、内部スクロール）
+   * ・フッター: sticky bottom-0 & 固定高。重なり防止に pb-[--footer-h] を上位ラッパーへ
+   */
+  const FOOTER_H = 88; // px（必要に応じて調整）
+
   return (
-    <div className="min-h-screen bg-gray-900">
-      <div className="p-8 max-w-5xl mx-auto">
-        {/* フラッシュメッセージ */}
+    <div className="min-h-screen bg-gray-900 flex flex-col">
+      {/* ヘッダ */}
+      <div className="p-6 max-w-5xl w-full mx-auto">
         {done && (
           <div className="mb-4 rounded bg-green-900/30 text-green-200 px-3 py-2">
             送信が完了しました。
@@ -156,7 +159,6 @@ export const AddTechForm = () => {
           </div>
         )}
 
-        {/* ツールバー */}
         <div className="mb-4 flex flex-wrap items-center gap-2">
           <button
             type="button"
@@ -173,63 +175,90 @@ export const AddTechForm = () => {
             {isSplit ? "入力のみ" : "分割表示"}
           </button>
         </div>
+      </div>
 
-        {/* 通常フォーム（分割プレビュー付き） */}
-        <form onSubmit={handleSubmit} className="mb-6 space-y-4" noValidate>
-          <input
-            className="w-full text-black border p-2"
-            value={slug}
-            onChange={(e) => setSlug(e.target.value)}
-            placeholder="スラッグ（URL識別子: react-hooks-basics など）"
-            required
-          />
-          <input
-            className="w-full text-black border p-2"
-            value={title}
-            onChange={(e) => setTitle(e.target.value)}
-            placeholder="タイトル"
-            required
-          />
-          <select
-            className="w-full text-black border p-2"
-            value={category}
-            onChange={(e) => setCategory(e.target.value)}
-            required
-          >
-            <option value="">カテゴリを選択</option>
-            {categories.map((cat, i) => (
-              <option key={i} value={cat}>
-                {cat}
-              </option>
-            ))}
-          </select>
+      {/* 本体フォーム：残り高を専有（下フッター分だけ余白を確保） */}
+      <form
+        onSubmit={handleSubmit}
+        className="flex-1 min-h-0 overflow-hidden"
+        noValidate
+      >
+        <div
+          className="max-w-5xl w-full mx-auto px-6 flex flex-col h-full"
+          style={{ paddingBottom: `var(--footer-h)` } as React.CSSProperties}
+        >
+          <style>{`:root{--footer-h:${FOOTER_H}px;}`}</style>
 
-          <label className="block text-sm text-white/80">summary</label>
-          <textarea
-            className="w-full text-black px-3 py-2 rounded mb-2 border"
-            value={summary}
-            onChange={(e) => setSummary(e.target.value)}
-            placeholder="記事の要約（空でも可）"
-            rows={6}
-          />
+          {/* メタ情報（上側は普通に流れる） */}
+          <div className="space-y-4 pb-4">
+            <input
+              className="w-full text-black border p-2"
+              value={slug}
+              onChange={(e) => setSlug(e.target.value)}
+              placeholder="スラッグ（react-hooks-basics など）"
+              required
+            />
+            <input
+              className="w-full text-black border p-2"
+              value={title}
+              onChange={(e) => setTitle(e.target.value)}
+              placeholder="タイトル"
+              required
+            />
+            <select
+              className="w-full text-black border p-2"
+              value={category}
+              onChange={(e) => setCategory(e.target.value)}
+              required
+            >
+              <option value="">カテゴリを選択</option>
+              {categories.map((cat, i) => (
+                <option key={i} value={cat}>
+                  {cat}
+                </option>
+              ))}
+            </select>
 
-          {/* エディタ＋プレビュー */}
+            <label className="block text-sm text-white/80">summary</label>
+            <textarea
+              className="w-full text-black px-3 py-2 rounded mb-2 border"
+              value={summary}
+              onChange={(e) => setSummary(e.target.value)}
+              placeholder="記事の要約（空でも可）"
+              rows={6}
+            />
+          </div>
+
+          {/* エディタ＆プレビュー：残り高を占有（内部スクロール） */}
           <div
-            className={`grid gap-4 ${
+            className={`flex-1 min-h-0 grid gap-4 ${
               isSplit ? "md:grid-cols-2" : "grid-cols-1"
             }`}
           >
-            <MarkdownTextarea
-              value={content}
-              onChange={setContent}
-              rows={28}
-              placeholder="内容（Markdown）"
-            />
-            {isSplit && <MarkdownView text={content} />}
+            <div className="h-full min-h-0">
+              <MarkdownTextarea
+                value={content}
+                onChange={setContent}
+                rows={40}
+                placeholder="内容（Markdown）"
+                className="h-full"
+                toolbarClassName="sticky top-0 bg-gray-900 z-10"
+              />
+            </div>
+            {isSplit && (
+              <div className="h-full min-h-0 flex flex-col overflow-hidden">
+                {/* ← ツールバー分のダミー余白（同じ高さ） */}
+                <div className="sticky top-0 h-12 bg-gray-900" />
+                {/* 実コンテンツは残り高でスクロール */}
+                <div className="flex-1 min-h-0">
+                  <MarkdownView text={content} />
+                </div>
+              </div>
+            )}
           </div>
 
-          {/* 画像プレビュー */}
-          <div className="space-y-2">
+          {/* 画像（スクロール領域内に配置してフッターと分離） */}
+          <div className="space-y-2 mt-4">
             <input
               type="file"
               accept="image/*"
@@ -249,23 +278,38 @@ export const AddTechForm = () => {
               </div>
             )}
           </div>
+        </div>
 
-          <button
-            type="submit"
-            className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
-            disabled={loading || submitting}
-          >
-            {submitting ? "投稿中..." : "投稿"}
-          </button>
-        </form>
-      </div>
+        {/* フッター（常に表示・重なりなし） */}
+        <div
+          className="sticky bottom-0 bg-gray-900/95 backdrop-blur border-t border-white/10"
+          style={{ height: FOOTER_H }}
+        >
+          <div className="max-w-5xl w-full mx-auto px-6 h-full flex items-center gap-3">
+            <button
+              type="submit"
+              className="bg-blue-600 text-white px-4 py-2 rounded disabled:opacity-50"
+              disabled={loading || submitting}
+            >
+              {submitting ? "投稿中..." : "投稿"}
+            </button>
+            <button
+              type="button"
+              className="px-3 py-2 bg-gray-700 rounded text-white"
+              onClick={() => window.scrollTo({ top: 0, behavior: "smooth" })}
+            >
+              上へ戻る
+            </button>
+          </div>
+        </div>
+      </form>
 
-      {/* ✨ ライティングモード（全画面・リアルタイム分割） */}
+      {/* ✨ 全画面・ライティングモード */}
       {isWritingMode && (
-        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm">
-          <div className="absolute inset-3 bg-gray-900 rounded-2xl shadow-2xl flex flex-col">
-            {/* 上部バー */}
-            <div className="flex items-center justify-between p-3 border-b border-white/10">
+        <div className="fixed inset-0 z-50 bg-black/80 backdrop-blur-sm overflow-hidden">
+          <div className="absolute inset-3 bg-gray-900 rounded-2xl shadow-2xl flex flex-col min-h-0">
+            {/* 上部バー（固定） */}
+            <div className="flex items-center justify-between p-3 border-b border-white/10 sticky top-0 bg-gray-900/90 backdrop-blur z-10">
               <div className="text-white/90 font-semibold">
                 ライティングモード
               </div>
@@ -279,7 +323,7 @@ export const AddTechForm = () => {
                 <button
                   className="px-3 py-1.5 bg-blue-600 rounded text-white disabled:opacity-50"
                   disabled={loading || submitting}
-                  onClick={handleSubmit as any}
+                  onClick={() => handleSubmit()}
                 >
                   {submitting ? "投稿中..." : "この内容で投稿"}
                 </button>
@@ -291,23 +335,31 @@ export const AddTechForm = () => {
                 </button>
               </div>
             </div>
-            {/* 本体 */}
+
+            {/* 本体（残り高を占有） */}
             <div
-              className={`flex-1 grid gap-3 p-3 ${
+              className={`flex-1 min-h-0 grid gap-3 p-3 ${
                 isSplit ? "md:grid-cols-2" : "grid-cols-1"
               }`}
             >
-              <div className="h-full">
+              <div className="h-full min-h-0">
                 <MarkdownTextarea
                   value={content}
                   onChange={setContent}
                   rows={40}
                   placeholder="内容（Markdown）を入力…"
+                  className="h-full"
+                  toolbarClassName="sticky top-0 bg-gray-900 z-10"
                 />
               </div>
               {isSplit && (
-                <div className="h-full">
-                  <MarkdownView text={content} />
+                <div className="h-full min-h-0 flex flex-col overflow-hidden">
+                  {/* ← ツールバー分のダミー余白（同じ高さ） */}
+                  <div className="sticky top-0 h-12 bg-gray-900" />
+                  {/* 実コンテンツは残り高でスクロール */}
+                  <div className="flex-1 min-h-0">
+                    <MarkdownView text={content} />
+                  </div>
                 </div>
               )}
             </div>

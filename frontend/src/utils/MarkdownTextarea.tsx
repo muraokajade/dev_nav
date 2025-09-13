@@ -8,6 +8,10 @@ type Props = {
   onChange: (val: string) => void;
   rows?: number;
   placeholder?: string;
+  /** 追加: 親から高さ制御や余白を渡すため */
+  className?: string;
+  /** 追加: ツールバーにクラス（sticky化などで使用） */
+  toolbarClassName?: string;
 };
 
 export const MarkdownTextarea: React.FC<Props> = ({
@@ -15,6 +19,8 @@ export const MarkdownTextarea: React.FC<Props> = ({
   onChange,
   rows = 8,
   placeholder = "",
+  className = "",
+  toolbarClassName = "",
 }) => {
   const textareaRef = useRef<HTMLTextAreaElement>(null);
 
@@ -55,17 +61,21 @@ export const MarkdownTextarea: React.FC<Props> = ({
   };
 
   return (
-    <div>
-      <MarkdownToolbar onInsert={handleInsert} />
-      <textarea
-        ref={textareaRef}
-        className="w-full bg-white text-black border p-2 rounded"
-        value={value}
-        onChange={(e) => onChange(e.target.value)}
-        onKeyDown={handleTextareaKeyDown}
-        rows={rows}
-        placeholder={placeholder}
-      />
+    <div className={`flex flex-col h-full min-h-0 ${className}`}>
+      <div className={`pb-2 ${toolbarClassName}`}>
+        <MarkdownToolbar onInsert={handleInsert} />
+      </div>
+      <div className="flex-1 min-h-0">
+        <textarea
+          ref={textareaRef}
+          className="w-full z-10 h-full resize-none outline-none bg-white text-black border p-2 rounded"
+          value={value}
+          onChange={(e) => onChange(e.target.value)}
+          onKeyDown={handleTextareaKeyDown}
+          rows={rows} // 高さ100%指定時は実質無視
+          placeholder={placeholder}
+        />
+      </div>
     </div>
   );
 };

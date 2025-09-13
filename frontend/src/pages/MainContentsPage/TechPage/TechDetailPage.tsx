@@ -433,7 +433,9 @@ export const TechDetailPage = () => {
                 ? "bg-blue-600 text-white"
                 : "bg-zinc-700 text-zinc-200"
             }`}
-          ></button>
+          >
+            レビュー
+          </button>
           <button
             onClick={() => setTab("comment")}
             className={`px-3 py-1 rounded ${

@@ -533,8 +533,13 @@ export const AdminSyntaxList = () => {
                     />
                   </div>
                   {isSplit && (
-                    <div className="min-h-0">
-                      <MarkdownView text={content} />
+                    <div className="h-full min-h-0 flex flex-col overflow-hidden">
+                      {/* ← ツールバー分のダミー余白（同じ高さ） */}
+                      <div className="sticky top-0 h-12 bg-gray-900" />
+                      {/* 実コンテンツは残り高でスクロール */}
+                      <div className="flex-1 min-h-0">
+                        <MarkdownView text={content} />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -591,8 +596,13 @@ export const AdminSyntaxList = () => {
                 />
               </div>
               {isSplit && (
-                <div className="min-h-0">
-                  <MarkdownView text={content} />
+                <div className="h-full min-h-0 flex flex-col overflow-hidden">
+                  {/* ← ツールバー分のダミー余白（同じ高さ） */}
+                  <div className="sticky top-0 h-12 bg-gray-900" />
+                  {/* 実コンテンツは残り高でスクロール */}
+                  <div className="flex-1 min-h-0">
+                    <MarkdownView text={content} />
+                  </div>
                 </div>
               )}
             </div>

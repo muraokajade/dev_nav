@@ -51,7 +51,10 @@ public class SecurityConfig {
                         .requestMatchers("/api/articles/**").permitAll()
                         .requestMatchers("/api/syntaxes/**").permitAll()
                         .requestMatchers("/api/procedures/**").permitAll()
-                        .requestMatchers(HttpMethod.GET, "/api/messages").permitAll()
+                        .requestMatchers(HttpMethod.GET,
+                                "/api/*/*/*/messages",        // 末尾が /messages
+                                "/api/*/*/*/messages/**"      // さらにその配下
+                        ).permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/review-scores/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/review-comments/**").permitAll()
                         .requestMatchers(HttpMethod.GET, "/api/likes/count").permitAll()

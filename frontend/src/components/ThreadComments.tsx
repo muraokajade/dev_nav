@@ -151,9 +151,7 @@ export const ThreadComments: React.FC<Props> = ({
     setError(null);
     try {
       debug && console.log("[ThreadComments][GET]", baseUrl);
-      const res = await apiHelper.get(`${baseUrl}?page=0&size=20`, {
-        headers: authHeader,
-      });
+      const res = await apiHelper.get(`${baseUrl}?page=0&size=20`);
       const pageData = adaptPage((res as any).data);
       debug && console.log("[ThreadComments][GET][OK]", pageData);
       setData(pageData);
