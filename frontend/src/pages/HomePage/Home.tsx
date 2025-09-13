@@ -11,6 +11,8 @@ import { useAuth } from "../../context/useAuthContext";
 export const Home = () => {
   const { idToken } = useAuth();
   console.log(idToken);
+  const [mounted, setMounted] = useState(false);
+  useEffect(() => setMounted(true), []);
 
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" ? window.innerWidth < 640 : false
@@ -61,9 +63,9 @@ export const Home = () => {
         {/* タイトル */}
         <motion.h1
           initial={{ opacity: 0 }}
-          animate={{ opacity: 1 }}
+          animate={mounted ? { opacity: 1 } : { opacity: 0 }}
           transition={{ duration: 0.6, ease: "easeOut" }}
-          className="text-4xl md:text-6xl font-extrabold text-center tracking-tight drop-shadow"
+          className="text-4xl md:text-6xl font-extrabold text-center tracking-tight leading-tight drop-shadow"
         >
           <span className="text-sky-400">Dev</span>
           <span className="text-white">Nav</span>
@@ -75,10 +77,10 @@ export const Home = () => {
 
         {/* サブ説明 */}
         <motion.p
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.1, duration: 0.5 }}
-          className="mt-4 text-base md:text-lg leading-snug text-gray-300 text-center max-w-3xl"
+          initial={{ opacity: 0 }}
+          animate={mounted ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ delay: 0.05, duration: 0.45, ease: "easeOut" }}
+          className="mt-4 text-base md:text-lg leading-snug text-gray-300 text-center max-w-3xl will-change-transform"
         >
           日本語で統合教材が少ない領域を網羅。TypeScript ×
           Java、実装→設計→デプロイまで一気通貫で学べます。
@@ -86,10 +88,10 @@ export const Home = () => {
 
         {/* CTA */}
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          animate={{ opacity: 1, y: 0 }}
-          transition={{ delay: 0.2, duration: 0.5 }}
-          className="mt-8 flex flex-wrap items-center justify-center gap-3"
+          initial={{ opacity: 0 }}
+          animate={mounted ? { opacity: 1 } : { opacity: 0 }}
+          transition={{ delay: 0.1, duration: 0.45, ease: "easeOut" }}
+          className="mt-8 flex flex-wrap items-center justify-center gap-3 will-change-transform"
         >
           <Link
             to="/start"
