@@ -35,6 +35,17 @@ export const Home = () => {
   console.log(idToken);
   const [mounted, setMounted] = useState(false);
   const [showReadmeBanner, setShowReadmeBanner] = useState(false);
+  const [showVideo, setShowVideo] = useState(false);
+  const openVideo = () => setShowVideo(true);
+  const closeVideo = () => setShowVideo(false);
+
+  // ESCで閉じる
+  useEffect(() => {
+    if (!showVideo) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && closeVideo();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [showVideo]);
 
   useEffect(() => {
     const t = setTimeout(() => {
@@ -143,6 +154,15 @@ export const Home = () => {
           >
             記事を探す
           </Link>
+          <button
+            onClick={openVideo}
+            className="transition-colors duration-200 px-4 py-2 rounded-lg border border-white/20 text-white/90 hover:bg-white/10 text-sm"
+            aria-haspopup="dialog"
+            aria-controls="demo-modal"
+          >
+            ▶︎ 60秒デモを見る
+          </button>
+
           <a
             href={README_URL}
             target="_blank"
@@ -275,6 +295,54 @@ export const Home = () => {
           ))}
         </div>
       </div>
+      <AnimatePresence>
+        {showVideo && (
+          <motion.div
+            id="demo-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="60秒デモ動画"
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            className="fixed inset-0 z-[100] flex items-center justify-center"
+          >
+            {/* 背景クリックで閉じる */}
+            <div
+              onClick={closeVideo}
+              className="absolute inset-0 bg-black/70 backdrop-blur-sm"
+            />
+            {/* コンテンツ */}
+            <motion.div
+              initial={{ scale: 0.98, y: 8, opacity: 0 }}
+              animate={{ scale: 1, y: 0, opacity: 1 }}
+              exit={{ scale: 0.98, y: 8, opacity: 0 }}
+              transition={{ duration: 0.2, ease: "easeOut" }}
+              className="relative w-[min(92vw,980px)] rounded-2xl overflow-hidden bg-black shadow-2xl"
+            >
+              {/* 閉じるボタン（右上） */}
+              <button
+                onClick={closeVideo}
+                className="absolute right-3 top-3 z-10 rounded-md bg-white/10 hover:bg-white/20 text-white px-2 py-1 text-xs"
+                aria-label="閉じる"
+              >
+                閉じる
+              </button>
+
+              {/* 16:9 埋め込み */}
+              <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
+                <iframe
+                  title="DevNav 60秒デモ"
+                  src="https://www.youtube-nocookie.com/embed/tx5BrnneewI?autoplay=1&rel=0&modestbranding=1"
+                  allow="autoplay; encrypted-media; picture-in-picture"
+                  allowFullScreen
+                  className="absolute inset-0 w-full h-full"
+                />
+              </div>
+            </motion.div>
+          </motion.div>
+        )}
+      </AnimatePresence>
     </div>
   );
 };
