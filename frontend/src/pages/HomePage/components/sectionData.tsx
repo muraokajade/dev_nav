@@ -4,6 +4,7 @@ import { MarkdownWithPrism } from "./CodeBlock";
 import { Bullets, GlassCard, MediaFrame } from "./ui";
 // import  MarkdownArticle  from "./MarkdownArticle";
 import { lazy, Suspense } from "react";
+import CodeShowcase from "./CodeShowcase";
 const MarkdownArticle = lazy(() => import("./MarkdownArticle"));
 const CodeSkeleton = () => (
   <div className="h-[180px] w-full rounded-xl border border-white/10 bg-white/5 animate-pulse" />
@@ -116,9 +117,10 @@ export const sections: SectionItem[] = [
 
         {/* 右：コードプレビュー */}
         <div className="min-w-0">
-          <MediaFrame className="text-[13px] md:text-[14px] leading-6 overflow-x-auto">
-            <MarkdownWithPrism md={demo1} />
-          </MediaFrame>
+          {/* ← ここに Code Highlight セクションを追加 */}
+          <div className="w-full mt-10 md:mt-12">
+            <CodeShowcase className="mt-6" />
+          </div>
         </div>
       </div>
     ),
