@@ -36,7 +36,15 @@ export const Home = () => {
   const [mounted, setMounted] = useState(false);
   const [showReadmeBanner, setShowReadmeBanner] = useState(false);
   const [showVideo, setShowVideo] = useState(false);
-  const openVideo = () => setShowVideo(true);
+
+  const [videoKey, setVideoKey] = useState(0);
+  const YT_BASE = "https://www.youtube-nocookie.com/embed/tx5BrnneewI";
+
+  const openVideo = () => {
+    setVideoKey((k) => k + 1); // ← 毎回キー更新でiframeを作り直す
+    setShowVideo(true);
+  };
+
   const closeVideo = () => setShowVideo(false);
 
   // ESCで閉じる
@@ -332,8 +340,9 @@ export const Home = () => {
               {/* 16:9 埋め込み */}
               <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
                 <iframe
+                  key={videoKey}
                   title="DevNav 60秒デモ"
-                  src="https://www.youtube-nocookie.com/embed/tx5BrnneewI?autoplay=1&rel=0&modestbranding=1"
+                  src={`${YT_BASE}?autoplay=1&mute=1&rel=0&modestbranding=1&playsinline=1&vts=${videoKey}`}
                   allow="autoplay; encrypted-media; picture-in-picture"
                   allowFullScreen
                   className="absolute inset-0 w-full h-full"
