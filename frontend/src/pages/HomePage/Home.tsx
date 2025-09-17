@@ -4,14 +4,52 @@ import { Link } from "react-router-dom";
 import { Canvas } from "@react-three/fiber";
 import { LogoPlane } from "./components/LogoPlane";
 import { useEffect, useState } from "react";
-import { motion } from "framer-motion";
+import { motion, AnimatePresence } from "framer-motion";
 import { SectionScrollMotion } from "./components/SectionScrollMotion";
 import { useAuth } from "../../context/useAuthContext";
+
+// --- Inline SVG icons (lucide不使用) ---
+const GitHubIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+    <path
+      fill="currentColor"
+      d="M12 2C6.48 2 2 6.58 2 12.26c0 4.52 2.87 8.35 6.84 9.7.5.1.68-.22.68-.49 0-.24-.01-.88-.01-1.73-2.78.62-3.37-1.2-3.37-1.2-.45-1.18-1.1-1.5-1.1-1.5-.9-.63.07-.62.07-.62 1 .07 1.53 1.06 1.53 1.06.89 1.55 2.34 1.1 2.9.84.09-.66.35-1.1.62-1.36-2.22-.26-4.56-1.13-4.56-5.02 0-1.11.39-2.01 1.03-2.72-.1-.26-.45-1.31.1-2.73 0 0 .84-.27 2.75 1.04A9.3 9.3 0 0 1 12 7.06c.85 0 1.71.12 2.51.34 1.9-1.31 2.73-1.04 2.73-1.04.56 1.42.21 2.47.1 2.73.64.71 1.03 1.61 1.03 2.72 0 3.9-2.35 4.75-4.59 5.01.36.32.67.95.67 1.92 0 1.39-.01 2.51-.01 2.85 0 .27.18.6.69.49A10.03 10.03 0 0 0 22 12.26C22 6.58 17.52 2 12 2z"
+    />
+  </svg>
+);
+
+const CloseIcon = (props: React.SVGProps<SVGSVGElement>) => (
+  <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
+    <path
+      fill="currentColor"
+      d="M18.3 5.71a1 1 0 0 0-1.41 0L12 10.59 7.11 5.7A1 1 0 0 0 5.7 7.11L10.59 12l-4.9 4.89a1 1 0 1 0 1.41 1.41L12 13.41l4.89 4.9a1 1 0 0 0 1.41-1.41L13.41 12l4.89-4.89a1 1 0 0 0 0-1.4z"
+    />
+  </svg>
+);
+
+// READMEリンク先（差し替え可）
+const README_URL = "https://github.com/muraokajade/dev_nav/blob/main/README.md";
 
 export const Home = () => {
   const { idToken } = useAuth();
   console.log(idToken);
   const [mounted, setMounted] = useState(false);
+  const [showReadmeBanner, setShowReadmeBanner] = useState(false);
+
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (!sessionStorage.getItem("readmeBannerDismissed")) {
+        setShowReadmeBanner(true);
+      }
+    }, 1500); // 到達後 ≈2.5秒で表示
+    return () => clearTimeout(t);
+  }, []);
+
+  const dismissReadmeBanner = () => {
+    sessionStorage.setItem("readmeBannerDismissed", "1");
+    setShowReadmeBanner(false);
+  };
+
   useEffect(() => setMounted(true), []);
 
   const [isMobile, setIsMobile] = useState(
@@ -105,7 +143,67 @@ export const Home = () => {
           >
             記事を探す
           </Link>
+          <a
+            href={README_URL}
+            target="_blank"
+            rel="noopener noreferrer"
+            className="transition-colors duration-200 min-w-[200px] px-5 py-3 rounded-xl bg-neutral-900/90 hover:bg-neutral-900 text-white font-semibold shadow-lg focus:outline-none focus-visible:ring-2 focus-visible:ring-white/40 inline-flex items-center justify-center gap-2"
+            aria-label="README (環境/セットアップ) を開く"
+          >
+            <GitHubIcon className="h-5 w-5" />
+            <span>README（環境/セットアップ）</span>
+          </a>
         </motion.div>
+        <AnimatePresence>
+          {showReadmeBanner && (
+            <motion.div
+              initial={{ y: 32, opacity: 0 }}
+              animate={{ y: 0, opacity: 1 }}
+              exit={{ y: 32, opacity: 0 }}
+              transition={{ duration: 0.35, ease: "easeOut" }}
+              className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[min(92vw,960px)]"
+              role="dialog"
+              aria-live="polite"
+            >
+              <div className="rounded-2xl border border-white/15 bg-white/90 backdrop-blur-md shadow-xl p-4 sm:p-5 flex items-start gap-4 text-neutral-800">
+                <div className="shrink-0 mt-1">
+                  <GitHubIcon className="h-6 w-6 text-neutral-900" />
+                </div>
+                <div className="flex-1">
+                  <p className="text-sm sm:text-base font-semibold">
+                    詳しいセットアップ / 環境についてはREADMEをご覧ください
+                  </p>
+                  <p className="text-xs sm:text-sm text-neutral-600 mt-1">
+                    企業・ご担当者様向け：導入手順、開発環境、設計意図、動作確認手順を短時間で確認できます。
+                  </p>
+                  <div className="mt-3 flex flex-wrap gap-2">
+                    <a
+                      href={README_URL}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="px-4 py-2 rounded-lg bg-neutral-900 hover:bg-black text-white text-sm font-semibold shadow"
+                    >
+                      READMEを開く
+                    </a>
+                    <button
+                      onClick={dismissReadmeBanner}
+                      className="px-3 py-2 rounded-lg border border-neutral-300 hover:bg-neutral-100 text-sm"
+                    >
+                      後で見る
+                    </button>
+                  </div>
+                </div>
+                <button
+                  onClick={dismissReadmeBanner}
+                  className="shrink-0 p-2 rounded-lg hover:bg-neutral-200/60 text-neutral-700"
+                  aria-label="バナーを閉じる"
+                >
+                  <CloseIcon className="h-5 w-5" />
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
 
         {/* 3Dロゴ：ガラス調カード */}
         <div className="relative w-full max-w-6xl h-[16rem] md:h-[22rem] mt-10">
