@@ -1,4 +1,4 @@
-// Home.tsx（統一・ガラス調Hero）
+// Home.tsx（ガラス調Hero + READMEバナー：外側クリックで閉じる対応）
 import { sections } from "./components/sectionData";
 import { Link } from "react-router-dom";
 import { Canvas } from "@react-three/fiber";
@@ -8,7 +8,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import { SectionScrollMotion } from "./components/SectionScrollMotion";
 import { useAuth } from "../../context/useAuthContext";
 
-// --- Inline SVG icons (lucide不使用) ---
+/* ===== Inline SVG（lucide不使用のまま） ===== */
 const GitHubIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
     <path
@@ -17,7 +17,6 @@ const GitHubIcon = (props: React.SVGProps<SVGSVGElement>) => (
     />
   </svg>
 );
-
 const CloseIcon = (props: React.SVGProps<SVGSVGElement>) => (
   <svg viewBox="0 0 24 24" aria-hidden="true" {...props}>
     <path
@@ -27,27 +26,116 @@ const CloseIcon = (props: React.SVGProps<SVGSVGElement>) => (
   </svg>
 );
 
-// READMEリンク先（差し替え可）
+/* ===== READMEリンク先（必要なら変更） ===== */
 const README_URL = "https://github.com/muraokajade/dev_nav/blob/main/README.md";
+
+/* ===== 追加: 外側クリックで閉じられる READMEバナー ===== */
+function ReadmeBanner({
+  open,
+  onClose,
+}: {
+  open: boolean;
+  onClose: () => void;
+}) {
+  // Esc でも閉じる
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === "Escape" && onClose();
+    window.addEventListener("keydown", onKey);
+    return () => window.removeEventListener("keydown", onKey);
+  }, [open, onClose]);
+
+  if (!open) return null;
+
+  return (
+    <div
+      className="fixed inset-0 z-[60] flex items-end sm:items-center justify-center"
+      aria-live="polite"
+      role="dialog"
+      aria-label="READMEのご案内"
+    >
+      {/* 背景（外側タップで閉じる） */}
+      <button
+        aria-hidden
+        onClick={onClose}
+        className="absolute inset-0 bg-black/20"
+        style={{ WebkitTapHighlightColor: "transparent" }}
+      />
+      {/* バナー本体 */}
+      <div className="relative m-3 sm:m-6 w-full sm:w-[min(92vw,720px)]">
+        <div className="rounded-2xl border border-white/15 bg-white/95 backdrop-blur-md shadow-2xl p-4 sm:p-5 flex items-start gap-4 text-neutral-800">
+          <div className="shrink-0 mt-1">
+            <GitHubIcon className="h-6 w-6 text-neutral-900" />
+          </div>
+          <div className="flex-1 min-w-0">
+            <p className="text-sm sm:text-base font-semibold">
+              詳しいセットアップ / 環境については README をご覧ください
+            </p>
+            <p className="text-xs sm:text-sm text-neutral-600 mt-1">
+              導入手順・開発環境・設計意図・動作確認手順を短時間で確認できます。
+            </p>
+            <div className="mt-3 flex flex-wrap gap-2">
+              <a
+                href={README_URL}
+                target="_blank"
+                rel="noopener noreferrer"
+                className="px-4 py-2 rounded-lg bg-neutral-900 hover:bg-black text-white text-sm font-semibold shadow inline-flex items-center gap-2"
+                onClick={onClose} // READMEへ遷移時も閉じる
+              >
+                <GitHubIcon className="h-4 w-4" />
+                READMEを開く
+              </a>
+              <button
+                onClick={onClose}
+                className="px-3 py-2 rounded-lg border border-neutral-300 hover:bg-neutral-100 text-sm"
+              >
+                後で見る
+              </button>
+            </div>
+          </div>
+          <button
+            onClick={onClose}
+            className="shrink-0 p-2 rounded-lg hover:bg-neutral-200/60 text-neutral-700"
+            aria-label="バナーを閉じる"
+          >
+            <CloseIcon className="h-5 w-5" />
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
 
 export const Home = () => {
   const { idToken } = useAuth();
   console.log(idToken);
+
   const [mounted, setMounted] = useState(false);
+
+  // ===== READMEバナーの表示制御（既存の sessionStorage 利用は維持） =====
   const [showReadmeBanner, setShowReadmeBanner] = useState(false);
-  const [showVideo, setShowVideo] = useState(false);
-
-  const [videoKey, setVideoKey] = useState(0);
-  const YT_BASE = "https://www.youtube-nocookie.com/embed/tx5BrnneewI";
-
-  const openVideo = () => {
-    setVideoKey((k) => k + 1); // ← 毎回キー更新でiframeを作り直す
-    setShowVideo(true);
+  useEffect(() => {
+    const t = setTimeout(() => {
+      if (!sessionStorage.getItem("readmeBannerDismissed")) {
+        setShowReadmeBanner(true);
+      }
+    }, 1500);
+    return () => clearTimeout(t);
+  }, []);
+  const dismissReadmeBanner = () => {
+    sessionStorage.setItem("readmeBannerDismissed", "1");
+    setShowReadmeBanner(false);
   };
 
+  // ===== 60秒デモ（既存そのまま） =====
+  const [showVideo, setShowVideo] = useState(false);
+  const [videoKey, setVideoKey] = useState(0);
+  const YT_BASE = "https://www.youtube-nocookie.com/embed/tx5BrnneewI";
+  const openVideo = () => {
+    setVideoKey((k) => k + 1);
+    setShowVideo(true);
+  };
   const closeVideo = () => setShowVideo(false);
-
-  // ESCで閉じる
   useEffect(() => {
     if (!showVideo) return;
     const onKey = (e: KeyboardEvent) => e.key === "Escape" && closeVideo();
@@ -55,22 +143,10 @@ export const Home = () => {
     return () => window.removeEventListener("keydown", onKey);
   }, [showVideo]);
 
-  useEffect(() => {
-    const t = setTimeout(() => {
-      if (!sessionStorage.getItem("readmeBannerDismissed")) {
-        setShowReadmeBanner(true);
-      }
-    }, 1500); // 到達後 ≈2.5秒で表示
-    return () => clearTimeout(t);
-  }, []);
-
-  const dismissReadmeBanner = () => {
-    sessionStorage.setItem("readmeBannerDismissed", "1");
-    setShowReadmeBanner(false);
-  };
-
+  // マウント
   useEffect(() => setMounted(true), []);
 
+  // ===== レスポンシブ用（既存のロゴ座標/スケールも維持） =====
   const [isMobile, setIsMobile] = useState(
     typeof window !== "undefined" ? window.innerWidth < 640 : false
   );
@@ -80,7 +156,6 @@ export const Home = () => {
     return () => window.removeEventListener("resize", onResize);
   }, []);
 
-  // 3D ロゴ配置
   const reactPos: [number, number, number] = isMobile
     ? [-1.7, 0.1, 0]
     : [-4, 0, 0];
@@ -182,58 +257,8 @@ export const Home = () => {
             <span>README（環境/セットアップ）</span>
           </a>
         </motion.div>
-        <AnimatePresence>
-          {showReadmeBanner && (
-            <motion.div
-              initial={{ y: 32, opacity: 0 }}
-              animate={{ y: 0, opacity: 1 }}
-              exit={{ y: 32, opacity: 0 }}
-              transition={{ duration: 0.35, ease: "easeOut" }}
-              className="fixed bottom-4 left-1/2 -translate-x-1/2 z-50 w-[min(92vw,960px)]"
-              role="dialog"
-              aria-live="polite"
-            >
-              <div className="rounded-2xl border border-white/15 bg-white/90 backdrop-blur-md shadow-xl p-4 sm:p-5 flex items-start gap-4 text-neutral-800">
-                <div className="shrink-0 mt-1">
-                  <GitHubIcon className="h-6 w-6 text-neutral-900" />
-                </div>
-                <div className="flex-1">
-                  <p className="text-sm sm:text-base font-semibold">
-                    詳しいセットアップ / 環境についてはREADMEをご覧ください
-                  </p>
-                  <p className="text-xs sm:text-sm text-neutral-600 mt-1">
-                    企業・ご担当者様向け：導入手順、開発環境、設計意図、動作確認手順を短時間で確認できます。
-                  </p>
-                  <div className="mt-3 flex flex-wrap gap-2">
-                    <a
-                      href={README_URL}
-                      target="_blank"
-                      rel="noopener noreferrer"
-                      className="px-4 py-2 rounded-lg bg-neutral-900 hover:bg-black text-white text-sm font-semibold shadow"
-                    >
-                      READMEを開く
-                    </a>
-                    <button
-                      onClick={dismissReadmeBanner}
-                      className="px-3 py-2 rounded-lg border border-neutral-300 hover:bg-neutral-100 text-sm"
-                    >
-                      後で見る
-                    </button>
-                  </div>
-                </div>
-                <button
-                  onClick={dismissReadmeBanner}
-                  className="shrink-0 p-2 rounded-lg hover:bg-neutral-200/60 text-neutral-700"
-                  aria-label="バナーを閉じる"
-                >
-                  <CloseIcon className="h-5 w-5" />
-                </button>
-              </div>
-            </motion.div>
-          )}
-        </AnimatePresence>
 
-        {/* 3Dロゴ：ガラス調カード */}
+        {/* 3Dロゴ：ガラス調カード（既存） */}
         <div className="relative w-full max-w-6xl h-[16rem] md:h-[22rem] mt-10">
           <div className="absolute inset-0 rounded-2xl overflow-hidden">
             <div className="absolute inset-0 rounded-2xl bg-white/8 backdrop-blur-md border border-white/15" />
@@ -303,6 +328,25 @@ export const Home = () => {
           ))}
         </div>
       </div>
+
+      {/* READMEバナー（外側タップで閉じる/モバイル安全） */}
+      <AnimatePresence>
+        {showReadmeBanner && (
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            transition={{ duration: 0.2 }}
+          >
+            <ReadmeBanner
+              open={showReadmeBanner}
+              onClose={dismissReadmeBanner}
+            />
+          </motion.div>
+        )}
+      </AnimatePresence>
+
+      {/* 60秒デモ・モーダル（既存） */}
       <AnimatePresence>
         {showVideo && (
           <motion.div
@@ -315,12 +359,10 @@ export const Home = () => {
             exit={{ opacity: 0 }}
             className="fixed inset-0 z-[100] flex items-center justify-center"
           >
-            {/* 背景クリックで閉じる */}
             <div
               onClick={closeVideo}
               className="absolute inset-0 bg-black/70 backdrop-blur-sm"
             />
-            {/* コンテンツ */}
             <motion.div
               initial={{ scale: 0.98, y: 8, opacity: 0 }}
               animate={{ scale: 1, y: 0, opacity: 1 }}
@@ -328,7 +370,6 @@ export const Home = () => {
               transition={{ duration: 0.2, ease: "easeOut" }}
               className="relative w-[min(92vw,980px)] rounded-2xl overflow-hidden bg-black shadow-2xl"
             >
-              {/* 閉じるボタン（右上） */}
               <button
                 onClick={closeVideo}
                 className="absolute right-3 top-3 z-10 rounded-md bg-white/10 hover:bg-white/20 text-white px-2 py-1 text-xs"
@@ -336,8 +377,6 @@ export const Home = () => {
               >
                 閉じる
               </button>
-
-              {/* 16:9 埋め込み */}
               <div className="relative w-full" style={{ paddingTop: "56.25%" }}>
                 <iframe
                   key={videoKey}
