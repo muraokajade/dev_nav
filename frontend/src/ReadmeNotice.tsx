@@ -1,10 +1,12 @@
 import { useEffect, useState } from "react";
 
 type Props = {
-  storageKey?: string; // 複数バナー用に識別したい時に変更
-  expireDays?: number; // 何日後に再表示するか（デフォ: 365）
+  storageKey?: string; // 識別子（複数バナー用）
+  expireDays?: number; // 何日で再表示するか（デフォ 365）
   readmeHref?: string; // 「READMEを見る」リンク先
 };
+
+const SESSION_KEY_PREFIX = "session_"; // フォールバック用
 
 export default function ReadmeNotice({
   storageKey = "readme_notice_dismissed_at",
@@ -13,26 +15,76 @@ export default function ReadmeNotice({
 }: Props) {
   const [open, setOpen] = useState(false);
 
-  useEffect(() => {
+  // util
+  const nowMs = () => Date.now();
+  const toMs = (iso: string | null) => (iso ? new Date(iso).getTime() : NaN);
+  const expMs = (dismissedAtMs: number) =>
+    dismissedAtMs + expireDays * 24 * 60 * 60 * 1000;
+
+  const readLocal = () => {
     try {
-      const raw = localStorage.getItem(storageKey);
-      if (!raw) {
-        setOpen(true);
-        return;
-      }
-      const dismissedAt = new Date(raw).getTime();
-      const expiresAt = dismissedAt + expireDays * 24 * 60 * 60 * 1000;
-      if (Date.now() > expiresAt) setOpen(true);
+      return localStorage.getItem(storageKey);
     } catch {
-      // localStorage が使えない環境でも落ちないように
-      setOpen(true);
+      return null;
     }
+  };
+  const writeLocal = (iso: string) => {
+    try {
+      localStorage.setItem(storageKey, iso);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  const readSession = () => {
+    try {
+      return sessionStorage.getItem(SESSION_KEY_PREFIX + storageKey);
+    } catch {
+      return null;
+    }
+  };
+  const writeSession = (iso: string) => {
+    try {
+      sessionStorage.setItem(SESSION_KEY_PREFIX + storageKey, iso);
+      return true;
+    } catch {
+      return false;
+    }
+  };
+
+  useEffect(() => {
+    // セッション記録があれば非表示（戻る/再訪でも出ない）
+    const ses = readSession();
+    if (ses) {
+      setOpen(false);
+      return;
+    }
+
+    // ローカル記録
+    const raw = readLocal();
+    if (!raw) {
+      setOpen(true);
+      return;
+    }
+    const dismissedAt = toMs(raw);
+    if (!Number.isFinite(dismissedAt)) {
+      setOpen(true);
+      return;
+    }
+    const expired = nowMs() > expMs(dismissedAt);
+    setOpen(expired); // 期限切れなら再表示
   }, [storageKey, expireDays]);
 
   const close = () => {
-    try {
-      localStorage.setItem(storageKey, new Date().toISOString());
-    } catch {}
+    const iso = new Date().toISOString();
+    // local がダメなら session にフォールバック
+    if (!writeLocal(iso)) {
+      writeSession(iso);
+    } else {
+      // 同一セッション中は確実に出ないよう session にも書いておく
+      writeSession(iso);
+    }
     setOpen(false);
   };
 
@@ -58,7 +110,7 @@ export default function ReadmeNotice({
   );
 }
 
-// 最小限のインラインスタイル（Tailwind等が無くても動く）
+// 最小限インラインCSS（Tailwindなしでも動きます）
 const styles: Record<string, React.CSSProperties> = {
   wrap: {
     position: "fixed",
