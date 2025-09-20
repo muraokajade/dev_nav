@@ -268,7 +268,7 @@ export default function HomePage() {
               {/* 閉じるボタン（右上） */}
               <button
                 onClick={closeVideo}
-                className="absolute right-3 top-3 z-10 rounded-md bg-white/10 hover:bg白/20 text-white px-2 py-1 text-xs"
+                className="absolute right-3 top-3 z-10 rounded-md bg-white/10 hover:bg-white/20 text-white px-2 py-1 text-xs"
                 aria-label="閉じる"
               >
                 閉じる
