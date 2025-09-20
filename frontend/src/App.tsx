@@ -6,7 +6,7 @@ import { BrowserRouter, Routes, Route } from "react-router-dom";
 // 直ロード（初回表示に必要）
 import { Navbar } from "./pages/CommonPage/Navbar";
 import { Footer } from "./pages/CommonPage/Footer";
-import { Home } from "./pages/HomePage/Home";
+import HomePage from "./pages/HomePage/Home";
 import { StartPage } from "./pages/StartPage/StartPage";
 import { AddTechForm } from "./pages/AdminPage/components/AddTechForm";
 import { AddSyntaxForm } from "./pages/AdminPage/components/AddSyntaxForm";
@@ -145,7 +145,7 @@ export default function App() {
         <Suspense fallback={null}>
           <Routes>
             {/* Public（即描画） */}
-            <Route path="/" element={<Home />} />
+            <Route path="/" element={<HomePage />} />
             <Route path="/start" element={<StartPage />} />
 
             {/* Articles */}
