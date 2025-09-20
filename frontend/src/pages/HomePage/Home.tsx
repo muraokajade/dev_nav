@@ -145,6 +145,17 @@ export const Home = () => {
 
   // マウント
   useEffect(() => setMounted(true), []);
+  // Home.tsx 内（Homeコンポーネントの中）
+  useEffect(() => {
+    const prevAlert = window.alert;
+    window.alert = (msg?: any) => {
+      // 必要ならトーストに差し替えたり、consoleに流すだけにする
+      // console.warn("[alert suppressed]", msg);
+    };
+    return () => {
+      window.alert = prevAlert;
+    };
+  }, []);
 
   // ===== レスポンシブ用（既存のロゴ座標/スケールも維持） =====
   const [isMobile, setIsMobile] = useState(
