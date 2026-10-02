@@ -1,5 +1,6 @@
 package com.example.tech.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import jakarta.persistence.Column;
 import jakarta.persistence.Table;
 import lombok.AllArgsConstructor;
@@ -16,6 +17,7 @@ public class ProcedureDTO {
     private String stepNumber;
     private String slug;
     private String title;
+    @JsonIgnore // 公開APIのレスポンスにメールアドレスを出さない
     private String userEmail;
     private String authorName;  // ←追加
     private String category;

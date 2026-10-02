@@ -1,5 +1,6 @@
 package com.example.tech.dto;
 
+import com.fasterxml.jackson.annotation.JsonIgnore;
 import lombok.AllArgsConstructor;
 import lombok.Data;
 import lombok.NoArgsConstructor;
@@ -13,6 +14,7 @@ public class ArticleDTO {
     private Long id;
     private String slug;
     private String title;
+    @JsonIgnore // 公開APIのレスポンスにメールアドレスを出さない
     private String userEmail;
     private String authorName;  // ←追加
     private String category;
