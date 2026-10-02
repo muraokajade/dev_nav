@@ -188,7 +188,7 @@ export default function HomePage() {
             <ambientLight intensity={0.6} />
             <pointLight position={[10, 10, 10]} intensity={0.7} />
             <LogoPlane
-              url="https://upload.wikimedia.org/wikipedia/commons/a/a7/React-icon.svg"
+              url="/assets/images/React.svg"
               position={reactPos}
               scale={reactScale}
               opacity={1}
