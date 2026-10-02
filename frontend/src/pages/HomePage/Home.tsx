@@ -1,5 +1,5 @@
 import { Link } from "react-router-dom";
-import { Canvas } from "@react-three/fiber";
+import { Canvas, useThree } from "@react-three/fiber";
 import { useEffect, useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import ReadmeNotice from "../../ReadmeNotice";
@@ -27,6 +27,23 @@ const CloseIcon = (props: React.SVGProps<SVGSVGElement>) => (
     />
   </svg>
 );
+
+// 3Dロゴ全体が収まるのに必要な横幅（three.js単位、左右の余白込み）
+// desktop: ロゴ配置の左右端 ±6.8 → 13.6 + 余白、mobile: ±3.35 → 6.7 + 余白
+const LOGO_REQUIRED_WIDTH = { desktop: 14.4, mobile: 7.3 };
+
+// Canvasで見えている横幅に合わせてロゴ全体を縮小する（広い画面では等倍のまま）
+const FitToViewport = ({
+  requiredWidth,
+  children,
+}: {
+  requiredWidth: number;
+  children: React.ReactNode;
+}) => {
+  const visibleWidth = useThree((state) => state.viewport.width);
+  const s = Math.min(1, visibleWidth / requiredWidth);
+  return <group scale={[s, s, s]}>{children}</group>;
+};
 
 // READMEリンク先（差し替え可）
 const README_URL = "https://github.com/muraokajade/dev_nav/blob/main/README.md";
@@ -187,32 +204,40 @@ export default function HomePage() {
           >
             <ambientLight intensity={0.6} />
             <pointLight position={[10, 10, 10]} intensity={0.7} />
-            <LogoPlane
-              url="/assets/images/React.svg"
-              position={reactPos}
-              scale={reactScale}
-              opacity={1}
-              rotationSpeed={0.01}
-            />
-            <LogoPlane
-              url="/assets/images/Ts.svg"
-              position={tsPos}
-              scale={tsScale}
-              opacity={1}
-            />
-            <LogoPlane
-              url="/assets/images/Spring.png"
-              position={springPos}
-              scale={springScale}
-              opacity={1}
-              bounce
-            />
-            <LogoPlane
-              url="/assets/images/Java.png"
-              position={javaPos}
-              scale={javaScale}
-              opacity={1}
-            />
+            <FitToViewport
+              requiredWidth={
+                isMobile
+                  ? LOGO_REQUIRED_WIDTH.mobile
+                  : LOGO_REQUIRED_WIDTH.desktop
+              }
+            >
+              <LogoPlane
+                url="/assets/images/React.svg"
+                position={reactPos}
+                scale={reactScale}
+                opacity={1}
+                rotationSpeed={0.01}
+              />
+              <LogoPlane
+                url="/assets/images/Ts.svg"
+                position={tsPos}
+                scale={tsScale}
+                opacity={1}
+              />
+              <LogoPlane
+                url="/assets/images/Spring.png"
+                position={springPos}
+                scale={springScale}
+                opacity={1}
+                bounce
+              />
+              <LogoPlane
+                url="/assets/images/Java.png"
+                position={javaPos}
+                scale={javaScale}
+                opacity={1}
+              />
+            </FitToViewport>
           </Canvas>
         </div>
 
