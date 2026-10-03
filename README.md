@@ -1,240 +1,199 @@
-# DevNav — React × Spring Boot 統合教材
+# DevNav+
 
-[![Deploy Frontend (Vercel)](https://img.shields.io/badge/Vercel-Frontend-black)](#)
-[![Backend (Koyeb)](https://img.shields.io/badge/Koyeb-Backend-blue)](#)
-[![DB (Neon)](https://img.shields.io/badge/Neon-Postgres-green)](#)
-[![Cloudflare DNS](https://img.shields.io/badge/Cloudflare-DNS%2FSSL-orange)](#)
+**React × Spring Boot を日本語で学ぶための技術記事・開発手順サイト。**
+フロントエンド（React / TypeScript）、バックエンド（Spring Boot / JPA）、認証（Firebase）、DB（PostgreSQL）、本番デプロイまでを個人で設計・実装・運用しています。
 
-## React × Spring Boot 実務再現教材 — 記事100本の開発手順ページで、本番構成を再現しポートフォリオに直結。
+- **Live Demo**: https://devnav.tech
+- **担当範囲**: 個人開発（企画・画面設計・Frontend・Backend・DB設計・インフラ構築・本番運用）
+- **開発期間**: 2025年7月〜（初回コミット 2025-07-11）
+
+| 区分 | 主な技術 |
+|---|---|
+| Frontend | React 18 / TypeScript / Create React App / Tailwind CSS / react-three-fiber |
+| Backend | Java 17 / Spring Boot 3.5 / Spring Data JPA / Spring Security |
+| Database | PostgreSQL（Neon） |
+| Auth | Firebase Authentication / Firebase Admin SDK |
+| Hosting | Vercel（Frontend） / Koyeb（Backend） / Cloudflare（DNS） |
+
+---
 
 ## 目次
-- [概要](#概要)
-- [成果](#成果)
-- [デモ / スクリーンショット](#デモ--スクリーンショット)
-- [Insomnia/Postman テスト](#insomniapostman-テスト管理者ファースト--ローカル)
-- [システム構成](#システム構成)
-- [主要機能](#主要機能)
-- [セットアップ（最短ルート）](#セットアップ最短ルート)
-- [デプロイ](#デプロイ)
-- [API 一覧（抜粋）](#api-一覧抜粋)
-- [開発ロードマップ](#開発ロードマップ)
-- [このプロジェクトが解決する課題](#このプロジェクトが解決する課題)
-- [実績・数値](#実績数値)
-
-## 概要
-- React（TS）× Spring Boot（JPA） を接続し、本番構成をそのまま再現できる実務教材。
-- **記事100本**の開発手順ページで、環境構築〜デプロイを一気通貫で体験。
-- Vercel × Koyeb × Neon × Cloudflare による本番同等のクラウド構成を提供。
-
-## 成果
-- 読者の成果：本番同等の構成を再現し、クラウド環境へデプロイ可能。
-- 制作者の成果：React × Spring Boot 両面で即戦力を証明し案件獲得へ直結。さらに、**Q&A機能によるフィードバックで教材を継続的に洗練**。
-
-
-## デモ / スクリーンショット
-- **本番URL**：https://devnav.tech （検証後に記載）
-
-### マイページの主な機能
-- プロフィールカード（表示名/メール、Lv/XP%バー）
-- 学習カレンダー（月表示・日別アクティビティ）
-- 統計カード：記録記事数 / レビュー数 / いいね数 / コメント数
-- いいねした記事（最新リストへのリンク）
-- 直近のアクション履歴（読了・コメント・いいねのタイムライン）
-![マイページ](https://github.com/user-attachments/assets/87aaa417-c130-4bc4-bb41-cea18173cb1e)
-
-### Q&A（学習者）
-- 質問投稿（タイトル/本文、ログイン必須）
-- ステータス表示（受付中・解決）
-- 自分の質問一覧／詳細（コメント履歴つき）
-- 通知：回答/更新を受け取り（将来：メール/Push予定）
-
-![ユーザーQA](https://github.com/user-attachments/assets/3e1f2982-80f7-4ce1-9375-bd3a507e7db5)
-
-### Q&A管理（管理者）
-- 質問一覧（並び替え・検索・ステータスフィルタ）
-- 対応：回答投稿、編集、解決/再開の切替
-- モデレーション：不適切質問の非表示/削除
-- メタ情報：投稿者、日時、記事紐づけ、タグ管理（予定）
-  
-![adminQA](https://github.com/user-attachments/assets/6951c124-f82e-4ce4-afca-a5d85d6aa687)
+1. [Live Demo](#live-demo)
+2. [What I Built / 主要機能](#what-i-built--主要機能)
+3. [Tech Stack](#tech-stack)
+4. [Architecture](#architecture)
+5. [Engineering Highlights](#engineering-highlights)
+6. [Testing](#testing)
+7. [Production / Security](#production--security)
+8. [Local Setup](#local-setup)
+9. [Roadmap](#roadmap)
 
 ---
 
+## Live Demo
 
-## Insomnia/Postman テスト（管理者ファースト / ローカル）
+- URL: https://devnav.tech
+- 未ログインで記事・文法・開発手順の一覧と詳細を閲覧できます。いいね・読了・コメント・マイページはログイン後に利用できます。
+- 公開中のコンテンツ数（2026年10月時点、本番APIで確認）: 技術記事 13 / 基本文法 9 / 開発手順 77
+- Backend は Koyeb の無料枠で稼働しているため、しばらくアクセスがないと初回表示に時間がかかる場合があります。
 
-この教材は「管理者を先に作る」前提です。まずは Firebase で管理者ユーザーにカスタムクレーム `admin: true` を付与し、IDトークンを取得して `Authorization: Bearer <ID_TOKEN>` で送信します。
-
-1) 動作確認
-- `GET http://localhost:8080/actuator/health` → `{"status":"UP"}`
-
-2) 管理者API（要 Bearer）
-- 記事一覧: `GET http://localhost:8080/api/admin/articles?page=0&size=10`
-- 記事投稿: `POST http://localhost:8080/api/admin/add-article`  
-  - Header: `Authorization: Bearer <ID_TOKEN>`  
-  - Body (multipart/form-data): `image?`, `title`, `content`, …(ArticleRequest)
-
-3) 学習者が触れる公開系
-- 記事一覧: `GET http://localhost:8080/api/articles?limit=20`(**未ログイン**)
-- いいね: `POST http://localhost:8080/api/likes/{articleId}`（**要ログイン**）
+| 技術記事の詳細 | 管理画面（記事一覧・公開切替・編集・削除） |
+|---|---|
+| ![技術記事の詳細](frontend/public/assets/images/tech-detail-top.png) | ![管理画面](frontend/public/assets/images/admin.png) |
 
 ---
 
-## システム構成
+## What I Built / 主要機能
 
-```sql
+現在のコードに実装されている機能のみを記載しています。
+
+### 閲覧（未ログイン可）
+- 技術記事・基本文法・開発手順の一覧／詳細（ページング、カテゴリ、Markdown + シンタックスハイライト表示）
+- 開発手順はステップ番号（例: `1-01`）順に並べて表示
+- トップページの技術スタック表示を react-three-fiber（three.js）で3D描画し、画面幅に応じて縮小
+
+### 学習者（ログイン後）
+- Firebase Authentication（メールアドレス／パスワード）によるログイン・登録
+- いいね（記事・文法）、読了の登録／解除（記事・文法・手順）
+- コメント／Q&A スレッド（投稿・本人の投稿の編集／削除）
+- マイページ: レベル／経験値バー、学習カレンダー、統計（読了・レビュー・いいね・コメント数）、いいねした記事、直近のアクション履歴
+
+### 管理者（Firebase カスタムクレーム `admin`）
+- 記事・文法・開発手順の作成／編集／削除、公開／非公開の切り替え、画像アップロード
+- 記事・文法・手順へのレビュー点数の登録
+- Q&A 管理画面（質問一覧と回答の登録）
+
+---
+
+## Tech Stack
+
+| Layer | Technology |
+|---|---|
+| Frontend | React 18.3, TypeScript 4.9, react-scripts 5.0.1 (CRA), React Router 6, axios, Tailwind CSS 3, framer-motion, react-markdown + react-syntax-highlighter, three.js r171 + @react-three/fiber 8 |
+| Backend | Java 17, Spring Boot 3.5.3, Spring Web, Spring Data JPA (Hibernate 6), Spring Security, Spring Boot Actuator, Lombok |
+| Database | PostgreSQL 17（Neon） |
+| Authentication | Firebase Authentication（Frontend）, Firebase Admin SDK 9.2（Backend での ID トークン検証） |
+| Hosting | Vercel（Frontend）, Koyeb Buildpack（Backend）, Neon（DB）, Cloudflare（DNS） |
+| Build | pnpm（Frontend）, Maven Wrapper（Backend） |
+
+---
+
+## Architecture
+
+```text
 [ Browser ]
-     |
-     |  HTTPS (TLS)
-     v
-+--------------------+
-|   Cloudflare DNS   |
-|   & Proxy (SSL)    |
-+--------------------+
-      |                     \
-      | devnav.tech          \ backend.devnav.tech
-      v                       v
-+-------------------+     +----------------------+
-|  Vercel (Frontend)| --> |  Koyeb (Spring API)  |
-|  React / TS       |     |  /actuator/health    |
-+-------------------+     +----------------------+
-                               |
-                               | JDBC (TLS, sslmode=require)
-                               v
-                         +------------------+
-                         | Neon (Postgres)  |
-                         +------------------+
-
+    |  https://devnav.tech  (DNS: Cloudflare)
+    v
++--------------------------+        HTTPS / JSON         +------------------------------+
+| Vercel                   | --------------------------> | Koyeb                        |
+| React + TypeScript (CRA) |  Authorization: Bearer      | Spring Boot (profile: prod)  |
+| Firebase Auth (client)   |  <Firebase ID Token>        | FirebaseTokenFilter          |
++--------------------------+                             | Controller → Service → JPA   |
+                                                         +---------------+--------------+
+                                                                         | JDBC (TLS)
+                                                                         v
+                                                         +------------------------------+
+                                                         | Neon (PostgreSQL)            |
+                                                         +------------------------------+
 ```
 
-- **Frontend**: React (CRA, TypeScript)
-- **Backend**: Spring Boot 3, JPA, Actuator, CORS
-- **DB**: Neon (Postgres, `sslmode=require`)
-- **Infra**: Cloudflare (DNS/SSL), Vercel, Koyeb
+- Frontend の API 接続先は環境変数 `REACT_APP_API_URL` で切り替えます。
+- Backend の接続情報は `application-prod.properties` で環境変数（`SPRING_DATASOURCE_URL` / `SPRING_DATASOURCE_USERNAME` / `SPRING_DATASOURCE_PASSWORD`）から読み込み、Firebase の資格情報は `FIREBASE_SERVICE_ACCOUNT_JSON` から読み込みます。値は Git に含めず、各ホスティングサービスで管理しています。
+- ヘルスチェック: `GET /actuator/health`
+
+### 認証・認可の流れ
+1. Frontend が Firebase Authentication でログインし、ID トークンを取得
+2. API リクエストに `Authorization: Bearer <ID Token>` を付与
+3. Backend の `FirebaseTokenFilter` が Firebase Admin SDK でトークンを検証し、Spring Security の認証情報（principal = email）を設定
+4. カスタムクレーム `admin: true` を持つユーザーに `ROLE_ADMIN` を付与し、`/api/admin/**` を保護
+
+### 主な API
+| 種別 | Endpoint（抜粋） |
+|---|---|
+| 公開 | `GET /api/articles`, `GET /api/articles/{id}`, `GET /api/syntaxes`, `GET /api/procedures`（一覧は `page`, `size` 指定） |
+| ログイン | `POST /api/likes`, `POST /api/{articles\|syntaxes\|procedures}/read`, `DELETE /api/{…}/read/{id}`, `GET /api/me`, `GET /api/user/stats`, `POST /api/{type}/{refId}/{category}/messages` |
+| 管理者 | `POST /api/admin/add-article`（multipart）, `PUT /api/admin/articles/{id}`, `PUT /api/admin/articles/toggle/{id}` ほか |
 
 ---
 
-## 主要機能
-- 学習進捗(マイページ)：レベルバー（XP）、カレンダー、アクション履歴
-- コンテンツ：記事読了ボタン、いいね、Q&A、コメント、レビュー点数
-- 管理：記事管理、ユーザー管理（予定含む）
+## Engineering Highlights
+
+- **Firebase ID トークンと Spring Security の統合**: 独自の `OncePerRequestFilter` でトークンを検証し、カスタムクレームからロールを付与。401 / 403 は JSON で返却。
+- **公開 API からの個人情報除外**: 記事・文法・手順の DTO が投稿者のメールアドレスを JSON に含めていたため、`@JsonIgnore` で除外。Entity / Service / Controller は変更せず、レスポンスだけを変える最小差分とし、単体テストで回帰を防止（[Testing](#testing)）。
+- **N+1 を避けた一覧取得**: 管理者向け Q&A 一覧で、`join fetch` と ID の一括取得（プロジェクション）を組み合わせて関連データを取得（`MessageService`）。
+- **冪等性・同時実行への配慮**: いいね（文法）の `ON CONFLICT DO NOTHING`、既読・レビュー・スレッドのユニーク制約、スレッド作成時の競合で再取得する `getOrCreate`。
+- **手順番号の数値ソート**: 文字列のステップ番号を正規化して数値カラムへ同期し（`StepNumber`）、既存データは専用プロファイルの移行処理で補完。
+- **Frontend の体験改善**: 読了ボタンの楽観的更新と失敗時のロールバック、`AbortController` による競合リクエストの破棄、`React.lazy` によるルート単位のコード分割。
+- **3D 表示のレスポンシブ対応**: three.js のテクスチャとして読み込めなかった SVG（`width` / `height` 未指定）を修正し、Canvas で見えている横幅に合わせてロゴ全体を縮小。
 
 ---
 
-## セットアップ（最短ルート）
+## Testing
 
-> この教材は「管理者を先に作る」前提です。まず Firebase で管理者ユーザーに `admin: true` を付与しておくこと。
+| 種類 | 対象 | 内容 |
+|---|---|---|
+| 単体テスト（Backend） | `PublicDtoSerializationTest` | `ArticleDTO` / `SyntaxDTO` / `ProcedureDTO` を Spring の Jackson 設定で JSON 化し、`userEmail` が出力されないこと、`title` / `authorName` などの公開項目は維持されることを確認（3 テスト）。Spring Context・DB・Firebase を起動せずに実行可能。 |
+| 起動テスト（Backend） | `TechApplicationTests.contextLoads` | Spring Context の起動確認。実行にはローカルの PostgreSQL と Firebase 資格情報が必要。 |
+| 本番確認 | 公開 API 6 系統 | 記事・文法・手順の一覧／詳細 API で HTTP 200、`userEmail` 項目が存在しないこと、既存の公開項目が維持されていることを本番で確認。 |
+
+```bash
+cd backend
+./mvnw -Dtest=PublicDtoSerializationTest test
+```
+
+Frontend の自動テストと CI（GitHub Actions）は未整備です（[Roadmap](#roadmap)）。
+
+---
+
+## Production / Security
+
+本番運用中に発生した課題への対応です。秘密値・接続先ホスト名は記載していません。
+
+1. **公開リポジトリに含まれていた DB 認証情報への対応**
+   - 本番 PostgreSQL を READ ONLY 接続で監査し、ロール・publication / subscription / replication slot・event trigger・拡張機能・関数・トリガー・接続状況に不審な設定がないことを確認。
+   - 変更前に `pg_dump`（custom format）で本番 DB を取得し、`pg_restore --list` で全テーブルのデータが含まれることを検証。
+   - 漏えいした認証情報を rotation して無効化し、Neon と Koyeb の接続情報を新しい値へ切り替え。
+2. **Backend デプロイ障害の切り分けと復旧**
+   - リポジトリ名の変更後、Koyeb の GitHub App の repository 権限と、Service の Source が別リポジトリを参照していたことを特定。
+   - 正しいリポジトリ（`dev_nav` / `main`）から再デプロイし、ローカルの使い捨てコンテナで起動を再現して、認証情報の不一致を原因として切り分け、復旧。
+3. **Frontend 本番ビルドの復旧**
+   - Vercel の CI 環境で ESLint の warning が error 扱いになり Production Build が失敗していた原因を切り分け、本番を復旧。
+4. **公開 API からのメールアドレス除外**（[Engineering Highlights](#engineering-highlights) 参照）
+
+---
+
+## Local Setup
 
 ### 前提
-- Node.js 18+ / npm
-- Java 17+ / IntelliJ IDEA
-- Firebase（Email/Password 有効化、管理者ユーザー作成）
+- Java 17 / PostgreSQL / Node.js / pnpm
+- Firebase プロジェクト（Email/Password 認証を有効化）とサービスアカウントの JSON
 
-### 1) Backend（Spring Initializr → IntelliJで起動）
-1. Spring Initializr で生成（Spring Boot 3, Web, JPA, Validation, Actuator など）
-2. IntelliJ でプロジェクトを開く → `TechApplication` を **dev** プロファイルで実行  
-   - （DB未接続でも起動できる構成ならそのまま。必要なら `application-dev.yml` にローカル設定）
-3. 動作確認  
-   ```bash
-   curl http://localhost:8080/actuator/health
-   # => {"status":"UP"}
-   ```
+### Backend
+```bash
+cd backend
+# dev プロファイル: localhost の PostgreSQL（application-dev.properties）を使用、ポート 8080
+# Firebase 資格情報は環境変数 FIREBASE_SERVICE_ACCOUNT_JSON（JSON 文字列）などで指定
+./mvnw spring-boot:run -Dspring-boot.run.profiles=dev
+curl http://localhost:8080/actuator/health   # => {"status":"UP"}
+```
 
-### 2) Frontend（React CRA）
-1. CRA プロジェクトを開く  
-   ```bash
-   cd frontend
-   npm install
-   npm start
-   ```
-2. API のベースURLはローカル前提（必要になったら `.env.local` に定義）  
-   ```bash
-   # 例：必要になった時だけ作成
-   # REACT_APP_API_URL=http://localhost:8080
-   ```
+### Frontend
+```bash
+cd frontend
+pnpm install
+# .env.local に REACT_APP_API_URL=http://localhost:8080 を設定
+pnpm start   # http://localhost:3000
+```
 
-### 3) 管理者トークンでAPI確認（Insomnia/curl）
-- ログインして **IDトークン** を取得 → `Authorization: Bearer <ID_TOKEN>`
-- 例：記事一覧（管理）：  
-  ```
-  GET http://localhost:8080/api/admin/articles?page=0&size=10
-  Header: Authorization: Bearer <ID_TOKEN>
-  ```
-- 例：記事投稿（管理・画像任意 / multipart）：  
-  ```
-  POST http://localhost:8080/api/admin/add-article
-  Header: Authorization: Bearer <ID_TOKEN>
-  Body: image?, title, content, ...
-  ```
-
-### 備考
-- CORS は本番移行時にだけ調整（例：`https://devnav.tech` を許可）。ローカルは `http://localhost:3000` が通ればOK。
-- デプロイ（Vercel/Koyeb/Neon/Cloudflare）は別セクションで後述。
+### 管理者ユーザー
+管理画面を使うには、Firebase のユーザーにカスタムクレーム `admin: true` を付与します（Firebase Admin SDK の `setCustomUserClaims`）。
 
 ---
 
-## デプロイ
+## Roadmap
 
-### DNS（Cloudflare）
-- `@` → A → 216.198.79.1（Vercel）
-- `www` → CNAME → cname.vercel-dns.com.
-- `_vercel` → TXT → vc-domain-verify=devnav.tech,xxxxxxxx（Vercel検証用）
-- `backend` → CNAME → <your-koyeb-app>.koyeb.app（API用）
-
-### Vercel（Frontend）
-- 環境変数: `REACT_APP_API_URL=https://backend.devnav.tech`
-- Domains → devnav.tech, www.devnav.tech（Verified後にリダイレクト統一）
-
-### Koyeb（Backend）
-- Secrets: JDBC_URL, DB_USER, DB_PASS, SPRING_PROFILES_ACTIVE=prod
-- Health: `/actuator/health`
-
-### Neon（DB）
-- Connection string: ...neon.tech/<db>?sslmode=require
-- 低権限ユーザー発行推奨
-
----
-
-## API 一覧（抜粋）
-- `GET /api/articles`：記事一覧（クエリ：limit, size）
-- `GET /api/articles/{id}`:記事詳細
-- `POST /api/admin/add-article`（管理者認証）
-- `POST /api/likes/{articleId}`(認証)
-- `GET /api/progress`（XP, 履歴）
-
----
-
-## 開発ロードマップ
-- 認証まわりのE2Eテスト（Playwright）  
-  → ログイン/記事投稿/いいね等の一連の動作を自動テストで保証する。
-- Q&A通知（メール / WebPush）  
-  → 質問への回答があったらユーザーに即通知。学習継続を支援する。
-- 記事検索機能（AI検索）  
-  → タグや全文検索に加え、AI検索で関連記事を高速に引けるようにする。
-- 管理画面のUX改善（shadcn/ui）  
-  → サイドメニューやフォームをモダンUI化し、運営者が使いやすい管理画面に進化。
-
----
-
-## このプロジェクトが解決する課題
-- **教材不足**：React × Spring Boot を日本語で体系的に学べる実務教材が少ない → 接続設計やデプロイを一気通貫で学習可能。
-- **学習の継続性**：進捗管理（Lv/XP、カレンダー）で「どこまでやったか」を可視化し、初心者の挫折を防ぐ。
-- **即戦力化**：本番同等の構成（Vercel/Koyeb/Neon/Cloudflare）を体験でき、案件獲得に直結するスキルを証明可能。
-- **将来性**：管理画面UX改善や通知機能などを拡張予定。教材にとどまらず「実務・学習コミュニティ基盤」として発展可能。
-
----
-
-## 実績・数値
-- 記事数：100本以上（最終200本予定）  
-- 実務経験：2年以上  
-- 本番構成：Vercel / Koyeb / Neon / Cloudflare を利用し、即稼働可能なポートフォリオを構築済み
-
----
-
-## 本番環境に関する補足
-
-本アプリはKoyebの無料枠でデプロイしているため、一定時間アクセスがない場合にサービスがスリープ状態になります。
-そのため初回アクセス時はJava/Spring Bootアプリケーションのコールドスタートにより、表示まで30〜40秒程度かかる場合があります。
-
-この課題に対して、Always On環境への移行、Docker化、Spring Boot起動最適化、ヘルスチェックによる監視などを改善案として検討しています。
-
+- Frontend の ESLint warning 解消（CI で warning を error として扱える状態に戻す）
+- CI（GitHub Actions）での Backend テスト・Frontend ビルドの自動実行
+- 認可・入力検証のテスト拡充（`@WebMvcTest` など）
+- DB マイグレーション管理（Flyway）の導入
+- 画像アップロードの外部ストレージ化
